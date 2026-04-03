@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      10.0
+// @version      10.1
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -200,7 +200,10 @@
                 </div>
                 
                 <div id="ls-setup-area" class="ls-screen">
-                    <span style="color: #f8fafc; font-size: 20px; font-weight: 700; text-align: center; margin-bottom: 5px;">Bem-vindo</span>
+                    <div style="text-align: center; margin-bottom: 10px;">
+                        <span style="font-size: 32px; font-weight: 800; background: linear-gradient(135deg, #6366f1, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: block; margin-bottom: 4px;">LidySync</span>
+                        <span style="color: #f8fafc; font-size: 16px; font-weight: 600;">Bem-vindo!</span>
+                    </div>
                     <div><span class="ls-label">Seu Apelido</span><input type="text" class="ls-input-text" id="ls-setup-name" placeholder="Como quer ser chamado?" /></div>
                     <div><span class="ls-label">Cor da sua Bolha</span><input type="color" class="ls-input-color" id="ls-setup-color" value="#6366f1" /></div>
                     <button class="ls-btn-primary" id="ls-setup-btn">Continuar</button>
@@ -280,7 +283,10 @@
                 </div>
             </div>
             <div id="ls-fab">
-                <img src="https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico" width="28" height="28" style="filter: brightness(0) invert(1);" alt="LS">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    <polygon points="10 9 15 12 10 15 10 9" fill="white"></polygon>
+                </svg>
             </div>
         `;
 
