@@ -1,1 +1,1 @@
-# WatchMate
+# LidySync
