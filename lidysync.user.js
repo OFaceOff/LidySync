@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      12.1
+// @version      13.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -106,21 +106,39 @@
             }
 
             #ls-wrapper.theme-glass {
-                --bg-base: rgba(255, 255, 255, 0.08);
-                --bg-surface: rgba(255, 255, 255, 0.12);
-                --bg-overlay: rgba(15, 23, 42, 0.4);
+                --bg-base: rgba(15, 23, 42, 0.35);
+                --bg-surface: rgba(255, 255, 255, 0.15);
+                --bg-overlay: rgba(15, 23, 42, 0.3);
                 --bg-modal: rgba(15, 23, 42, 0.95);
                 --text-primary: #ffffff;
                 --text-muted: #cbd5e1;
-                --border-color: rgba(255,255,255,0.2);
-                --glass-blur: blur(16px);
-                --received-msg: rgba(255, 255, 255, 0.15);
-                --fab-bg: rgba(255, 255, 255, 0.15);
+                --border-color: rgba(255,255,255,0.25);
+                --glass-blur: blur(20px);
+                --received-msg: rgba(255, 255, 255, 0.2);
+                --fab-bg: rgba(255, 255, 255, 0.2);
                 --fab-color: #ffffff;
                 --fab-shadow: 0 4px 15px rgba(0,0,0,0.3);
-                --btn-primary-bg: rgba(255, 255, 255, 0.25);
+                --btn-primary-bg: rgba(255, 255, 255, 0.3);
                 --btn-primary-color: #ffffff;
-                --btn-secondary-bg: rgba(0, 0, 0, 0.2);
+                --btn-secondary-bg: rgba(0, 0, 0, 0.3);
+            }
+
+            #ls-wrapper.theme-hellokitty {
+                --bg-base: #fff0f5;
+                --bg-surface: #ffffff;
+                --bg-overlay: rgba(255, 240, 245, 0.9);
+                --bg-modal: #fff0f5;
+                --text-primary: #be185d;
+                --text-muted: #f472b6;
+                --border-color: rgba(244, 114, 182, 0.3);
+                --glass-blur: blur(0px);
+                --received-msg: #fce7f3;
+                --fab-bg: linear-gradient(135deg, #f472b6, #db2777);
+                --fab-color: #ffffff;
+                --fab-shadow: 0 4px 15px rgba(219, 39, 119, 0.3);
+                --btn-primary-bg: linear-gradient(135deg, #f472b6, #db2777);
+                --btn-primary-color: #ffffff;
+                --btn-secondary-bg: #fbcfe8;
             }
             
             ::-webkit-scrollbar { width: 6px; }
@@ -219,16 +237,16 @@
             #ls-input { flex-grow: 1; min-width: 0; background-color: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 20px; padding: 10px 16px; color: var(--text-primary); outline: none; font-size: 14px; transition: 0.2s; }
             #ls-input:focus { border-color: #6366f1; }
             
-            #ls-send-btn { flex-shrink: 0; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; box-shadow: 0 2px 10px rgba(99, 102, 241, 0.3); transition: transform 0.2s; }
+            #ls-send-btn { flex-shrink: 0; background: var(--btn-primary-bg); color: var(--btn-primary-color); border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); transition: transform 0.2s; }
             #ls-send-btn:hover { transform: scale(1.05); }
             
             .ls-popup-panel { position: absolute; bottom: 70px; background-color: var(--bg-surface); border-radius: 16px; padding: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: none; z-index: 20; border: 1px solid var(--border-color); }
-            #ls-emoji-panel { left: 16px; width: 240px; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+            #ls-emoji-panel { left: 16px; width: max-content; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 12px; }
             .ls-emoji-item { font-size: 20px; cursor: pointer; text-align: center; padding: 6px; border-radius: 8px; transition: 0.1s; }
             .ls-emoji-item:hover { background-color: rgba(128,128,128,0.1); transform: scale(1.1); }
-            #ls-plus-panel { left: 16px; width: 200px; flex-direction: column; gap: 4px; }
+            #ls-plus-panel { left: 16px; width: 220px; flex-direction: column; gap: 4px; }
             .ls-action-item { color: var(--text-primary); padding: 12px; cursor: pointer; font-size: 14px; border-radius: 10px; display: flex; align-items: center; gap: 10px; font-weight: 500; transition: 0.2s; }
-            .ls-action-item:hover { background-color: rgba(99, 102, 241, 0.1); color: #6366f1; }
+            .ls-action-item:hover { background-color: rgba(128,128,128,0.1); color: var(--text-primary); }
 
             #ls-countdown-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 100; display: none; flex-direction: column; justify-content: center; align-items: center; }
             #ls-countdown-number { font-size: 110px; font-weight: 700; color: #a5b4fc; text-shadow: 0 0 40px rgba(99, 102, 241, 0.5); animation: pop 1s infinite; letter-spacing: -2px; }
@@ -248,8 +266,11 @@
             <div id="ls-chat-window">
                 <div id="ls-header">
                     <span id="ls-header-title" style="display:flex; align-items:center; gap:8px;">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path><polygon points="10.5,9 15.5,12 10.5,15" fill="#a5b4fc" stroke="#a5b4fc" stroke-width="1"></polygon></svg>
-                        LidySync
+                        <button class="ls-header-btn" id="ls-back-btn" style="display:none; margin-left:-8px; margin-right:4px;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                        </button>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path><polygon points="10.5,9 15.5,12 10.5,15" fill="currentColor" stroke="currentColor" stroke-width="1"></polygon></svg>
+                        <span id="ls-header-text">LidySync</span>
                     </span>
                     <div class="ls-header-btns">
                         <button class="ls-header-btn" id="ls-lobby-settings-btn" title="Configurações do Perfil" style="display:none;">⚙️</button>
@@ -258,7 +279,6 @@
                             <div class="ls-dropdown-menu" id="ls-chat-dropdown">
                                 <button class="ls-dropdown-item" id="ls-menu-settings">🎨 Aparência da Sala</button>
                                 <div style="height:1px; background:var(--border-color); margin:4px 0;"></div>
-                                <button class="ls-dropdown-item" id="ls-menu-leave">🚪 Sair para o Lobby</button>
                                 <button class="ls-dropdown-item danger" id="ls-menu-delete">🗑️ Encerrar Sala</button>
                             </div>
                         </div>
@@ -302,6 +322,7 @@
                             <option value="">Tema Escuro (Padrão)</option>
                             <option value="theme-light">Tema Claro</option>
                             <option value="theme-glass">Tema Glassmorfismo</option>
+                            <option value="theme-hellokitty">Tema Hello Kitty</option>
                         </select>
                         <label class="ls-checkbox-group">
                             <input type="checkbox" id="ls-app-sound" checked>
@@ -311,10 +332,7 @@
                     <div class="ls-config-section" style="margin-top:auto;">
                         <button class="ls-btn-danger" id="ls-wipe-data-btn">Desconectar e Apagar Dados</button>
                     </div>
-                    <div style="display: flex; gap: 10px; margin-top: 10px;">
-                        <button class="ls-btn-secondary" id="ls-close-lobby-settings">Cancelar</button>
-                        <button class="ls-btn-primary" id="ls-save-lobby-config-btn" style="margin-top: 0;">Salvar</button>
-                    </div>
+                    <button class="ls-btn-primary" id="ls-save-lobby-config-btn" style="margin-top: 10px;">Salvar</button>
                 </div>
 
                 <div id="ls-add-room-overlay" class="ls-modal-overlay">
@@ -372,6 +390,7 @@
                     </div>
                     <div id="ls-emoji-panel" class="ls-popup-panel">${emojis.map(e => `<span class="ls-emoji-item">${e}</span>`).join('')}</div>
                     <div id="ls-plus-panel" class="ls-popup-panel">
+                        <div class="ls-action-item" id="btn-action-invite">🔗 Convidar para ver isso</div>
                         <div class="ls-action-item" id="btn-action-countdown">⏱️ Sincronizar Vídeo (Play)</div>
                     </div>
                     <div id="ls-input-area">
@@ -385,9 +404,9 @@
                 </div>
             </div>
             <div id="ls-fab">
-                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
-                    <polygon points="10.5,9 15.5,12 10.5,15"></polygon>
+                    <polygon points="10.5,9 15.5,12 10.5,15" fill="currentColor" stroke="currentColor" stroke-width="1"></polygon>
                 </svg>
             </div>
         `;
@@ -400,7 +419,8 @@
         const chatWindow = shadow.getElementById('ls-chat-window');
         const closeBtn = shadow.getElementById('ls-close-btn');
         const lobbySettingsBtn = shadow.getElementById('ls-lobby-settings-btn');
-        const headerTitle = shadow.getElementById('ls-header-title');
+        const backBtn = shadow.getElementById('ls-back-btn');
+        const headerText = shadow.getElementById('ls-header-text');
         const chatMenuContainer = shadow.getElementById('ls-chat-menu-container');
         
         const setupArea = shadow.getElementById('ls-setup-area');
@@ -464,14 +484,16 @@
                 chatArea.style.display = 'none';
                 chatMenuContainer.style.display = 'none';
                 lobbySettingsBtn.style.display = 'none';
-                headerTitle.innerHTML = `🍿 LidySync`;
+                backBtn.style.display = 'none';
+                headerText.innerText = "LidySync";
             } else if (!currentRoom || !currentRoomKey) {
                 setupArea.style.display = 'none';
                 lobbyArea.style.display = 'flex';
                 chatArea.style.display = 'none';
                 chatMenuContainer.style.display = 'none';
                 lobbySettingsBtn.style.display = 'flex';
-                headerTitle.innerHTML = `Lobby (${myName})`;
+                backBtn.style.display = 'none';
+                headerText.innerText = `Lobby (${myName})`;
                 renderSavedRooms();
             } else {
                 setupArea.style.display = 'none';
@@ -479,7 +501,8 @@
                 chatArea.style.display = 'flex';
                 chatMenuContainer.style.display = 'block';
                 lobbySettingsBtn.style.display = 'none';
-                headerTitle.innerHTML = `${currentRoom}`;
+                backBtn.style.display = 'flex';
+                headerText.innerText = `${currentRoom}`;
                 if (!mySyncBg) applyBackground(myBgType, myBgColor, myBgImage);
                 startChatListeners();
             }
@@ -602,10 +625,6 @@
             lobbySettingsOverlay.style.display = 'none';
         });
 
-        shadow.getElementById('ls-close-lobby-settings').addEventListener('click', () => {
-            lobbySettingsOverlay.style.display = 'none';
-        });
-
         shadow.getElementById('ls-save-lobby-config-btn').addEventListener('click', () => {
             const name = shadow.getElementById('ls-edit-name').value.trim();
             if (name) myName = name;
@@ -679,19 +698,23 @@
 
         shadow.getElementById('ls-menu-settings').addEventListener('click', () => {
             chatDropdown.classList.remove('show');
-            settingsOverlay.style.display = 'flex';
-            shadow.getElementById('ls-config-bg-type').value = myBgType;
-            shadow.getElementById('ls-config-bg-type').dispatchEvent(new Event('change')); 
-            shadow.getElementById('ls-config-bg-color').value = myBgColor;
-            shadow.getElementById('ls-config-bg-image').value = myBgImage;
-            shadow.getElementById('ls-config-sync').checked = mySyncBg;
-            shadow.getElementById('ls-config-autoplay').checked = myAutoPlay;
+            if (settingsOverlay.style.display === 'flex') {
+                settingsOverlay.style.display = 'none';
+            } else {
+                settingsOverlay.style.display = 'flex';
+                shadow.getElementById('ls-config-bg-type').value = myBgType;
+                shadow.getElementById('ls-config-bg-type').dispatchEvent(new Event('change')); 
+                shadow.getElementById('ls-config-bg-color').value = myBgColor;
+                shadow.getElementById('ls-config-bg-image').value = myBgImage;
+                shadow.getElementById('ls-config-sync').checked = mySyncBg;
+                shadow.getElementById('ls-config-autoplay').checked = myAutoPlay;
+            }
         });
 
         shadow.getElementById('ls-close-settings-modal').addEventListener('click', () => { settingsOverlay.style.display = 'none'; });
 
-        shadow.getElementById('ls-menu-leave').addEventListener('click', () => {
-            chatDropdown.classList.remove('show'); stopChatListeners();
+        backBtn.addEventListener('click', () => {
+            stopChatListeners();
             currentRoom = null; currentRoomKey = null;
             localStorage.removeItem('ls_current_room'); localStorage.removeItem('ls_room_key');
             checkScreenState();
@@ -755,6 +778,15 @@
                         if (data.deleted) return; 
                         container.className = 'ls-message-container system-msg-container';
                         container.innerHTML = `<div class="ls-message system-msg">🎬 ${data.text} <span class="ls-msg-time" style="display:block; margin-top:2px;">${formatTime(data.timestamp)}</span></div>`;
+                    } else if (data.type === 'invite') {
+                        if (data.deleted) return;
+                        container.className = 'ls-message-container system-msg-container';
+                        container.innerHTML = `
+                            <div class="ls-message system-msg" style="cursor:pointer; background: var(--btn-primary-bg) !important; color: var(--btn-primary-color) !important; border:none;" onclick="window.open('${data.url}', '_blank')">
+                                🍿 ${data.text}<br><small style="text-decoration:underline;">Clique para abrir</small>
+                                <span class="ls-msg-time" style="display:block; margin-top:4px; color:inherit; opacity:0.8;">${formatTime(data.timestamp)}</span>
+                            </div>
+                        `;
                     } else {
                         container.className = `ls-message-container ${isMe ? 'sent' : 'received'}`;
                         
@@ -808,11 +840,14 @@
         }
 
         function applyBackground(type, color, imageUrl) {
+            messagesContainer.parentElement.style.backgroundColor = '';
             if (type === 'image' && imageUrl) {
                 messagesContainer.style.background = `linear-gradient(rgba(15, 23, 42, 0.7), rgba(15, 23, 42, 0.7)), url("${imageUrl}") center/cover`;
-            } else {
+            } else if (type === 'color' && color && color !== '#0f172a') {
                 messagesContainer.style.background = 'transparent'; 
-                messagesContainer.parentElement.style.backgroundColor = color || 'var(--bg-base)';
+                messagesContainer.parentElement.style.backgroundColor = color;
+            } else {
+                messagesContainer.style.background = 'transparent';
             }
         }
 
@@ -885,6 +920,22 @@
                 }
             }, 1000);
         }
+
+        shadow.getElementById('btn-action-invite').addEventListener('click', async () => {
+            plusPanel.style.display = 'none';
+            if(!currentRoom || !currentRoomKey) return;
+            try {
+                await db.collection('rooms').doc(currentRoom).collection('messages').add({
+                    type: 'invite', 
+                    text: `${myName} convidou você para ver algo!`, 
+                    url: window.location.href,
+                    sender: myName, 
+                    roomKey: currentRoomKey,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(), 
+                    deleted: false
+                });
+            } catch (e) {}
+        });
 
         shadow.getElementById('btn-action-countdown').addEventListener('click', async () => {
             plusPanel.style.display = 'none';
