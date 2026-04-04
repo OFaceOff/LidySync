@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      43.0
+// @version      44.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -185,7 +185,7 @@
             .ls-message-container { display: flex; flex-direction: column; max-width: 85%; position: relative; } .ls-message-container.sent { align-self: flex-end; align-items: flex-end; } .ls-message-container.received { align-self: flex-start; align-items: flex-start; }
             .ls-sender-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; padding: 0 4px; } .ls-sender-name { font-size: 11px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.3px; cursor: pointer; transition: 0.2s; } .ls-sender-name:hover { text-decoration: underline; color: var(--text-primary); } .ls-msg-time { font-size: 9px; color: var(--text-muted); opacity: 0.7; font-weight: normal; margin-left: 4px; }
             .ls-msg-action { display: none; cursor: pointer; font-size: 13px; filter: grayscale(100%); transition: 0.2s; opacity: 0.6; margin: 0 2px; } .ls-msg-action:hover { filter: grayscale(0%); opacity: 1; transform: scale(1.1); } .ls-message-container:hover .ls-msg-action { display: inline-block; }
-            .ls-message { padding: 10px 14px; font-size: 14px; line-height: 1.45; color: #ffffff; word-wrap: break-word; box-shadow: 0 2px 8px rgba(0,0,0,0.15); } .ls-message img { max-width: 100%; border-radius: 8px; display: block; margin-top: 4px; }
+            .ls-message { padding: 10px 14px; font-size: 14px; line-height: 1.45; color: #ffffff; word-wrap: break-word; box-shadow: 0 2px 8px rgba(0,0,0,0.15); } .ls-message img { max-width: 100%; border-radius: 8px; display: block; margin-top: 4px; cursor: pointer; transition: transform 0.2s; } .ls-message img:hover { transform: scale(1.02); opacity: 0.9; }
             .ls-message-container.system-msg-container { max-width: 95%; align-self: center; margin: 6px 0; } .ls-message.system-msg { background: rgba(128, 128, 128, 0.1) !important; color: var(--text-muted); text-align: center; font-weight: 500; border-radius: 12px !important; font-size: 12px; border: 1px solid rgba(128, 128, 128, 0.2); box-shadow: none; padding: 6px 12px; } .ls-message.deleted-msg { background-color: transparent !important; color: var(--text-muted); font-style: italic; border: 1px solid var(--border-color); border-radius: 12px !important; font-size: 13px; box-shadow: none; }
             .sent .ls-message:not(.deleted-msg) { border-radius: 14px 14px 4px 14px; } .received .ls-message:not(.deleted-msg) { border-radius: 14px 14px 14px 4px; background-color: var(--received-msg) !important; border: 1px solid var(--border-color); }
             #ls-input-area { display: flex; padding: 12px 16px; background-color: var(--bg-overlay); gap: 10px; align-items: center; position: relative; flex-wrap: nowrap; border-top: 1px solid var(--border-color); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); } .ls-icon-btn { flex-shrink: 0; background: none; border: none; color: var(--text-muted); font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; transition: color 0.2s, transform 0.2s; border-radius: 8px; } .ls-icon-btn:hover { color: var(--text-primary); background: rgba(128,128,128,0.1); transform: scale(1.05); }
@@ -194,6 +194,7 @@
             .ls-popup-panel { position: absolute; bottom: 70px; background-color: var(--bg-overlay); border-radius: 16px; padding: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: none; z-index: 20; border: 1px solid var(--border-color); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); } #ls-emoji-panel { left: 16px; width: 280px; display: flex; flex-wrap: wrap; gap: 6px; padding: 12px; } .ls-emoji-item { font-size: 20px; cursor: pointer; text-align: center; border-radius: 8px; transition: 0.1s; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; } .ls-emoji-item:hover { background-color: rgba(128,128,128,0.1); transform: scale(1.1); }
             #ls-plus-panel { left: 16px; width: 280px; flex-direction: column; gap: 4px; } .ls-action-item { color: var(--text-primary); padding: 12px; cursor: pointer; font-size: 14px; border-radius: 10px; display: flex; align-items: center; gap: 10px; font-weight: 500; transition: 0.2s; } .ls-action-item:hover { background-color: rgba(128,128,128,0.1); color: var(--text-primary); }
             #ls-countdown-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 100; display: none; flex-direction: column; justify-content: center; align-items: center; } #ls-countdown-number { font-size: 110px; font-weight: 700; color: #a5b4fc; text-shadow: 0 0 40px rgba(99, 102, 241, 0.5); animation: pop 1s infinite; letter-spacing: -2px; } #ls-countdown-text { color: #cbd5e1; font-size: 16px; margin-top: 15px; font-weight: 500; letter-spacing: 0.5px;} @keyframes pop { 0% { transform: scale(0.8); opacity: 0.5; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 0.8; } }
+            #ls-image-viewer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 200; display: none; align-items: center; justify-content: center; flex-direction: column; opacity: 0; transition: opacity 0.2s; } #ls-image-viewer.show { opacity: 1; } #ls-viewer-img { max-width: 90%; max-height: 85%; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); object-fit: contain; transform: scale(0.95); transition: transform 0.2s; cursor: default; } #ls-image-viewer.show #ls-viewer-img { transform: scale(1); } #ls-close-viewer { position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.5); border: none; color: white; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: 0.2s; } #ls-close-viewer:hover { background: rgba(0,0,0,0.8); transform: scale(1.1); }
         `;
 
         const emojis = ['😀','😂','😍','🥰','😎','😭','😡','😱','🍿','🎬','🍕','🥂','👍','👎','❤️','🔥'];
@@ -402,6 +403,11 @@
                     </div>
                 </div>
 
+                <div id="ls-image-viewer">
+                    <button id="ls-close-viewer">✕</button>
+                    <img id="ls-viewer-img" src="">
+                </div>
+
                 <div id="ls-chat-area">
                     <div id="ls-messages"></div>
                     <div id="ls-typing-indicator" style="display: none; padding: 0 16px 8px; font-size: 11px; color: var(--text-muted); font-style: italic; min-height: 16px;"></div>
@@ -456,6 +462,13 @@
         const input = shadow.getElementById('ls-input');
         const inputSetupName = shadow.getElementById('ls-setup-name');
         const inputSetupPin = shadow.getElementById('ls-setup-pin');
+
+        const imageViewer = shadow.getElementById('ls-image-viewer');
+        const viewerImg = shadow.getElementById('ls-viewer-img');
+        const closeViewerBtn = shadow.getElementById('ls-close-viewer');
+
+        closeViewerBtn.addEventListener('click', () => { imageViewer.classList.remove('show'); setTimeout(() => { imageViewer.style.display = 'none'; viewerImg.src = ''; }, 200); });
+        imageViewer.addEventListener('click', (e) => { if(e.target === imageViewer) closeViewerBtn.click(); });
 
         let myDeviceId = ls.getItem('ls_device_id');
         if (!myDeviceId) {
@@ -1294,6 +1307,15 @@
                             }
                             if(isMe) { msgBubble.style.background = data.color || '#6366f1'; }
                         }
+                        
+                        msgBubble.querySelectorAll('img').forEach(img => {
+                            img.addEventListener('click', () => {
+                                viewerImg.src = img.src;
+                                imageViewer.style.display = 'flex';
+                                setTimeout(() => imageViewer.classList.add('show'), 10);
+                            });
+                        });
+                        
                         container.appendChild(senderRow); container.appendChild(msgBubble);
                         
                         lastSender = data.sender;
