@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      20.0
+// @version      20.1
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -97,7 +97,7 @@
 
         const host = document.createElement('div');
         host.id = 'lidysync-host';
-        host.style.cssText = 'position: fixed !important; bottom: 20px !important; right: 20px !important; z-index: 2147483647 !important; pointer-events: none !important;';
+        host.style.cssText = 'position: fixed !important; bottom: 90px !important; right: 20px !important; z-index: 2147483647 !important; pointer-events: none !important;';
         
         const shadow = host.attachShadow({ mode: 'open' });
 
@@ -569,6 +569,7 @@
             editingRoomAppearance = null;
             
             if (!myName) {
+                db.collection('users').doc(myName).set({ color: myColor, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
                 setupArea.style.display = 'flex';
                 lobbyArea.style.display = 'none';
                 chatArea.style.display = 'none';
