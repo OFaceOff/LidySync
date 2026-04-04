@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      61.0
+// @version      62.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -578,9 +578,6 @@
         let floodCount = 0;
         let isFlooding = false;
         let floodResetTimer = null;
-        
-        let lastDocumentTitle = document.title;
-        let lastPingTime = 0;
 
         window.addEventListener('beforeunload', () => {
             if (currentRoom && currentRoomKey) {
@@ -1900,8 +1897,6 @@
         if (myHideApp) fab.style.display = 'none';
         checkScreenState();
         
-        let lastDocumentTitle = document.title;
-        let lastPingTime = 0;
         setInterval(() => {
             if (!myName) return;
             const now = Date.now();
