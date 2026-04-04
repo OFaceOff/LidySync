@@ -1,12 +1,14 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      45.0
+// @version      46.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
 // @match        *://*/*
-// @grant        none
+// @grant        GM_setValue
+// @grant        GM_getValue
+// @grant        GM_deleteValue
 // @run-at       document-start
 // @require      https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js
 // @require      https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js
@@ -14,6 +16,27 @@
 
 (function() {
     'use strict';
+
+    const ls = {
+        getItem: function(key) {
+            let val = GM_getValue(key);
+            if (val === undefined) {
+                val = localStorage.getItem(key);
+                if (val !== null) GM_setValue(key, val);
+            }
+            return val === undefined ? null : val;
+        },
+        setItem: function(key, val) {
+            GM_setValue(key, String(val));
+        },
+        removeItem: function(key) {
+            GM_deleteValue(key);
+        },
+        clear: function() {
+            const keys = ['ls_device_id','ls_username','ls_userpin','ls_usercolor','ls_usertextcolor','ls_useravatar','ls_userbanner','ls_userbio','ls_usercountry','ls_hidechats','ls_current_room','ls_room_key','ls_saved_rooms','ls_last_read','ls_muted_rooms','ls_theme','ls_sound','ls_inchat_sounds','ls_hide_sys','ls_hide_app','ls_hide_revive','ls_integrated','ls_bg_type','ls_bg_color','ls_bg_image','ls_sync_bg','ls_autoplay'];
+            keys.forEach(k => GM_deleteValue(k));
+        }
+    };
 
     async function hashPassword(password) {
         const msgBuffer = new TextEncoder().encode(password);
@@ -39,9 +62,9 @@
         } catch (e) {}
     }
 
-    function playNotificationSound() { if (localStorage.getItem('ls_sound') !== 'false') playAudio(600, 1000, 0.1); }
-    function playSendSound() { if (localStorage.getItem('ls_sound') !== 'false' && localStorage.getItem('ls_inchat_sounds') !== 'false') playAudio(300, 600, 0.08); }
-    function playReceiveSound() { if (localStorage.getItem('ls_sound') !== 'false' && localStorage.getItem('ls_inchat_sounds') !== 'false') playAudio(800, 1200, 0.15); }
+    function playNotificationSound() { if (ls.getItem('ls_sound') !== 'false') playAudio(600, 1000, 0.1); }
+    function playSendSound() { if (ls.getItem('ls_sound') !== 'false' && ls.getItem('ls_inchat_sounds') !== 'false') playAudio(300, 600, 0.08); }
+    function playReceiveSound() { if (ls.getItem('ls_sound') !== 'false' && ls.getItem('ls_inchat_sounds') !== 'false') playAudio(800, 1200, 0.15); }
 
     function escapeHTML(str) {
         return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag]));
@@ -135,7 +158,7 @@
             .ls-screen { flex: 1; display: none; flex-direction: column; padding: 20px; background-color: transparent; gap: 16px; position: relative; overflow-y: auto;}
             #ls-room-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; padding-bottom: 70px; } .ls-room-item { display: flex; align-items: center; padding: 12px; background: rgba(128,128,128,0.05); border: 1px solid var(--border-color); border-radius: 12px; cursor: pointer; transition: 0.2s; position: relative; } .ls-room-item:hover { background: rgba(128,128,128,0.1); } .ls-room-avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #8b5cf6); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; color: white; margin-right: 12px; flex-shrink: 0; position: relative; background-size: cover !important; background-position: center !important; } .ls-online-dot { position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; background: #22c55e; border-radius: 50%; border: 2px solid var(--bg-surface); display: none; } .ls-room-info { flex: 1; overflow: hidden; } .ls-room-name { color: var(--text-primary); font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px; } .ls-room-status { color: var(--text-muted); font-size: 12px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ls-room-unread { width: 10px; height: 10px; background: #ef4444; border-radius: 50%; display: none; margin-left: 8px; flex-shrink: 0; } .ls-room-options { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: 0.2s; margin-left: 4px; } .ls-room-options:hover { background: rgba(128,128,128,0.1); color: var(--text-primary); }
             .ls-tags-container { display: inline-flex; gap: 4px; align-items: center; vertical-align: middle; flex-wrap: wrap; } .ls-tag { font-size: 8px; font-weight: 800; padding: 2px 5px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; cursor: help; } .ls-tag-adm { background-color: #ef4444; color: #ffffff; } .ls-tag-dev { background-color: #eab308; color: #000000; } .ls-tag-owner { background-color: #2d0778; color: #ffffff; } .ls-tag-mod { background-color: #345beb; color: #ffffff; } .ls-tag-linda { background-color: #fbcfe8; color: #be185d; } .ls-tag-generic { background-color: rgba(128,128,128,0.2); color: inherit; }
-            .ls-tag-vip { background: linear-gradient(135deg, #f59e0b, #d97706); color: #ffffff; border: 1px solid #fbbf24; }
+            .ls-tag-vip { background: linear-gradient(135deg, #fde047, #eab308); color: #000000; border: 1px solid #ca8a04; font-weight: 900; }
             .ls-tag-verified { background-color: #1da1f2 !important; color: #ffffff !important; border-radius: 50% !important; width: 14px !important; height: 14px !important; display: inline-flex !important; justify-content: center; align-items: center; padding: 0 !important; font-size: 9px !important; border: 1px solid #ffffff; box-shadow: 0 0 4px rgba(29, 161, 242, 0.6); }
             #ls-fab-add { position: absolute; bottom: 20px; right: 20px; width: 50px; height: 50px; background: var(--fab-bg); color: var(--fab-color); border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: var(--fab-shadow); font-size: 24px; transition: 0.2s; z-index: 20; border: none; backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); } #ls-fab-add:hover { transform: scale(1.1); }
             .ls-modal-overlay { position: absolute; top: 54px; left: 0; width: 100%; height: calc(100% - 54px); background-color: var(--bg-modal); z-index: 30; display: none; flex-direction: column; overflow-y: auto; }
@@ -162,7 +185,7 @@
             .ls-message-container { display: flex; flex-direction: column; max-width: 85%; position: relative; } .ls-message-container.sent { align-self: flex-end; align-items: flex-end; } .ls-message-container.received { align-self: flex-start; align-items: flex-start; }
             .ls-sender-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; padding: 0 4px; } .ls-sender-name { font-size: 11px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.3px; cursor: pointer; transition: 0.2s; } .ls-sender-name:hover { text-decoration: underline; color: var(--text-primary); } .ls-msg-time { font-size: 9px; color: var(--text-muted); opacity: 0.7; font-weight: normal; margin-left: 4px; }
             .ls-msg-action { display: none; cursor: pointer; font-size: 13px; filter: grayscale(100%); transition: 0.2s; opacity: 0.6; margin: 0 2px; } .ls-msg-action:hover { filter: grayscale(0%); opacity: 1; transform: scale(1.1); } .ls-message-container:hover .ls-msg-action { display: inline-block; }
-            .ls-message { padding: 10px 14px; font-size: 14px; line-height: 1.45; color: #ffffff; word-wrap: break-word; box-shadow: 0 2px 8px rgba(0,0,0,0.15); } .ls-message img { max-width: 100%; border-radius: 8px; display: block; margin-top: 4px; cursor: pointer; transition: transform 0.2s; } .ls-message img:hover { transform: scale(1.02); opacity: 0.9; }
+            .ls-message { padding: 10px 14px; font-size: 14px; line-height: 1.45; color: #ffffff; word-wrap: break-word; word-break: break-word; white-space: pre-wrap; overflow-wrap: anywhere; box-shadow: 0 2px 8px rgba(0,0,0,0.15); max-width: 100%; overflow-x: hidden; } .ls-message img { max-width: 100%; border-radius: 8px; display: block; margin-top: 4px; cursor: pointer; transition: transform 0.2s; } .ls-message img:hover { transform: scale(1.02); opacity: 0.9; }
             .ls-message-container.system-msg-container { max-width: 95%; align-self: center; margin: 6px 0; } .ls-message.system-msg { background: rgba(128, 128, 128, 0.1) !important; color: var(--text-muted); text-align: center; font-weight: 500; border-radius: 12px !important; font-size: 12px; border: 1px solid rgba(128, 128, 128, 0.2); box-shadow: none; padding: 6px 12px; } .ls-message.deleted-msg { background-color: transparent !important; color: var(--text-muted); font-style: italic; border: 1px solid var(--border-color); border-radius: 12px !important; font-size: 13px; box-shadow: none; }
             .sent .ls-message:not(.deleted-msg) { border-radius: 14px 14px 4px 14px; } .received .ls-message:not(.deleted-msg) { border-radius: 14px 14px 14px 4px; background-color: var(--received-msg) !important; border: 1px solid var(--border-color); }
             #ls-input-area { display: flex; padding: 12px 16px; background-color: var(--bg-overlay); gap: 10px; align-items: center; position: relative; flex-wrap: nowrap; border-top: 1px solid var(--border-color); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); } .ls-icon-btn { flex-shrink: 0; background: none; border: none; color: var(--text-muted); font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; transition: color 0.2s, transform 0.2s; border-radius: 8px; } .ls-icon-btn:hover { color: var(--text-primary); background: rgba(128,128,128,0.1); transform: scale(1.05); }
@@ -180,7 +203,7 @@
 
         const wrapper = document.createElement('div');
         wrapper.id = 'ls-wrapper';
-        wrapper.className = localStorage.getItem('ls_theme') !== null ? localStorage.getItem('ls_theme') : ''; 
+        wrapper.className = ls.getItem('ls_theme') !== null ? ls.getItem('ls_theme') : ''; 
         
         wrapper.innerHTML = `
             <div id="ls-chat-window">
@@ -402,7 +425,7 @@
                     <div id="ls-input-area">
                         <button class="ls-icon-btn" id="ls-btn-plus">➕</button>
                         <button class="ls-icon-btn" id="ls-btn-emoji">😀</button>
-                        <input type="text" id="ls-input" placeholder="Mensagem..." autocomplete="off" maxlength="350" />
+                        <input type="text" id="ls-input" placeholder="Mensagem..." autocomplete="off" maxlength="150" />
                         <button id="ls-send-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:-2px;"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></button>
                     </div>
                 </div>
@@ -447,41 +470,41 @@
         closeViewerBtn.addEventListener('click', () => { imageViewer.classList.remove('show'); setTimeout(() => { imageViewer.style.display = 'none'; viewerImg.src = ''; }, 200); });
         imageViewer.addEventListener('click', (e) => { if(e.target === imageViewer) closeViewerBtn.click(); });
 
-        let myDeviceId = localStorage.getItem('ls_device_id');
+        let myDeviceId = ls.getItem('ls_device_id');
         if (!myDeviceId) {
             myDeviceId = crypto.randomUUID();
-            localStorage.setItem('ls_device_id', myDeviceId);
+            ls.setItem('ls_device_id', myDeviceId);
         }
 
-        let myName = sessionStorage.getItem('ls_username') || localStorage.getItem('ls_username');
-        let myPin = sessionStorage.getItem('ls_userpin') || localStorage.getItem('ls_userpin');
-        let myColor = localStorage.getItem('ls_usercolor') || '#6366f1';
-        let myTextColor = localStorage.getItem('ls_usertextcolor') || '#ffffff';
-        let myAvatar = localStorage.getItem('ls_useravatar') || '';
-        let myBanner = localStorage.getItem('ls_userbanner') || '';
-        let myBio = localStorage.getItem('ls_userbio') || '';
-        let myCountry = localStorage.getItem('ls_usercountry') || '🌍';
-        let myHideChats = localStorage.getItem('ls_hidechats') === 'true';
-        let currentRoom = localStorage.getItem('ls_current_room'); 
-        let currentRoomKey = localStorage.getItem('ls_room_key'); 
+        let myName = sessionStorage.getItem('ls_username') || ls.getItem('ls_username');
+        let myPin = sessionStorage.getItem('ls_userpin') || ls.getItem('ls_userpin');
+        let myColor = ls.getItem('ls_usercolor') || '#6366f1';
+        let myTextColor = ls.getItem('ls_usertextcolor') || '#ffffff';
+        let myAvatar = ls.getItem('ls_useravatar') || '';
+        let myBanner = ls.getItem('ls_userbanner') || '';
+        let myBio = ls.getItem('ls_userbio') || '';
+        let myCountry = ls.getItem('ls_usercountry') || '🌍';
+        let myHideChats = ls.getItem('ls_hidechats') === 'true';
+        let currentRoom = ls.getItem('ls_current_room'); 
+        let currentRoomKey = ls.getItem('ls_room_key'); 
         
         let tempAvatar = '';
         let tempBanner = '';
         
-        let savedRooms = JSON.parse(localStorage.getItem('ls_saved_rooms') || '[]');
-        let lastReadTimes = JSON.parse(localStorage.getItem('ls_last_read') || '{}');
-        let mutedRooms = JSON.parse(localStorage.getItem('ls_muted_rooms') || '[]');
+        let savedRooms = JSON.parse(ls.getItem('ls_saved_rooms') || '[]');
+        let lastReadTimes = JSON.parse(ls.getItem('ls_last_read') || '{}');
+        let mutedRooms = JSON.parse(ls.getItem('ls_muted_rooms') || '[]');
         
-        let myBgType = localStorage.getItem('ls_bg_type') || 'color';
-        let myBgColor = localStorage.getItem('ls_bg_color') || '#0f172a';
-        let myBgImage = localStorage.getItem('ls_bg_image') || '';
-        let mySyncBg = localStorage.getItem('ls_sync_bg') === 'true'; 
-        let myAutoPlay = localStorage.getItem('ls_autoplay') !== 'false'; 
-        let myHideApp = localStorage.getItem('ls_hide_app') === 'true';
-        let myHideRevive = localStorage.getItem('ls_hide_revive') !== 'false';
-        let myIntegratedMode = localStorage.getItem('ls_integrated') === 'true';
-        let myHideSys = localStorage.getItem('ls_hide_sys') === 'true';
-        let myInChatSound = localStorage.getItem('ls_inchat_sounds') !== 'false';
+        let myBgType = ls.getItem('ls_bg_type') || 'color';
+        let myBgColor = ls.getItem('ls_bg_color') || '#0f172a';
+        let myBgImage = ls.getItem('ls_bg_image') || '';
+        let mySyncBg = ls.getItem('ls_sync_bg') === 'true'; 
+        let myAutoPlay = ls.getItem('ls_autoplay') !== 'false'; 
+        let myHideApp = ls.getItem('ls_hide_app') === 'true';
+        let myHideRevive = ls.getItem('ls_hide_revive') !== 'false';
+        let myIntegratedMode = ls.getItem('ls_integrated') === 'true';
+        let myHideSys = ls.getItem('ls_hide_sys') === 'true';
+        let myInChatSound = ls.getItem('ls_inchat_sounds') !== 'false';
         
         let editingRoomAppearance = null;
         let unreadCount = 0;
@@ -527,19 +550,19 @@
                 
                 const keepLogged = shadow.getElementById('ls-setup-keep').checked;
                 if (keepLogged) {
-                    localStorage.setItem('ls_username', myName);
-                    localStorage.setItem('ls_userpin', myPin);
+                    ls.setItem('ls_username', myName);
+                    ls.setItem('ls_userpin', myPin);
                     sessionStorage.removeItem('ls_username');
                     sessionStorage.removeItem('ls_userpin');
                 } else {
                     sessionStorage.setItem('ls_username', myName);
                     sessionStorage.setItem('ls_userpin', myPin);
-                    localStorage.removeItem('ls_username');
-                    localStorage.removeItem('ls_userpin');
+                    ls.removeItem('ls_username');
+                    ls.removeItem('ls_userpin');
                 }
 
-                localStorage.setItem('ls_usercolor', myColor);
-                localStorage.setItem('ls_usertextcolor', myTextColor);
+                ls.setItem('ls_usercolor', myColor);
+                ls.setItem('ls_usertextcolor', myTextColor);
                 await syncUserProfile(); checkScreenState();
             } catch (e) { alert("Erro ao conectar ao banco de dados."); }
         });
@@ -564,22 +587,22 @@
                 
                 const keepLogged = shadow.getElementById('ls-setup-keep').checked;
                 if (keepLogged) {
-                    localStorage.setItem('ls_username', myName);
-                    localStorage.setItem('ls_userpin', myPin);
+                    ls.setItem('ls_username', myName);
+                    ls.setItem('ls_userpin', myPin);
                     sessionStorage.removeItem('ls_username');
                     sessionStorage.removeItem('ls_userpin');
                 } else {
                     sessionStorage.setItem('ls_username', myName);
                     sessionStorage.setItem('ls_userpin', myPin);
-                    localStorage.removeItem('ls_username');
-                    localStorage.removeItem('ls_userpin');
+                    ls.removeItem('ls_username');
+                    ls.removeItem('ls_userpin');
                 }
                 
-                localStorage.setItem('ls_usercolor', myColor);
-                localStorage.setItem('ls_usertextcolor', myTextColor);
-                localStorage.setItem('ls_userbio', myBio); localStorage.setItem('ls_usercountry', myCountry);
-                localStorage.setItem('ls_hidechats', myHideChats);
-                localStorage.setItem('ls_useravatar', myAvatar); localStorage.setItem('ls_userbanner', myBanner);
+                ls.setItem('ls_usercolor', myColor);
+                ls.setItem('ls_usertextcolor', myTextColor);
+                ls.setItem('ls_userbio', myBio); ls.setItem('ls_usercountry', myCountry);
+                ls.setItem('ls_hidechats', myHideChats);
+                ls.setItem('ls_useravatar', myAvatar); ls.setItem('ls_userbanner', myBanner);
                 
                 await syncUserProfile(); checkScreenState();
             } catch (e) { alert("Erro ao conectar ao banco de dados."); }
@@ -592,12 +615,12 @@
             if (currentRoom && currentRoomKey) {
                 if (!isTyping) {
                     isTyping = true;
-                    db.collection('rooms').doc(currentRoom).set({ typing: firebase.firestore.FieldValue.arrayUnion(myName) }, { merge: true }).catch(()=>{});
+                    db.collection('rooms').doc(currentRoom).update({ typing: firebase.firestore.FieldValue.arrayUnion(myName) }).catch(()=>{});
                 }
                 clearTimeout(typingTimeout);
                 typingTimeout = setTimeout(() => {
                     isTyping = false;
-                    db.collection('rooms').doc(currentRoom).set({ typing: firebase.firestore.FieldValue.arrayRemove(myName) }, { merge: true }).catch(()=>{});
+                    db.collection('rooms').doc(currentRoom).update({ typing: firebase.firestore.FieldValue.arrayRemove(myName) }).catch(()=>{});
                 }, 2000);
             }
 
@@ -641,7 +664,7 @@
             if (isTyping && currentRoom) {
                 clearTimeout(typingTimeout);
                 isTyping = false;
-                db.collection('rooms').doc(currentRoom).set({ typing: firebase.firestore.FieldValue.arrayRemove(myName) }, { merge: true }).catch(()=>{});
+                db.collection('rooms').doc(currentRoom).update({ typing: firebase.firestore.FieldValue.arrayRemove(myName) }).catch(()=>{});
             }
         });
 
@@ -722,7 +745,7 @@
 
         function updateLastRead(roomName) {
             lastReadTimes[roomName] = Date.now();
-            localStorage.setItem('ls_last_read', JSON.stringify(lastReadTimes));
+            ls.setItem('ls_last_read', JSON.stringify(lastReadTimes));
         }
 
         async function sendSystemAction(actionText) {
@@ -750,8 +773,8 @@
                 userProfileUnsubscribe = userRef.onSnapshot(snap => {
                     if(snap.exists) {
                         const data = snap.data();
-                        if(data.isBanned) { alert("⚠️ Acesso Negado: Você foi banido. Motivo: " + (data.banReason || "Violação das regras.")); localStorage.clear(); sessionStorage.clear(); location.reload(); }
-                        if(data.username && data.username !== myName) { alert(`⚠️ Moderação: Seu nome foi alterado pelo administrador para "${data.username}".`); localStorage.setItem('ls_username', data.username); location.reload(); }
+                        if(data.isBanned) { alert("⚠️ Acesso Negado: Você foi banido. Motivo: " + (data.banReason || "Violação das regras.")); ls.clear(); sessionStorage.clear(); location.reload(); }
+                        if(data.username && data.username !== myName) { alert(`⚠️ Moderação: Seu nome foi alterado pelo administrador para "${data.username}".`); ls.setItem('ls_username', data.username); location.reload(); }
                     }
                 });
             } catch(e) { }
@@ -784,7 +807,7 @@
             const btnEdit = shadow.getElementById('ls-btn-edit-profile');
             btnEdit.style.display = targetUsername === myName ? 'block' : 'none';
 
-            shadow.getElementById('ls-profile-v-name').innerText = "Carregando..."; shadow.getElementById('ls-profile-v-country').innerText = "-"; shadow.getElementById('ls-profile-v-bio').innerText = "-"; shadow.getElementById('ls-profile-v-tags').innerHTML = ""; shadow.getElementById('ls-profile-v-created').innerText = "-"; shadow.getElementById('ls-profile-v-rooms').innerText = "-"; shadow.getElementById('ls-profile-v-statustext').innerText = "";
+            shadow.getElementById('ls-profile-v-name').innerText = "Carregando..."; shadow.getElementById('ls-profile-v-country').innerText = "-"; shadow.getElementById('ls-profile-v-bio').innerText = "-"; shadow.getElementById('ls-profile-v-tags').innerHTML = ""; shadow.getElementById('ls-profile-v-created').innerText = "-"; shadow.getElementById('ls-profile-v-rooms').innerText = "-"; shadow.getElementById('ls-profile-v-statustext').innerText = "-";
             shadow.getElementById('ls-profile-v-banner').style.background = '#6366f1';
             
             try {
@@ -937,8 +960,8 @@
             myColor = shadow.getElementById('ls-profile-e-color').value; myTextColor = shadow.getElementById('ls-profile-e-textcolor').value; myBio = shadow.getElementById('ls-profile-e-bio').value.trim(); myHideChats = shadow.getElementById('ls-profile-e-hiderooms').checked;
             myAvatar = tempAvatar; myBanner = tempBanner;
             
-            localStorage.setItem('ls_usercolor', myColor); localStorage.setItem('ls_usertextcolor', myTextColor); localStorage.setItem('ls_userbio', myBio); localStorage.setItem('ls_hidechats', myHideChats);
-            localStorage.setItem('ls_useravatar', myAvatar); localStorage.setItem('ls_userbanner', myBanner);
+            ls.setItem('ls_usercolor', myColor); ls.setItem('ls_usertextcolor', myTextColor); ls.setItem('ls_userbio', myBio); ls.setItem('ls_hidechats', myHideChats);
+            ls.setItem('ls_useravatar', myAvatar); ls.setItem('ls_userbanner', myBanner);
             
             await syncUserProfile(); openProfile(myName);
         });
@@ -1003,10 +1026,10 @@
                     btn.addEventListener('click', async (e) => {
                         e.stopPropagation(); dropMenu.classList.remove('show');
                         if (btn.dataset.action === 'members') { membersOverlay.style.display = 'flex'; fetchAndRenderMembers(btn.dataset.name, shadow.getElementById('ls-members-list')); } 
-                        else if (btn.dataset.action === 'mute') { const rName = btn.dataset.name; if(mutedRooms.includes(rName)) { mutedRooms = mutedRooms.filter(r => r !== rName); } else { mutedRooms.push(rName); } localStorage.setItem('ls_muted_rooms', JSON.stringify(mutedRooms)); renderSavedRooms(); } 
-                        else if (btn.dataset.action === 'share') { let passToShare = btn.dataset.rawpass; if (!passToShare) { passToShare = prompt("Qual a senha dessa sala para incluir no convite?") || "[Sua Senha]"; if (passToShare !== "[Sua Senha]") { room.rawPass = passToShare; localStorage.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); } } const link = `Vem assistir comigo no LidySync!\n🍿 Nome da Sala: ${btn.dataset.name}\n🔑 Senha: ${passToShare}\n\nCaso não tenha a extensão clique aqui para aprender a instalar: https://ofaceoff.github.io/LidySync/index.html`; navigator.clipboard.writeText(link); alert("Convite copiado!"); } 
+                        else if (btn.dataset.action === 'mute') { const rName = btn.dataset.name; if(mutedRooms.includes(rName)) { mutedRooms = mutedRooms.filter(r => r !== rName); } else { mutedRooms.push(rName); } ls.setItem('ls_muted_rooms', JSON.stringify(mutedRooms)); renderSavedRooms(); } 
+                        else if (btn.dataset.action === 'share') { let passToShare = btn.dataset.rawpass; if (!passToShare) { passToShare = prompt("Qual a senha dessa sala para incluir no convite?") || "[Sua Senha]"; if (passToShare !== "[Sua Senha]") { room.rawPass = passToShare; ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); } } const link = `Vem assistir comigo no LidySync!\n🍿 Nome da Sala: ${btn.dataset.name}\n🔑 Senha: ${passToShare}\n\nCaso não tenha a extensão clique aqui para aprender a instalar: https://ofaceoff.github.io/LidySync/index.html`; navigator.clipboard.writeText(link); alert("Convite copiado!"); } 
                         else if (btn.dataset.action === 'appearance') { editingRoomAppearance = btn.dataset.name; settingsOverlay.style.display = 'flex'; db.collection('rooms').doc(btn.dataset.name).collection('settings').doc('shared').get().then(doc => { if(doc.exists) { try { const d = JSON.parse(doc.data().theme); shadow.getElementById('ls-config-bg-type').value = d.bgType || 'color'; shadow.getElementById('ls-config-bg-type').dispatchEvent(new Event('change')); shadow.getElementById('ls-config-bg-color').value = d.bgColor || '#0f172a'; shadow.getElementById('ls-config-bg-image').value = d.bgImage || ''; shadow.getElementById('ls-config-sync').checked = true; } catch(e){} } }); } 
-                        else if(btn.dataset.action === 'remove') { savedRooms.splice(btn.dataset.index, 1); localStorage.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); await syncUserProfile(); renderSavedRooms(); startLobbyListeners(); }
+                        else if(btn.dataset.action === 'remove') { savedRooms.splice(btn.dataset.index, 1); ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); await syncUserProfile(); renderSavedRooms(); startLobbyListeners(); }
                     });
                 });
                 list.appendChild(item);
@@ -1048,16 +1071,16 @@
 
         function saveRoomToLocalList(name, hash, rawPass) {
             const exists = savedRooms.find(r => r.name === name);
-            if(!exists) { savedRooms.push({name, hash, rawPass}); localStorage.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); } 
-            else if (rawPass && !exists.rawPass) { exists.rawPass = rawPass; localStorage.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); }
+            if(!exists) { savedRooms.push({name, hash, rawPass}); ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); } 
+            else if (rawPass && !exists.rawPass) { exists.rawPass = rawPass; ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); }
         }
 
         async function autoJoinRoom(roomName, savedHash) {
             try {
                 const doc = await db.collection('rooms').doc(roomName).get();
-                if(!doc.exists) { alert("Esta sala foi encerrada pelo dono."); savedRooms = savedRooms.filter(r => r.name !== roomName); localStorage.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); await syncUserProfile(); renderSavedRooms(); startLobbyListeners(); return; }
+                if(!doc.exists) { alert("Esta sala foi encerrada pelo dono."); savedRooms = savedRooms.filter(r => r.name !== roomName); ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); await syncUserProfile(); renderSavedRooms(); startLobbyListeners(); return; }
                 if(doc.data().password !== savedHash) { alert("A senha desta sala foi alterada. Por favor, adicione-a novamente pelo botão +"); return; }
-                currentRoom = roomName; currentRoomKey = roomName; localStorage.setItem('ls_current_room', currentRoom); localStorage.setItem('ls_room_key', currentRoomKey);
+                currentRoom = roomName; currentRoomKey = roomName; ls.setItem('ls_current_room', currentRoom); ls.setItem('ls_room_key', currentRoomKey);
                 db.collection('rooms').doc(currentRoom).set({ participants: firebase.firestore.FieldValue.arrayUnion(myName) }, { merge: true }).catch(()=>{});
                 sendSystemAction('SYSTEM_JOIN'); updateLastRead(currentRoom); checkScreenState();
             } catch(e) {}
@@ -1085,7 +1108,7 @@
                 
                 saveRoomToLocalList(roomName, hashedPass, roomPass);
                 currentRoom = roomName; currentRoomKey = roomName;
-                localStorage.setItem('ls_current_room', currentRoom); localStorage.setItem('ls_room_key', currentRoomKey);
+                ls.setItem('ls_current_room', currentRoom); ls.setItem('ls_room_key', currentRoomKey);
                 
                 sendSystemAction('SYSTEM_JOIN'); updateLastRead(currentRoom); inputRoom.value = ''; inputPass.value = ''; checkScreenState();
             } catch (e) {}
@@ -1103,7 +1126,7 @@
                 if(doc.data().password !== hashedPass) return alert("Senha incorreta!");
                 saveRoomToLocalList(roomName, hashedPass, roomPass);
                 currentRoom = roomName; currentRoomKey = roomName;
-                localStorage.setItem('ls_current_room', currentRoom); localStorage.setItem('ls_room_key', currentRoomKey);
+                ls.setItem('ls_current_room', currentRoom); ls.setItem('ls_room_key', currentRoomKey);
                 
                 db.collection('rooms').doc(currentRoom).set({ participants: firebase.firestore.FieldValue.arrayUnion(myName) }, { merge: true }).catch(()=>{});
                 
@@ -1115,12 +1138,12 @@
         const chatDropdown = shadow.getElementById('ls-chat-dropdown');
 
         chatMenuBtn.addEventListener('click', (e) => { e.stopPropagation(); chatDropdown.classList.toggle('show'); });
-        shadow.getElementById('ls-menu-theater').addEventListener('click', () => { chatDropdown.classList.remove('show'); myIntegratedMode = !myIntegratedMode; localStorage.setItem('ls_integrated', myIntegratedMode); checkScreenState(); });
+        shadow.getElementById('ls-menu-theater').addEventListener('click', () => { chatDropdown.classList.remove('show'); myIntegratedMode = !myIntegratedMode; ls.setItem('ls_integrated', myIntegratedMode); checkScreenState(); });
         shadow.getElementById('ls-menu-share').addEventListener('click', () => {
             chatDropdown.classList.remove('show'); if(!currentRoom) return;
             let passToShare = ""; const roomData = savedRooms.find(r => r.name === currentRoom);
             if (roomData && roomData.rawPass) { passToShare = roomData.rawPass; } 
-            else { passToShare = prompt("Qual a senha dessa sala para incluir no convite?") || "[Sua Senha]"; if (roomData && passToShare !== "[Sua Senha]") { roomData.rawPass = passToShare; localStorage.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); } }
+            else { passToShare = prompt("Qual a senha dessa sala para incluir no convite?") || "[Sua Senha]"; if (roomData && passToShare !== "[Sua Senha]") { roomData.rawPass = passToShare; ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); } }
             const link = `Vem assistir comigo no LidySync!\n🍿 Nome da Sala: ${currentRoom}\n🔑 Senha: ${passToShare}\n\nCaso não tenha a extensão clique aqui para aprender a instalar: https://ofaceoff.github.io/LidySync/index.html`;
             navigator.clipboard.writeText(link); alert("Convite copiado!");
         });
@@ -1136,8 +1159,8 @@
         shadow.getElementById('ls-close-members-modal').addEventListener('click', () => { membersOverlay.style.display = 'none'; });
 
         backBtn.addEventListener('click', () => { 
-            if (isTyping && currentRoom) { clearTimeout(typingTimeout); isTyping = false; db.collection('rooms').doc(currentRoom).set({ typing: firebase.firestore.FieldValue.arrayRemove(myName) }, { merge: true }).catch(()=>{}); }
-            sendSystemAction('SYSTEM_LEAVE'); stopChatListeners(); currentRoom = null; currentRoomKey = null; currentRoomData = null; localStorage.removeItem('ls_current_room'); localStorage.removeItem('ls_room_key'); checkScreenState(); 
+            if (isTyping && currentRoom) { clearTimeout(typingTimeout); isTyping = false; db.collection('rooms').doc(currentRoom).update({ typing: firebase.firestore.FieldValue.arrayRemove(myName) }).catch(()=>{}); }
+            sendSystemAction('SYSTEM_LEAVE'); stopChatListeners(); currentRoom = null; currentRoomKey = null; currentRoomData = null; ls.removeItem('ls_current_room'); ls.removeItem('ls_room_key'); checkScreenState(); 
         });
         
         shadow.getElementById('ls-menu-delete').addEventListener('click', async () => { chatDropdown.classList.remove('show'); if(!confirm("Encerrar e deletar a sala para todos?")) return; try { await db.collection('rooms').doc(currentRoom).delete(); } catch(e){} });
@@ -1150,13 +1173,13 @@
 
             roomListener = roomRef.onSnapshot(doc => {
                 if (!doc.exists) {
-                    alert("A sala foi encerrada pelo criador."); stopChatListeners(); currentRoom = null; currentRoomKey = null; currentRoomData = null; localStorage.removeItem('ls_current_room'); localStorage.removeItem('ls_room_key'); savedRooms = savedRooms.filter(r => r.name !== doc.id); localStorage.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); checkScreenState();
+                    alert("A sala foi encerrada pelo criador."); stopChatListeners(); currentRoom = null; currentRoomKey = null; currentRoomData = null; ls.removeItem('ls_current_room'); ls.removeItem('ls_room_key'); savedRooms = savedRooms.filter(r => r.name !== doc.id); ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); checkScreenState();
                 } else {
                     currentRoomData = doc.data();
                     if (currentRoomData.participants) { currentRoomData.participants.forEach(p => { if (!userCache[p]) { db.collection('users').doc(p).get().then(u => { if (u.exists) userCache[p] = u.data(); }); } }); }
                     
                     const typingEl = shadow.getElementById('ls-typing-indicator');
-                    if (currentRoomData.typing && typingEl) {
+                    if (currentRoomData.typing && Array.isArray(currentRoomData.typing) && typingEl) {
                         const typers = currentRoomData.typing.filter(u => u !== myName);
                         if (typers.length === 1) {
                             typingEl.innerText = `${typers[0]} está digitando...`;
@@ -1348,7 +1371,7 @@
             if (editingRoomAppearance) { try { await db.collection('rooms').doc(editingRoomAppearance).collection('settings').doc('shared').set({ theme: JSON.stringify({ bgType: bType, bgColor: bColor, bgImage: bImage }) }, {merge: true}); } catch(e){} } 
             else {
                 myBgType = bType; myBgColor = bColor; myBgImage = bImage; mySyncBg = bSync; myAutoPlay = aPlay;
-                localStorage.setItem('ls_bg_type', myBgType); localStorage.setItem('ls_bg_color', myBgColor); localStorage.setItem('ls_bg_image', myBgImage); localStorage.setItem('ls_sync_bg', mySyncBg); localStorage.setItem('ls_autoplay', myAutoPlay);
+                ls.setItem('ls_bg_type', myBgType); ls.setItem('ls_bg_color', myBgColor); ls.setItem('ls_bg_image', myBgImage); ls.setItem('ls_sync_bg', mySyncBg); ls.setItem('ls_autoplay', myAutoPlay);
                 if (mySyncBg && currentRoom) { try { await db.collection('rooms').doc(currentRoom).collection('settings').doc('shared').set({ theme: JSON.stringify({ bgType: myBgType, bgColor: myBgColor, bgImage: myBgImage }) }, {merge: true}); } catch (e) {} } 
                 else applyBackground(myBgType, myBgColor, myBgImage);
             }
@@ -1456,7 +1479,7 @@
         async function sendMessage() {
             const rawText = input.value.trim();
             if (!rawText || !myName || !currentRoom) return;
-            if (rawText.length > 350) return alert("Mensagem muito longa (máximo 350 caracteres).");
+            if (rawText.length > 150) return alert("Mensagem muito longa (máximo 150 caracteres).");
             if (!currentRoomKey) return alert("Sessão inválida.");
             let finalText = rawText;
             if (replyTarget) { finalText = `[REPLY:${replyTarget.sender}|${replyTarget.text}] ${rawText}`; replyTarget = null; shadow.getElementById('ls-reply-bar').style.display = 'none'; }
@@ -1465,7 +1488,7 @@
             if (isTyping) {
                 clearTimeout(typingTimeout);
                 isTyping = false;
-                db.collection('rooms').doc(currentRoom).set({ typing: firebase.firestore.FieldValue.arrayRemove(myName) }, { merge: true }).catch(()=>{});
+                db.collection('rooms').doc(currentRoom).update({ typing: firebase.firestore.FieldValue.arrayRemove(myName) }).catch(()=>{});
             }
 
             try { await db.collection('rooms').doc(currentRoom).collection('messages').add({ type: 'text', text: finalText, sender: myName, deviceId: myDeviceId, color: myColor, textColor: myTextColor, roomKey: currentRoomKey, timestamp: firebase.firestore.FieldValue.serverTimestamp(), deleted: false }); updateLastRead(currentRoom); playSendSound(); } catch (e) {}
@@ -1483,8 +1506,8 @@
         if (lobbySettingsBtn) {
             lobbySettingsBtn.addEventListener('click', () => {
                 lobbySettingsOverlay.style.display = 'flex';
-                shadow.getElementById('ls-app-theme').value = localStorage.getItem('ls_theme') || '';
-                shadow.getElementById('ls-app-sound').checked = localStorage.getItem('ls_sound') !== 'false';
+                shadow.getElementById('ls-app-theme').value = ls.getItem('ls_theme') || '';
+                shadow.getElementById('ls-app-sound').checked = ls.getItem('ls_sound') !== 'false';
                 shadow.getElementById('ls-app-inchatsound').checked = myInChatSound;
                 shadow.getElementById('ls-app-hidesys').checked = myHideSys;
                 shadow.getElementById('ls-app-hide').checked = myHideApp;
@@ -1511,13 +1534,13 @@
                 myHideRevive = shadow.getElementById('ls-app-revive').checked;
                 myIntegratedMode = shadow.getElementById('ls-app-integrated').checked;
 
-                localStorage.setItem('ls_theme', theme);
-                localStorage.setItem('ls_sound', sound);
-                localStorage.setItem('ls_inchat_sounds', myInChatSound);
-                localStorage.setItem('ls_hide_sys', myHideSys);
-                localStorage.setItem('ls_hide_app', myHideApp);
-                localStorage.setItem('ls_hide_revive', myHideRevive);
-                localStorage.setItem('ls_integrated', myIntegratedMode);
+                ls.setItem('ls_theme', theme);
+                ls.setItem('ls_sound', sound);
+                ls.setItem('ls_inchat_sounds', myInChatSound);
+                ls.setItem('ls_hide_sys', myHideSys);
+                ls.setItem('ls_hide_app', myHideApp);
+                ls.setItem('ls_hide_revive', myHideRevive);
+                ls.setItem('ls_integrated', myIntegratedMode);
 
                 shadow.getElementById('ls-wrapper').className = theme;
                 lobbySettingsOverlay.style.display = 'none';
@@ -1529,7 +1552,7 @@
         if (wipeDataBtn) {
             wipeDataBtn.addEventListener('click', () => {
                 if(confirm("Tem certeza que deseja desconectar e apagar todos os dados locais do LidySync?")) {
-                    localStorage.clear();
+                    ls.clear();
                     sessionStorage.clear();
                     location.reload();
                 }
