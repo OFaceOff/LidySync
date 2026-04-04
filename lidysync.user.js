@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      13.0
+// @version      15.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -38,6 +38,41 @@
             osc.start();
             osc.stop(ctx.currentTime + 0.1);
         } catch (e) {}
+    }
+
+    function escapeHTML(str) {
+        return str.replace(/[&<>'"]/g, tag => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+        }[tag]));
+    }
+
+    function linkify(text) {
+        const safeText = escapeHTML(text);
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        return safeText.replace(urlRegex, '<a href="$1" target="_blank" style="color: currentColor; text-decoration: underline; word-break: break-all;">$1</a>');
+    }
+
+    function compressImage(dataUrl, callback) {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            const max = 800;
+            if (width > height && width > max) {
+                height *= max / width;
+                width = max;
+            } else if (height > max) {
+                width *= max / height;
+                height = max;
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            callback(canvas.toDataURL('image/jpeg', 0.7));
+        };
+        img.src = dataUrl;
     }
 
     const firebaseConfig = {
@@ -144,11 +179,13 @@
             ::-webkit-scrollbar { width: 6px; }
             ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 6px; opacity: 0.5; }
             
-            #ls-fab { width: 60px; height: 60px; background: var(--fab-bg); color: var(--fab-color); border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: var(--fab-shadow); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); transition: transform 0.2s, box-shadow 0.2s; }
+            #ls-fab { width: 60px; height: 60px; background: var(--fab-bg); color: var(--fab-color); border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: var(--fab-shadow); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); transition: transform 0.2s, box-shadow 0.2s; position: relative; }
             #ls-fab:hover { transform: scale(1.08); }
             #ls-fab svg { stroke: currentColor; }
             #ls-fab svg polygon { fill: currentColor; stroke: currentColor; }
             
+            #ls-unread-badge { position: absolute; top: -4px; right: -4px; background: #ef4444; color: white; font-size: 12px; font-weight: 800; border-radius: 50%; min-width: 22px; height: 22px; display: none; align-items: center; justify-content: center; border: 2px solid var(--bg-base); z-index: 10; padding: 0 4px; }
+
             #ls-chat-window { width: 350px; height: 580px; background-color: var(--bg-base); border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.6); display: none; flex-direction: column; margin-bottom: 15px; overflow: hidden; border: 1px solid var(--border-color); position: relative; backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); transition: background-color 0.3s, backdrop-filter 0.3s; }
             #ls-chat-window.open { display: flex; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
             @keyframes slideUp { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
@@ -164,7 +201,7 @@
             @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
             .ls-dropdown-item { padding: 12px 16px; color: var(--text-primary); font-size: 13.5px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; background: none; border: none; text-align: left; width: 100%; font-weight: 500; }
             .ls-dropdown-item:hover { background-color: rgba(128,128,128,0.1); }
-            .ls-dropdown-item.danger { color: #f87171; }
+            .ls-dropdown-item.danger { color: #ef4444; }
             
             .ls-screen { flex: 1; display: none; flex-direction: column; padding: 20px; background-color: transparent; gap: 16px; position: relative; overflow-y: auto;}
             
@@ -174,8 +211,9 @@
             .ls-room-avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #8b5cf6); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; color: white; margin-right: 12px; flex-shrink: 0; }
             .ls-room-info { flex: 1; overflow: hidden; }
             .ls-room-name { color: var(--text-primary); font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-            .ls-room-status { color: var(--text-muted); font-size: 12px; margin-top: 2px; }
-            .ls-room-options { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+            .ls-room-status { color: var(--text-muted); font-size: 12px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .ls-room-unread { width: 10px; height: 10px; background: #ef4444; border-radius: 50%; display: none; margin-left: 8px; flex-shrink: 0; }
+            .ls-room-options { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: 0.2s; margin-left: 4px; }
             .ls-room-options:hover { background: rgba(128,128,128,0.1); color: var(--text-primary); }
 
             #ls-fab-add { position: absolute; bottom: 20px; right: 20px; width: 50px; height: 50px; background: var(--fab-bg); color: var(--fab-color); border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: var(--fab-shadow); font-size: 24px; transition: 0.2s; z-index: 20; border: none; backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); }
@@ -222,6 +260,7 @@
             .ls-message-container:hover .ls-msg-delete { display: inline-block; }
             
             .ls-message { padding: 10px 14px; font-size: 14px; line-height: 1.45; color: #ffffff; word-wrap: break-word; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+            .ls-message img { max-width: 100%; border-radius: 8px; display: block; margin-top: 4px; }
             
             .ls-message-container.system-msg-container { max-width: 95%; align-self: center; margin: 8px 0; }
             .ls-message.system-msg { background: rgba(99, 102, 241, 0.1) !important; color: var(--text-primary); text-align: center; font-weight: 500; border-radius: 12px !important; font-size: 13px; border: 1px solid rgba(99, 102, 241, 0.3); box-shadow: 0 4px 15px rgba(0,0,0,0.1); padding: 10px 16px; }
@@ -241,10 +280,11 @@
             #ls-send-btn:hover { transform: scale(1.05); }
             
             .ls-popup-panel { position: absolute; bottom: 70px; background-color: var(--bg-surface); border-radius: 16px; padding: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: none; z-index: 20; border: 1px solid var(--border-color); }
-            #ls-emoji-panel { left: 16px; width: max-content; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 12px; }
-            .ls-emoji-item { font-size: 20px; cursor: pointer; text-align: center; padding: 6px; border-radius: 8px; transition: 0.1s; }
+            #ls-emoji-panel { left: 16px; width: 280px; display: flex; flex-wrap: wrap; gap: 6px; padding: 12px; }
+            .ls-emoji-item { font-size: 20px; cursor: pointer; text-align: center; border-radius: 8px; transition: 0.1s; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; }
             .ls-emoji-item:hover { background-color: rgba(128,128,128,0.1); transform: scale(1.1); }
-            #ls-plus-panel { left: 16px; width: 220px; flex-direction: column; gap: 4px; }
+            
+            #ls-plus-panel { left: 16px; width: 260px; flex-direction: column; gap: 4px; }
             .ls-action-item { color: var(--text-primary); padding: 12px; cursor: pointer; font-size: 14px; border-radius: 10px; display: flex; align-items: center; gap: 10px; font-weight: 500; transition: 0.2s; }
             .ls-action-item:hover { background-color: rgba(128,128,128,0.1); color: var(--text-primary); }
 
@@ -266,10 +306,10 @@
             <div id="ls-chat-window">
                 <div id="ls-header">
                     <span id="ls-header-title" style="display:flex; align-items:center; gap:8px;">
-                        <button class="ls-header-btn" id="ls-back-btn" style="display:none; margin-left:-8px; margin-right:4px;">
+                        <button class="ls-header-btn" id="ls-back-btn" style="display:none; margin-left:-8px; margin-right:4px;" title="Voltar ao Lobby">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
                         </button>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path><polygon points="10.5,9 15.5,12 10.5,15" fill="currentColor" stroke="currentColor" stroke-width="1"></polygon></svg>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path><polygon points="10.5,9 15.5,12 10.5,15" fill="currentColor" stroke="currentColor" stroke-width="1"></polygon></svg>
                         <span id="ls-header-text">LidySync</span>
                     </span>
                     <div class="ls-header-btns">
@@ -282,7 +322,7 @@
                                 <button class="ls-dropdown-item danger" id="ls-menu-delete">🗑️ Encerrar Sala</button>
                             </div>
                         </div>
-                        <button class="ls-header-btn" id="ls-close-btn" title="Minimizar">
+                        <button class="ls-header-btn" id="ls-close-btn" title="Ocultar Chat">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                         </button>
                     </div>
@@ -329,10 +369,21 @@
                             <span><b>Sons de Notificação</b></span>
                         </label>
                     </div>
+                    <div class="ls-config-section">
+                        <span class="ls-label">Visibilidade do App</span>
+                        <label class="ls-checkbox-group">
+                            <input type="checkbox" id="ls-app-hide">
+                            <span><b>Modo Silencioso (Ocultar)</b><br><small style="color: var(--text-muted);">Some ao fechar. Requer F5 para voltar.</small></span>
+                        </label>
+                        <label class="ls-checkbox-group">
+                            <input type="checkbox" id="ls-app-revive" checked>
+                            <span><b>Despertar com Notificação</b><br><small style="color: var(--text-muted);">Reaparece se chegar mensagem.</small></span>
+                        </label>
+                    </div>
                     <div class="ls-config-section" style="margin-top:auto;">
                         <button class="ls-btn-danger" id="ls-wipe-data-btn">Desconectar e Apagar Dados</button>
                     </div>
-                    <button class="ls-btn-primary" id="ls-save-lobby-config-btn" style="margin-top: 10px;">Salvar</button>
+                    <button class="ls-btn-primary" id="ls-save-lobby-config-btn" style="margin-top: 10px;">Salvar Alterações</button>
                 </div>
 
                 <div id="ls-add-room-overlay" class="ls-modal-overlay">
@@ -382,6 +433,17 @@
                     <button class="ls-btn-primary" id="ls-save-config-btn" style="margin-top: auto;">Salvar Alterações</button>
                 </div>
 
+                <div id="ls-camera-overlay" class="ls-modal-overlay" style="align-items: center; justify-content: center; background: rgba(0,0,0,0.9); padding: 20px;">
+                    <div style="width: 100%; max-width: 320px; background: var(--bg-surface); padding: 16px; border-radius: 16px; display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--border-color);">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="color: var(--text-primary); font-weight: bold; font-size: 16px;">Tirar Foto</span>
+                            <button id="ls-close-camera" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size: 18px;">✕</button>
+                        </div>
+                        <video id="ls-camera-video" autoplay playsinline style="width: 100%; border-radius: 8px; background: #000; min-height: 200px;"></video>
+                        <button class="ls-btn-primary" id="ls-capture-btn">📸 Capturar e Enviar</button>
+                    </div>
+                </div>
+
                 <div id="ls-chat-area">
                     <div id="ls-messages"></div>
                     <div id="ls-countdown-overlay">
@@ -390,13 +452,15 @@
                     </div>
                     <div id="ls-emoji-panel" class="ls-popup-panel">${emojis.map(e => `<span class="ls-emoji-item">${e}</span>`).join('')}</div>
                     <div id="ls-plus-panel" class="ls-popup-panel">
-                        <div class="ls-action-item" id="btn-action-invite">🔗 Convidar para ver isso</div>
-                        <div class="ls-action-item" id="btn-action-countdown">⏱️ Sincronizar Vídeo (Play)</div>
+                        <div class="ls-action-item" id="btn-action-invite">🔗 Convidar para ver programação</div>
+                        <div class="ls-action-item" id="btn-action-countdown">⏱️ Play Sincronizado</div>
+                        <div class="ls-action-item" id="btn-action-gif">🎞️ Adicionar GIF</div>
+                        <div class="ls-action-item" id="btn-action-camera">📷 Tirar Foto</div>
                     </div>
                     <div id="ls-input-area">
                         <button class="ls-icon-btn" id="ls-btn-plus">➕</button>
                         <button class="ls-icon-btn" id="ls-btn-emoji">😀</button>
-                        <input type="text" id="ls-input" placeholder="Mensagem..." autocomplete="off" />
+                        <input type="text" id="ls-input" placeholder="Mensagem ou Cole Imagem..." autocomplete="off" />
                         <button id="ls-send-btn">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:-2px;"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
                         </button>
@@ -404,6 +468,7 @@
                 </div>
             </div>
             <div id="ls-fab">
+                <div id="ls-unread-badge">0</div>
                 <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
                     <polygon points="10.5,9 15.5,12 10.5,15" fill="currentColor" stroke="currentColor" stroke-width="1"></polygon>
@@ -416,6 +481,7 @@
         target.appendChild(host);
 
         const fab = shadow.getElementById('ls-fab');
+        const badge = shadow.getElementById('ls-unread-badge');
         const chatWindow = shadow.getElementById('ls-chat-window');
         const closeBtn = shadow.getElementById('ls-close-btn');
         const lobbySettingsBtn = shadow.getElementById('ls-lobby-settings-btn');
@@ -438,17 +504,25 @@
         let currentRoomKey = localStorage.getItem('ls_room_key'); 
         
         let savedRooms = JSON.parse(localStorage.getItem('ls_saved_rooms') || '[]');
+        let lastReadTimes = JSON.parse(localStorage.getItem('ls_last_read') || '{}');
         
         let myBgType = localStorage.getItem('ls_bg_type') || 'color';
         let myBgColor = localStorage.getItem('ls_bg_color') || '#0f172a';
         let myBgImage = localStorage.getItem('ls_bg_image') || '';
         let mySyncBg = localStorage.getItem('ls_sync_bg') === 'true'; 
         let myAutoPlay = localStorage.getItem('ls_autoplay') !== 'false'; 
+        let myHideApp = localStorage.getItem('ls_hide_app') === 'true';
+        let myHideRevive = localStorage.getItem('ls_hide_revive') !== 'false';
+        
+        let editingRoomAppearance = null;
+        let unreadCount = 0;
 
         let roomListener = null;
         let messagesListener = null;
         let settingsListener = null;
         let isFirstSnapshot = true;
+        let localStream = null;
+        let lobbyUnsubscribes = [];
 
         shadow.addEventListener('click', (e) => {
             if(!e.target.closest('.ls-dropdown-container')) {
@@ -473,10 +547,16 @@
             return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
 
+        function updateLastRead(roomName) {
+            lastReadTimes[roomName] = Date.now();
+            localStorage.setItem('ls_last_read', JSON.stringify(lastReadTimes));
+        }
+
         function checkScreenState() {
             settingsOverlay.style.display = 'none';
             addRoomOverlay.style.display = 'none';
             lobbySettingsOverlay.style.display = 'none';
+            editingRoomAppearance = null;
             
             if (!myName) {
                 setupArea.style.display = 'flex';
@@ -486,6 +566,7 @@
                 lobbySettingsBtn.style.display = 'none';
                 backBtn.style.display = 'none';
                 headerText.innerText = "LidySync";
+                stopLobbyListeners();
             } else if (!currentRoom || !currentRoomKey) {
                 setupArea.style.display = 'none';
                 lobbyArea.style.display = 'flex';
@@ -495,6 +576,7 @@
                 backBtn.style.display = 'none';
                 headerText.innerText = `Lobby (${myName})`;
                 renderSavedRooms();
+                startLobbyListeners();
             } else {
                 setupArea.style.display = 'none';
                 lobbyArea.style.display = 'none';
@@ -504,6 +586,7 @@
                 backBtn.style.display = 'flex';
                 headerText.innerText = `${currentRoom}`;
                 if (!mySyncBg) applyBackground(myBgType, myBgColor, myBgImage);
+                stopLobbyListeners();
                 startChatListeners();
             }
         }
@@ -526,11 +609,13 @@
                     <div class="ls-room-avatar">${initial}</div>
                     <div class="ls-room-info">
                         <div class="ls-room-name">${room.name}</div>
-                        <div class="ls-room-status">Toque para entrar</div>
+                        <div class="ls-room-status" id="ls-status-${room.name}">Toque para entrar</div>
                     </div>
+                    <div class="ls-room-unread" id="ls-unread-${room.name}"></div>
                     <div class="ls-dropdown-container">
                         <button class="ls-room-options" data-index="${index}">⋮</button>
                         <div class="ls-dropdown-menu" id="ls-drop-${index}">
+                            <button class="ls-dropdown-item" data-action="appearance" data-name="${room.name}">🎨 Aparência do Chat</button>
                             <button class="ls-dropdown-item" data-action="remove" data-index="${index}">Remover da Lista</button>
                             <button class="ls-dropdown-item danger" data-action="delete" data-name="${room.name}">🗑️ Apagar do Servidor</button>
                         </div>
@@ -553,22 +638,83 @@
                     btn.addEventListener('click', async (e) => {
                         e.stopPropagation();
                         dropMenu.classList.remove('show');
-                        if(btn.dataset.action === 'remove') {
+                        if (btn.dataset.action === 'appearance') {
+                            editingRoomAppearance = btn.dataset.name;
+                            settingsOverlay.style.display = 'flex';
+                            db.collection('rooms').doc(btn.dataset.name).collection('settings').doc('shared').get().then(doc => {
+                                if(doc.exists) {
+                                    const d = doc.data();
+                                    shadow.getElementById('ls-config-bg-type').value = d.bgType || 'color';
+                                    shadow.getElementById('ls-config-bg-type').dispatchEvent(new Event('change'));
+                                    shadow.getElementById('ls-config-bg-color').value = d.bgColor || '#0f172a';
+                                    shadow.getElementById('ls-config-bg-image').value = d.bgImage || '';
+                                    shadow.getElementById('ls-config-sync').checked = true;
+                                }
+                            });
+                        } else if(btn.dataset.action === 'remove') {
                             savedRooms.splice(btn.dataset.index, 1);
                             localStorage.setItem('ls_saved_rooms', JSON.stringify(savedRooms));
                             renderSavedRooms();
+                            startLobbyListeners();
                         } else if(btn.dataset.action === 'delete') {
                             if(confirm(`Encerrar e deletar definitivamente a sala ${btn.dataset.name}?`)) {
                                 try { await db.collection('rooms').doc(btn.dataset.name).delete(); } catch(err){}
                                 savedRooms.splice(btn.dataset.index, 1);
                                 localStorage.setItem('ls_saved_rooms', JSON.stringify(savedRooms));
                                 renderSavedRooms();
+                                startLobbyListeners();
                             }
                         }
                     });
                 });
                 list.appendChild(item);
             });
+        }
+
+        function startLobbyListeners() {
+            stopLobbyListeners();
+            savedRooms.forEach((room) => {
+                const unsub = db.collection('rooms').doc(room.name).collection('messages')
+                    .orderBy('timestamp', 'desc').limit(1)
+                    .onSnapshot(snap => {
+                        if (!snap.empty) {
+                            const data = snap.docs[0].data();
+                            const statusEl = shadow.getElementById(`ls-status-${room.name}`);
+                            const unreadEl = shadow.getElementById(`ls-unread-${room.name}`);
+                            if (statusEl && !data.deleted) {
+                                let msgText = data.text;
+                                if (data.type === 'image') msgText = '📷 Imagem';
+                                else if (data.type === 'gif') msgText = '🎞️ GIF';
+                                else if (data.type === 'invite') msgText = '🔗 Convite';
+                                else if (data.type === 'countdown') msgText = '⏱️ Sincronização';
+                                statusEl.innerText = `${data.sender}: ${msgText}`;
+                            } else if (statusEl && data.deleted) {
+                                statusEl.innerText = `${data.sender}: 🚫 Mensagem apagada`;
+                            }
+
+                            if (unreadEl) {
+                                const lastRead = lastReadTimes[room.name] || 0;
+                                const msgTime = data.timestamp ? data.timestamp.toMillis() : Date.now();
+                                if (msgTime > lastRead && data.sender !== myName) {
+                                    unreadEl.style.display = 'block';
+                                    if (myHideApp && myHideRevive && !chatWindow.classList.contains('open')) {
+                                        fab.style.display = 'flex';
+                                        badge.style.display = 'flex';
+                                        badge.innerText = '!';
+                                    }
+                                } else {
+                                    unreadEl.style.display = 'none';
+                                }
+                            }
+                        }
+                    });
+                lobbyUnsubscribes.push(unsub);
+            });
+        }
+
+        function stopLobbyListeners() {
+            lobbyUnsubscribes.forEach(u => u());
+            lobbyUnsubscribes = [];
         }
 
         function saveRoomToLocalList(name, hash) {
@@ -587,6 +733,7 @@
                     savedRooms = savedRooms.filter(r => r.name !== roomName);
                     localStorage.setItem('ls_saved_rooms', JSON.stringify(savedRooms));
                     renderSavedRooms();
+                    startLobbyListeners();
                     return;
                 }
                 if(doc.data().password !== savedHash) {
@@ -595,6 +742,7 @@
                 }
                 currentRoom = roomName; currentRoomKey = crypto.randomUUID();
                 localStorage.setItem('ls_current_room', currentRoom); localStorage.setItem('ls_room_key', currentRoomKey);
+                updateLastRead(currentRoom);
                 checkScreenState();
             } catch(e) {}
         }
@@ -618,6 +766,8 @@
                 shadow.getElementById('ls-edit-color').value = myColor || '#6366f1';
                 shadow.getElementById('ls-app-theme').value = localStorage.getItem('ls_theme') || '';
                 shadow.getElementById('ls-app-sound').checked = localStorage.getItem('ls_sound') !== 'false';
+                shadow.getElementById('ls-app-hide').checked = myHideApp;
+                shadow.getElementById('ls-app-revive').checked = myHideRevive;
             }
         });
 
@@ -632,11 +782,15 @@
             
             const selectedTheme = shadow.getElementById('ls-app-theme').value;
             const soundEnabled = shadow.getElementById('ls-app-sound').checked;
+            myHideApp = shadow.getElementById('ls-app-hide').checked;
+            myHideRevive = shadow.getElementById('ls-app-revive').checked;
 
             localStorage.setItem('ls_username', myName);
             localStorage.setItem('ls_usercolor', myColor);
             localStorage.setItem('ls_theme', selectedTheme);
             localStorage.setItem('ls_sound', soundEnabled);
+            localStorage.setItem('ls_hide_app', myHideApp);
+            localStorage.setItem('ls_hide_revive', myHideRevive);
             
             wrapper.className = selectedTheme;
 
@@ -670,6 +824,7 @@
                 saveRoomToLocalList(roomName, hashedPass);
                 currentRoom = roomName; currentRoomKey = crypto.randomUUID();
                 localStorage.setItem('ls_current_room', currentRoom); localStorage.setItem('ls_room_key', currentRoomKey);
+                updateLastRead(currentRoom);
                 inputRoom.value = ''; inputPass.value = ''; checkScreenState();
             } catch (e) {}
         });
@@ -687,6 +842,7 @@
                 saveRoomToLocalList(roomName, hashedPass);
                 currentRoom = roomName; currentRoomKey = crypto.randomUUID();
                 localStorage.setItem('ls_current_room', currentRoom); localStorage.setItem('ls_room_key', currentRoomKey);
+                updateLastRead(currentRoom);
                 inputRoom.value = ''; inputPass.value = ''; checkScreenState();
             } catch (e) {}
         });
@@ -711,7 +867,10 @@
             }
         });
 
-        shadow.getElementById('ls-close-settings-modal').addEventListener('click', () => { settingsOverlay.style.display = 'none'; });
+        shadow.getElementById('ls-close-settings-modal').addEventListener('click', () => { 
+            settingsOverlay.style.display = 'none'; 
+            editingRoomAppearance = null;
+        });
 
         backBtn.addEventListener('click', () => {
             stopChatListeners();
@@ -765,6 +924,16 @@
                     }
                     if (change.type === 'added' && !isFirstSnapshot && data.sender !== myName && !data.deleted) {
                         playNotificationSound();
+                        if (!chatWindow.classList.contains('open')) {
+                            unreadCount++;
+                            badge.style.display = 'flex';
+                            badge.innerText = unreadCount > 5 ? '5+' : unreadCount;
+                            if (myHideApp && myHideRevive) {
+                                fab.style.display = 'flex';
+                            }
+                        } else {
+                            updateLastRead(currentRoom);
+                        }
                     }
                 });
 
@@ -782,11 +951,52 @@
                         if (data.deleted) return;
                         container.className = 'ls-message-container system-msg-container';
                         container.innerHTML = `
-                            <div class="ls-message system-msg" style="cursor:pointer; background: var(--btn-primary-bg) !important; color: var(--btn-primary-color) !important; border:none;" onclick="window.open('${data.url}', '_blank')">
-                                🍿 ${data.text}<br><small style="text-decoration:underline;">Clique para abrir</small>
-                                <span class="ls-msg-time" style="display:block; margin-top:4px; color:inherit; opacity:0.8;">${formatTime(data.timestamp)}</span>
+                            <div class="ls-message system-msg" style="background: var(--btn-primary-bg) !important; color: var(--btn-primary-color) !important; border:none; padding:0;">
+                                <a href="${data.url}" target="_blank" style="color: inherit; text-decoration: none; display: block; padding: 10px 16px;">
+                                    🍿 ${data.text}<br><small style="text-decoration:underline;">Clique para abrir</small>
+                                    <span class="ls-msg-time" style="display:block; margin-top:4px; color:inherit; opacity:0.8;">${formatTime(data.timestamp)}</span>
+                                </a>
                             </div>
                         `;
+                    } else if (data.type === 'image' || data.type === 'gif') {
+                        container.className = `ls-message-container ${isMe ? 'sent' : 'received'}`;
+                        
+                        const senderRow = document.createElement('div');
+                        senderRow.className = 'ls-sender-row';
+                        
+                        const nameLabel = document.createElement('span');
+                        nameLabel.className = 'ls-sender-name';
+                        nameLabel.innerText = data.sender;
+                        senderRow.appendChild(nameLabel);
+
+                        const timeLabel = document.createElement('span');
+                        timeLabel.className = 'ls-msg-time';
+                        timeLabel.innerText = formatTime(data.timestamp);
+                        senderRow.appendChild(timeLabel);
+                        
+                        if (isMe && !data.deleted) {
+                            const delBtn = document.createElement('span');
+                            delBtn.className = 'ls-msg-delete';
+                            delBtn.innerText = '🗑️';
+                            delBtn.title = "Apagar";
+                            delBtn.onclick = async () => { try { await messagesRef.doc(docId).update({ deleted: true }); } catch (e) {} };
+                            senderRow.appendChild(delBtn);
+                        }
+                        
+                        const msgBubble = document.createElement('div');
+                        msgBubble.className = 'ls-message';
+                        msgBubble.style.padding = '4px';
+
+                        if (data.deleted) {
+                            msgBubble.classList.add('deleted-msg');
+                            msgBubble.innerText = "🚫 Imagem apagada";
+                        } else {
+                            msgBubble.innerHTML = `<img src="${data.url}">`;
+                            if(isMe) { msgBubble.style.background = data.color || '#6366f1'; }
+                        }
+
+                        container.appendChild(senderRow);
+                        container.appendChild(msgBubble);
                     } else {
                         container.className = `ls-message-container ${isMe ? 'sent' : 'received'}`;
                         
@@ -819,7 +1029,7 @@
                             msgBubble.classList.add('deleted-msg');
                             msgBubble.innerText = "🚫 Mensagem apagada";
                         } else {
-                            msgBubble.innerText = data.text;
+                            msgBubble.innerHTML = linkify(data.text);
                             if(isMe) { msgBubble.style.background = data.color || '#6366f1'; }
                         }
 
@@ -861,35 +1071,64 @@
         });
 
         shadow.getElementById('ls-save-config-btn').addEventListener('click', async () => {
-            myBgType = bgTypeSelect.value; myBgColor = shadow.getElementById('ls-config-bg-color').value;
-            myBgImage = shadow.getElementById('ls-config-bg-image').value; mySyncBg = shadow.getElementById('ls-config-sync').checked;
-            myAutoPlay = shadow.getElementById('ls-config-autoplay').checked;
+            const bType = bgTypeSelect.value; 
+            const bColor = shadow.getElementById('ls-config-bg-color').value;
+            const bImage = shadow.getElementById('ls-config-bg-image').value; 
+            const bSync = shadow.getElementById('ls-config-sync').checked;
+            const aPlay = shadow.getElementById('ls-config-autoplay').checked;
             
-            localStorage.setItem('ls_bg_type', myBgType); localStorage.setItem('ls_bg_color', myBgColor);
-            localStorage.setItem('ls_bg_image', myBgImage); localStorage.setItem('ls_sync_bg', mySyncBg);
-            localStorage.setItem('ls_autoplay', myAutoPlay);
-            
-            if (mySyncBg && currentRoom) {
+            if (editingRoomAppearance) {
                 try {
-                    await db.collection('rooms').doc(currentRoom).collection('settings').doc('shared').set({
-                        bgType: myBgType, bgColor: myBgColor, bgImage: myBgImage, timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    await db.collection('rooms').doc(editingRoomAppearance).collection('settings').doc('shared').set({
+                        bgType: bType, bgColor: bColor, bgImage: bImage, timestamp: firebase.firestore.FieldValue.serverTimestamp()
                     });
-                } catch (e) {}
-            } else { applyBackground(myBgType, myBgColor, myBgImage); }
+                } catch(e){}
+            } else {
+                myBgType = bType; myBgColor = bColor; myBgImage = bImage; mySyncBg = bSync; myAutoPlay = aPlay;
+                localStorage.setItem('ls_bg_type', myBgType); localStorage.setItem('ls_bg_color', myBgColor);
+                localStorage.setItem('ls_bg_image', myBgImage); localStorage.setItem('ls_sync_bg', mySyncBg);
+                localStorage.setItem('ls_autoplay', myAutoPlay);
+                
+                if (mySyncBg && currentRoom) {
+                    try {
+                        await db.collection('rooms').doc(currentRoom).collection('settings').doc('shared').set({
+                            bgType: myBgType, bgColor: myBgColor, bgImage: myBgImage, timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    } catch (e) {}
+                } else { applyBackground(myBgType, myBgColor, myBgImage); }
+            }
             
-            settingsOverlay.style.display = 'none'; scrollToBottom();
+            settingsOverlay.style.display = 'none'; 
+            editingRoomAppearance = null;
+            scrollToBottom();
         });
 
         const scrollToBottom = () => { messagesContainer.scrollTop = messagesContainer.scrollHeight; };
-        fab.addEventListener('click', () => { chatWindow.classList.add('open'); fab.style.display = 'none'; checkScreenState(); });
-        closeBtn.addEventListener('click', () => { chatWindow.classList.remove('open'); fab.style.display = 'flex'; });
+        
+        fab.addEventListener('click', () => { 
+            chatWindow.classList.add('open'); 
+            fab.style.display = 'none'; 
+            unreadCount = 0;
+            badge.style.display = 'none';
+            if (currentRoom) updateLastRead(currentRoom);
+            checkScreenState(); 
+        });
+
+        closeBtn.addEventListener('click', () => { 
+            chatWindow.classList.remove('open'); 
+            if (myHideApp) {
+                fab.style.display = 'none';
+            } else {
+                fab.style.display = 'flex';
+            }
+        });
 
         const btnPlus = shadow.getElementById('ls-btn-plus');
         const btnEmoji = shadow.getElementById('ls-btn-emoji');
         const emojiPanel = shadow.getElementById('ls-emoji-panel');
         const plusPanel = shadow.getElementById('ls-plus-panel');
 
-        btnEmoji.addEventListener('click', () => { emojiPanel.style.display = emojiPanel.style.display === 'grid' ? 'none' : 'grid'; plusPanel.style.display = 'none'; });
+        btnEmoji.addEventListener('click', () => { emojiPanel.style.display = emojiPanel.style.display === 'flex' ? 'none' : 'flex'; plusPanel.style.display = 'none'; });
         btnPlus.addEventListener('click', () => { plusPanel.style.display = plusPanel.style.display === 'flex' ? 'none' : 'flex'; emojiPanel.style.display = 'none'; });
 
         shadow.querySelectorAll('.ls-emoji-item').forEach(item => {
@@ -897,6 +1136,23 @@
         });
 
         input.addEventListener('focus', () => { emojiPanel.style.display = 'none'; plusPanel.style.display = 'none'; });
+
+        input.addEventListener('paste', (e) => {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (let index in items) {
+                const item = items[index];
+                if (item.kind === 'file' && item.type.indexOf('image/') === 0) {
+                    const blob = item.getAsFile();
+                    const reader = new FileReader();
+                    reader.onload = async (event) => {
+                        compressImage(event.target.result, async (compressedUrl) => {
+                           await sendImageMsg(compressedUrl);
+                        });
+                    };
+                    reader.readAsDataURL(blob);
+                }
+            }
+        });
 
         const countdownOverlay = shadow.getElementById('ls-countdown-overlay');
         const countdownNumber = shadow.getElementById('ls-countdown-number');
@@ -927,13 +1183,15 @@
             try {
                 await db.collection('rooms').doc(currentRoom).collection('messages').add({
                     type: 'invite', 
-                    text: `${myName} convidou você para ver algo!`, 
+                    text: `${myName} convidou você para ver a programação atual!`, 
                     url: window.location.href,
                     sender: myName, 
+                    color: myColor,
                     roomKey: currentRoomKey,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp(), 
                     deleted: false
                 });
+                updateLastRead(currentRoom);
             } catch (e) {}
         });
 
@@ -945,14 +1203,82 @@
             try {
                 await db.collection('rooms').doc(currentRoom).collection('messages').add({
                     type: 'countdown', 
-                    text: `${myName} iniciou a sincronização!`, 
+                    text: `iniciou a sincronização!`, 
                     sender: myName, 
+                    color: myColor,
                     roomKey: currentRoomKey,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp(), 
                     deleted: false
                 });
+                updateLastRead(currentRoom);
             } catch (e) {}
         });
+
+        shadow.getElementById('btn-action-gif').addEventListener('click', async () => {
+            plusPanel.style.display = 'none';
+            const gifUrl = prompt("Cole o link do GIF:");
+            if(!gifUrl || !currentRoom) return;
+            if(!currentRoomKey) return alert("Sessão inválida. Saia e entre na sala novamente.");
+            try {
+                await db.collection('rooms').doc(currentRoom).collection('messages').add({
+                    type: 'gif', 
+                    url: gifUrl,
+                    sender: myName, 
+                    color: myColor,
+                    roomKey: currentRoomKey,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(), 
+                    deleted: false
+                });
+                updateLastRead(currentRoom);
+            } catch (e) {}
+        });
+
+        shadow.getElementById('btn-action-camera').addEventListener('click', async () => {
+            plusPanel.style.display = 'none';
+            shadow.getElementById('ls-camera-overlay').style.display = 'flex';
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                shadow.getElementById('ls-camera-video').srcObject = localStream;
+            } catch(e) {
+                alert("Erro ao acessar a câmera.");
+                shadow.getElementById('ls-camera-overlay').style.display = 'none';
+            }
+        });
+
+        shadow.getElementById('ls-close-camera').addEventListener('click', () => {
+            if(localStream) localStream.getTracks().forEach(t => t.stop());
+            shadow.getElementById('ls-camera-overlay').style.display = 'none';
+        });
+
+        shadow.getElementById('ls-capture-btn').addEventListener('click', async () => {
+            const video = shadow.getElementById('ls-camera-video');
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+            
+            if(localStream) localStream.getTracks().forEach(t => t.stop());
+            shadow.getElementById('ls-camera-overlay').style.display = 'none';
+            await sendImageMsg(dataUrl);
+        });
+
+        async function sendImageMsg(dataUrl) {
+            if (!myName || !currentRoom || !currentRoomKey) return;
+            try {
+                await db.collection('rooms').doc(currentRoom).collection('messages').add({
+                    type: 'image', 
+                    url: dataUrl, 
+                    sender: myName, 
+                    color: myColor, 
+                    roomKey: currentRoomKey,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(), 
+                    deleted: false
+                });
+                updateLastRead(currentRoom);
+            } catch (e) {}
+        }
 
         async function sendMessage() {
             const text = input.value.trim();
@@ -971,11 +1297,15 @@
                     timestamp: firebase.firestore.FieldValue.serverTimestamp(), 
                     deleted: false
                 });
+                updateLastRead(currentRoom);
             } catch (e) {}
         }
 
         shadow.getElementById('ls-send-btn').addEventListener('click', sendMessage);
         input.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+        
+        if (myHideApp) fab.style.display = 'none';
+        checkScreenState();
     }
 
     const interval = setInterval(() => { if (document.body) injectUI(); }, 1000);
