@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      37.0
+// @version      38.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -1157,6 +1157,7 @@
                 backBtn.style.display = 'flex';
                 headerText.innerText = `${currentRoom}`;
                 if (!mySyncBg) applyBackground(myBgType, myBgColor, myBgImage);
+                if (myIntegratedMode) toggleIntegratedMode(true);
                 stopLobbyListeners();
                 startChatListeners();
             }
@@ -1567,30 +1568,58 @@
             } catch(e) {}
         }
 
-        const minimizeBtn = shadow.getElementById('ls-minimize-btn');
-        minimizeBtn.addEventListener('click', () => {
-            if (myIntegratedMode) {
-                alert("O Chat está no Modo Teatro. Desative essa opção no menu ou nas configurações para ocultar a janela.");
-                return;
-            }
-            chatWindow.classList.remove('open');
-            fab.style.display = 'none'; // Esconde a bolinha forçadamente
-            if (currentRoom) updateLastRead(currentRoom);
+        shadow.getElementById('ls-setup-btn').addEventListener('click', () => shadow.getElementById('ls-login-btn').click());
+
+        shadow.getElementById('ls-close-add-modal').addEventListener('click', () => { addRoomOverlay.style.display = 'none'; });
+
+        const inputRoom = shadow.getElementById('ls-lobby-room');
+        const inputPass = shadow.getElementById('ls-lobby-pass');
+
+        shadow.getElementById('ls-create-room-btn').addEventListener('click', async () => {
+            const roomName = inputRoom.value.trim().toLowerCase();
+            const roomPass = inputPass.value.trim();
+            if(!roomName || !roomPass) return alert("Preencha o nome e a senha!");
+            if(roomName.length > 80) return alert("O nome da sala deve ter no máximo 80 caracteres.");
+            if(roomPass.length < 4 || roomPass.length > 16) return alert("A senha deve ter entre 4 e 16 caracteres.");
+
+            try {
+                const docRef = db.collection('rooms').doc(roomName);
+                const doc = await docRef.get();
+                if(doc.exists) return alert("Esta sala já existe! Clique em 'Entrar na Sala'.");
+                const hashedPass = await hashPassword(roomPass);
+                
+                await docRef.set({ password: hashedPass, createdBy: myName, deviceId: myDeviceId, createdAt: firebase.firestore.FieldValue.serverTimestamp(), participants: [myName] });
+                
+                saveRoomToLocalList(roomName, hashedPass, roomPass);
+                currentRoom = roomName; currentRoomKey = roomName;
+                localStorage.setItem('ls_current_room', currentRoom); localStorage.setItem('ls_room_key', currentRoomKey);
+                
+                sendSystemAction('SYSTEM_JOIN');
+                updateLastRead(currentRoom);
+                inputRoom.value = ''; inputPass.value = ''; checkScreenState();
+            } catch (e) {}
         });
 
-        const closeBtnObj = shadow.getElementById('ls-close-btn');
-        closeBtnObj.addEventListener('click', () => { 
-            if (myIntegratedMode) {
-                alert("O Chat está no Modo Teatro. Desative essa opção no menu ou nas configurações para minimizar a janela.");
-                return;
-            }
-            chatWindow.classList.remove('open'); 
-            if (myHideApp) {
-                fab.style.display = 'none';
-            } else {
-                fab.style.display = 'flex';
-            }
-            if (currentRoom) updateLastRead(currentRoom);
+        shadow.getElementById('ls-join-room-btn').addEventListener('click', async () => {
+            const roomName = inputRoom.value.trim().toLowerCase();
+            const roomPass = inputPass.value.trim();
+            if(!roomName || !roomPass) return alert("Preencha o nome e a senha!");
+            try {
+                const docRef = db.collection('rooms').doc(roomName);
+                const doc = await docRef.get();
+                if(!doc.exists) return alert("Sala não encontrada.");
+                const hashedPass = await hashPassword(roomPass);
+                if(doc.data().password !== hashedPass) return alert("Senha incorreta!");
+                saveRoomToLocalList(roomName, hashedPass, roomPass);
+                currentRoom = roomName; currentRoomKey = roomName;
+                localStorage.setItem('ls_current_room', currentRoom); localStorage.setItem('ls_room_key', currentRoomKey);
+                
+                db.collection('rooms').doc(currentRoom).set({ participants: firebase.firestore.FieldValue.arrayUnion(myName) }, { merge: true }).catch(()=>{});
+                
+                sendSystemAction('SYSTEM_JOIN');
+                updateLastRead(currentRoom);
+                inputRoom.value = ''; inputPass.value = ''; checkScreenState();
+            } catch (e) {}
         });
 
         const chatMenuBtn = shadow.getElementById('ls-chat-menu-btn');
