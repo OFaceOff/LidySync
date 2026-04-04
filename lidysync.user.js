@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      31.0
+// @version      32.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -748,20 +748,22 @@
             const pushStyleId = 'ls-integrated-push-style';
             let pushStyle = document.getElementById(pushStyleId);
 
-            if (active && currentRoom) {
+            if (active) {
                 isCurrentlyIntegrated = true;
 
                 if (!pushStyle) {
                     pushStyle = document.createElement('style');
                     pushStyle.id = pushStyleId;
                     pushStyle.innerHTML = `
-                        html, body {
-                            width: calc(100vw - 350px) !important;
+                        html {
                             margin-right: 350px !important;
-                            overflow-x: hidden !important;
+                            width: calc(100% - 350px) !important;
                         }
-                        video, .html5-video-player, #ytd-player, .nf-player-container {
-                            max-width: calc(100vw - 350px) !important;
+                        body {
+                            width: 100% !important;
+                        }
+                        .html5-video-player, #ytd-player, .nf-player-container, .webPlayerContainer, #dv-web-player {
+                            width: calc(100vw - 350px) !important;
                         }
                     `;
                     document.head.appendChild(pushStyle);
@@ -795,7 +797,7 @@
                 wrapperEl.style.width = 'auto';
                 wrapperEl.style.height = 'auto';
 
-                if (currentRoom && !chatWindow.classList.contains('open')) {
+                if (!chatWindow.classList.contains('open')) {
                     if (!myHideApp) fab.style.display = 'flex';
                 }
 
@@ -902,6 +904,12 @@
                 db.collection('users').doc(myName).set({ color: myColor, deviceId: myDeviceId, pin: myPin, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
             }
 
+            if (myIntegratedMode) {
+                toggleIntegratedMode(true);
+            } else {
+                toggleIntegratedMode(false);
+            }
+
             if (!myName || !myPin) {
                 if (userProfileUnsubscribe) userProfileUnsubscribe();
                 setupArea.style.display = 'flex';
@@ -911,7 +919,6 @@
                 lobbySettingsBtn.style.display = 'none';
                 backBtn.style.display = 'none';
                 headerText.innerText = "LidySync";
-                toggleIntegratedMode(false);
                 stopLobbyListeners();
             } else if (!currentRoom || !currentRoomKey) {
                 setupArea.style.display = 'none';
@@ -921,7 +928,6 @@
                 lobbySettingsBtn.style.display = 'flex';
                 backBtn.style.display = 'none';
                 headerText.innerText = `Lobby (${myName})`;
-                toggleIntegratedMode(false);
                 renderSavedRooms();
                 startLobbyListeners();
             } else {
@@ -933,7 +939,6 @@
                 backBtn.style.display = 'flex';
                 headerText.innerText = `${currentRoom}`;
                 if (!mySyncBg) applyBackground(myBgType, myBgColor, myBgImage);
-                if (myIntegratedMode) toggleIntegratedMode(true);
                 stopLobbyListeners();
                 startChatListeners();
             }
@@ -1304,7 +1309,7 @@
             chatDropdown.classList.remove('show');
             myIntegratedMode = !myIntegratedMode;
             localStorage.setItem('ls_integrated', myIntegratedMode);
-            toggleIntegratedMode(myIntegratedMode);
+            checkScreenState(); // Re-apply correctly across entire UI
         });
 
         shadow.getElementById('ls-menu-share').addEventListener('click', () => {
@@ -1698,6 +1703,7 @@
                                 playNotificationSound();
                                 
                                 if (!chatWindow.classList.contains('open') || myIntegratedMode) {
+                                    // Se está no modo integrado, só mostra badge se o chat não estiver visível (o que não acontece se integrado==true, pois fica sempre aberto)
                                     if (!myIntegratedMode) {
                                         unreadCount++;
                                         badge.style.display = 'flex';
