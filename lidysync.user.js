@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      24.0
+// @version      25.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -806,6 +806,8 @@
                 item.className = 'ls-room-item';
                 const initial = room.name.charAt(0).toUpperCase();
                 
+                let rawPass = room.rawPass || '';
+
                 item.innerHTML = `
                     <div class="ls-room-avatar">${initial}</div>
                     <div class="ls-room-info">
@@ -816,7 +818,7 @@
                     <div class="ls-dropdown-container">
                         <button class="ls-room-options" data-index="${index}">⋮</button>
                         <div class="ls-dropdown-menu" id="ls-drop-${index}">
-                            <button class="ls-dropdown-item" data-action="share" data-name="${room.name}" data-pass="${room.hash}">🔗 Compartilhar</button>
+                            <button class="ls-dropdown-item" data-action="share" data-name="${room.name}" data-rawpass="${rawPass}">🔗 Compartilhar</button>
                             <button class="ls-dropdown-item" data-action="appearance" data-name="${room.name}">🎨 Aparência do Chat</button>
                             <div style="height:1px; background:var(--border-color); margin:4px 0;"></div>
                             <button class="ls-dropdown-item" data-action="remove" data-index="${index}">Remover da Lista</button>
@@ -841,7 +843,11 @@
                         e.stopPropagation();
                         dropMenu.classList.remove('show');
                         if (btn.dataset.action === 'share') {
-                            const link = `Vem assistir comigo no LidySync!\n🍿 Sala: ${btn.dataset.name}\n(Insira a senha se houver)`;
+                            let passToShare = btn.dataset.rawpass;
+                            if (!passToShare) {
+                                passToShare = prompt("Qual a senha dessa sala para incluir no convite?") || "[Sua Senha]";
+                            }
+                            const link = `Vem assistir comigo no LidySync!\n🍿 Nome da Sala: ${btn.dataset.name}\n🔑 Senha: ${passToShare}\n\nCaso não tenha a extensão clique aqui para aprender a instalar: https://ofaceoff.github.io/LidySync/index.html`;
                             navigator.clipboard.writeText(link);
                             alert("Convite copiado!");
                         } else if (btn.dataset.action === 'appearance') {
@@ -900,7 +906,7 @@
                                 const msgTime = data.timestamp ? data.timestamp.toMillis() : Date.now();
                                 if (msgTime > lastRead && data.sender !== myName) {
                                     unreadEl.style.display = 'block';
-                                    if (!chatWindow.classList.contains('open') && !myIntegratedMode) {
+                                    if (!chatWindow.classList.contains('open')) {
                                         badge.style.display = 'flex';
                                         badge.innerText = '!';
                                         if (myHideApp && myHideRevive) {
@@ -922,10 +928,13 @@
             lobbyUnsubscribes = [];
         }
 
-        function saveRoomToLocalList(name, hash) {
+        function saveRoomToLocalList(name, hash, rawPass) {
             const exists = savedRooms.find(r => r.name === name);
             if(!exists) {
-                savedRooms.push({name, hash});
+                savedRooms.push({name, hash, rawPass});
+                localStorage.setItem('ls_saved_rooms', JSON.stringify(savedRooms));
+            } else if (rawPass && !exists.rawPass) {
+                exists.rawPass = rawPass;
                 localStorage.setItem('ls_saved_rooms', JSON.stringify(savedRooms));
             }
         }
@@ -1066,7 +1075,7 @@
                 
                 await docRef.set({ password: hashedPass, createdBy: myName, createdAt: firebase.firestore.FieldValue.serverTimestamp(), participants: [myName] });
                 
-                saveRoomToLocalList(roomName, hashedPass);
+                saveRoomToLocalList(roomName, hashedPass, roomPass);
                 currentRoom = roomName; currentRoomKey = roomName;
                 localStorage.setItem('ls_current_room', currentRoom); localStorage.setItem('ls_room_key', currentRoomKey);
                 
@@ -1086,7 +1095,7 @@
                 if(!doc.exists) return alert("Sala não encontrada.");
                 const hashedPass = await hashPassword(roomPass);
                 if(doc.data().password !== hashedPass) return alert("Senha incorreta!");
-                saveRoomToLocalList(roomName, hashedPass);
+                saveRoomToLocalList(roomName, hashedPass, roomPass);
                 currentRoom = roomName; currentRoomKey = roomName;
                 localStorage.setItem('ls_current_room', currentRoom); localStorage.setItem('ls_room_key', currentRoomKey);
                 
@@ -1446,7 +1455,7 @@
                         const msgTime = data.timestamp ? data.timestamp.toMillis() : Date.now();
                         const lastRead = lastReadTimes[currentRoom] || 0;
                         
-                        if (msgTime > lastRead && (!chatWindow.classList.contains('open') || myIntegratedMode)) {
+                        if (msgTime > lastRead && !chatWindow.classList.contains('open')) {
                             // If integrated mode is on, we don't show the fab, so no badge needed there.
                             if (!myIntegratedMode) {
                                 unreadCount++;
