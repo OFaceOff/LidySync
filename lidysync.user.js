@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      15.0
+// @version      18.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -37,7 +37,9 @@
             gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
             osc.start();
             osc.stop(ctx.currentTime + 0.1);
-        } catch (e) {}
+        } catch (e) {
+            console.warn("LidySync: Som bloqueado pelo navegador. O usuário precisa interagir com a página (clicar) para permitir áudio.");
+        }
     }
 
     function escapeHTML(str) {
@@ -559,6 +561,7 @@
             editingRoomAppearance = null;
             
             if (!myName) {
+                db.collection('users').doc(myName).set({ color: myColor, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
                 setupArea.style.display = 'flex';
                 lobbyArea.style.display = 'none';
                 chatArea.style.display = 'none';
@@ -643,12 +646,14 @@
                             settingsOverlay.style.display = 'flex';
                             db.collection('rooms').doc(btn.dataset.name).collection('settings').doc('shared').get().then(doc => {
                                 if(doc.exists) {
-                                    const d = doc.data();
-                                    shadow.getElementById('ls-config-bg-type').value = d.bgType || 'color';
-                                    shadow.getElementById('ls-config-bg-type').dispatchEvent(new Event('change'));
-                                    shadow.getElementById('ls-config-bg-color').value = d.bgColor || '#0f172a';
-                                    shadow.getElementById('ls-config-bg-image').value = d.bgImage || '';
-                                    shadow.getElementById('ls-config-sync').checked = true;
+                                    try {
+                                        const d = JSON.parse(doc.data().theme);
+                                        shadow.getElementById('ls-config-bg-type').value = d.bgType || 'color';
+                                        shadow.getElementById('ls-config-bg-type').dispatchEvent(new Event('change'));
+                                        shadow.getElementById('ls-config-bg-color').value = d.bgColor || '#0f172a';
+                                        shadow.getElementById('ls-config-bg-image').value = d.bgImage || '';
+                                        shadow.getElementById('ls-config-sync').checked = true;
+                                    } catch(e){}
                                 }
                             });
                         } else if(btn.dataset.action === 'remove') {
@@ -740,8 +745,11 @@
                     alert("A senha desta sala foi alterada. Por favor, adicione-a novamente pelo botão +");
                     return;
                 }
-                currentRoom = roomName; currentRoomKey = crypto.randomUUID();
+                currentRoom = roomName; currentRoomKey = roomName;
                 localStorage.setItem('ls_current_room', currentRoom); localStorage.setItem('ls_room_key', currentRoomKey);
+                
+                db.collection('rooms').doc(currentRoom).set({ participants: firebase.firestore.FieldValue.arrayUnion(myName) }, { merge: true }).catch(()=>{});
+                
                 updateLastRead(currentRoom);
                 checkScreenState();
             } catch(e) {}
@@ -754,6 +762,7 @@
             myColor = shadow.getElementById('ls-setup-color').value;
             localStorage.setItem('ls_username', myName);
             localStorage.setItem('ls_usercolor', myColor);
+            db.collection('users').doc(myName).set({ color: myColor, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
             checkScreenState();
         });
 
@@ -793,6 +802,7 @@
             localStorage.setItem('ls_hide_revive', myHideRevive);
             
             wrapper.className = selectedTheme;
+            db.collection('users').doc(myName).set({ color: myColor, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
 
             lobbySettingsOverlay.style.display = 'none';
             checkScreenState();
@@ -820,9 +830,11 @@
                 const doc = await docRef.get();
                 if(doc.exists) return alert("Esta sala já existe! Clique em 'Entrar na Sala'.");
                 const hashedPass = await hashPassword(roomPass);
-                await docRef.set({ password: hashedPass, createdBy: myName, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+                
+                await docRef.set({ password: hashedPass, createdBy: myName, createdAt: firebase.firestore.FieldValue.serverTimestamp(), participants: [myName] });
+                
                 saveRoomToLocalList(roomName, hashedPass);
-                currentRoom = roomName; currentRoomKey = crypto.randomUUID();
+                currentRoom = roomName; currentRoomKey = roomName;
                 localStorage.setItem('ls_current_room', currentRoom); localStorage.setItem('ls_room_key', currentRoomKey);
                 updateLastRead(currentRoom);
                 inputRoom.value = ''; inputPass.value = ''; checkScreenState();
@@ -840,8 +852,11 @@
                 const hashedPass = await hashPassword(roomPass);
                 if(doc.data().password !== hashedPass) return alert("Senha incorreta!");
                 saveRoomToLocalList(roomName, hashedPass);
-                currentRoom = roomName; currentRoomKey = crypto.randomUUID();
+                currentRoom = roomName; currentRoomKey = roomName;
                 localStorage.setItem('ls_current_room', currentRoom); localStorage.setItem('ls_room_key', currentRoomKey);
+                
+                db.collection('rooms').doc(currentRoom).set({ participants: firebase.firestore.FieldValue.arrayUnion(myName) }, { merge: true }).catch(()=>{});
+                
                 updateLastRead(currentRoom);
                 inputRoom.value = ''; inputPass.value = ''; checkScreenState();
             } catch (e) {}
@@ -910,37 +925,29 @@
 
             settingsListener = settingsRef.onSnapshot(doc => {
                 if (doc.exists && mySyncBg) {
-                    const data = doc.data(); applyBackground(data.bgType, data.bgColor, data.bgImage);
+                    try {
+                        const data = JSON.parse(doc.data().theme);
+                        applyBackground(data.bgType, data.bgColor, data.bgImage);
+                    } catch(e){}
                 }
             });
 
             messagesListener = messagesRef.orderBy('timestamp', 'asc').limitToLast(50).onSnapshot((snapshot) => {
                 messagesContainer.innerHTML = '';
                 
-                snapshot.docChanges().forEach((change) => {
-                    const data = change.doc.data();
-                    if (change.type === 'added' && data.type === 'countdown' && !isFirstSnapshot && !data.deleted) {
-                        runVisualCountdown(data.sender);
-                    }
-                    if (change.type === 'added' && !isFirstSnapshot && data.sender !== myName && !data.deleted) {
-                        playNotificationSound();
-                        if (!chatWindow.classList.contains('open')) {
-                            unreadCount++;
-                            badge.style.display = 'flex';
-                            badge.innerText = unreadCount > 5 ? '5+' : unreadCount;
-                            if (myHideApp && myHideRevive) {
-                                fab.style.display = 'flex';
-                            }
-                        } else {
-                            updateLastRead(currentRoom);
-                        }
-                    }
-                });
+                let currentUnread = 0;
+                const lastRead = lastReadTimes[currentRoom] || 0;
 
                 snapshot.forEach((doc) => {
                     const data = doc.data();
                     const docId = doc.id; 
                     const isMe = data.sender === myName;
+                    
+                    if (!isMe && !data.deleted) {
+                        const msgTime = data.timestamp ? data.timestamp.toMillis() : Date.now();
+                        if (msgTime > lastRead) currentUnread++;
+                    }
+
                     const container = document.createElement('div');
                     
                     if (data.type === 'countdown') {
@@ -953,7 +960,7 @@
                         container.innerHTML = `
                             <div class="ls-message system-msg" style="background: var(--btn-primary-bg) !important; color: var(--btn-primary-color) !important; border:none; padding:0;">
                                 <a href="${data.url}" target="_blank" style="color: inherit; text-decoration: none; display: block; padding: 10px 16px;">
-                                    🍿 ${data.text}<br><small style="text-decoration:underline;">Clique para abrir</small>
+                                    🍿 ${data.sender} convidou você para ver a programação atual!<br><small style="text-decoration:underline;">Clique para abrir</small>
                                     <span class="ls-msg-time" style="display:block; margin-top:4px; color:inherit; opacity:0.8;">${formatTime(data.timestamp)}</span>
                                 </a>
                             </div>
@@ -979,7 +986,7 @@
                             delBtn.className = 'ls-msg-delete';
                             delBtn.innerText = '🗑️';
                             delBtn.title = "Apagar";
-                            delBtn.onclick = async () => { try { await messagesRef.doc(docId).update({ deleted: true }); } catch (e) {} };
+                            delBtn.onclick = async () => { try { await messagesRef.doc(docId).set({ deleted: true }, { merge: true }); } catch (e) {} };
                             senderRow.appendChild(delBtn);
                         }
                         
@@ -1018,7 +1025,7 @@
                             delBtn.className = 'ls-msg-delete';
                             delBtn.innerText = '🗑️';
                             delBtn.title = "Apagar";
-                            delBtn.onclick = async () => { try { await messagesRef.doc(docId).update({ deleted: true }); } catch (e) {} };
+                            delBtn.onclick = async () => { try { await messagesRef.doc(docId).set({ deleted: true }, { merge: true }); } catch (e) {} };
                             senderRow.appendChild(delBtn);
                         }
                         
@@ -1038,6 +1045,24 @@
                     }
                     messagesContainer.appendChild(container);
                 });
+
+                snapshot.docChanges().forEach((change) => {
+                    const data = change.doc.data();
+                    if (change.type === 'added' && !isFirstSnapshot && data.sender !== myName && !data.deleted) {
+                        playNotificationSound();
+                    }
+                });
+
+                if (!chatWindow.classList.contains('open') && currentUnread > 0) {
+                    badge.style.display = 'flex';
+                    badge.innerText = currentUnread > 5 ? '5+' : currentUnread;
+                    if (myHideApp && myHideRevive) {
+                        fab.style.display = 'flex';
+                    }
+                } else if (chatWindow.classList.contains('open')) {
+                    badge.style.display = 'none';
+                    updateLastRead(currentRoom);
+                }
                 
                 scrollToBottom();
                 isFirstSnapshot = false;
@@ -1080,8 +1105,8 @@
             if (editingRoomAppearance) {
                 try {
                     await db.collection('rooms').doc(editingRoomAppearance).collection('settings').doc('shared').set({
-                        bgType: bType, bgColor: bColor, bgImage: bImage, timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                    });
+                        theme: JSON.stringify({ bgType: bType, bgColor: bColor, bgImage: bImage })
+                    }, {merge: true});
                 } catch(e){}
             } else {
                 myBgType = bType; myBgColor = bColor; myBgImage = bImage; mySyncBg = bSync; myAutoPlay = aPlay;
@@ -1092,8 +1117,8 @@
                 if (mySyncBg && currentRoom) {
                     try {
                         await db.collection('rooms').doc(currentRoom).collection('settings').doc('shared').set({
-                            bgType: myBgType, bgColor: myBgColor, bgImage: myBgImage, timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                        });
+                            theme: JSON.stringify({ bgType: myBgType, bgColor: myBgColor, bgImage: myBgImage })
+                        }, {merge: true});
                     } catch (e) {}
                 } else { applyBackground(myBgType, myBgColor, myBgImage); }
             }
@@ -1108,7 +1133,6 @@
         fab.addEventListener('click', () => { 
             chatWindow.classList.add('open'); 
             fab.style.display = 'none'; 
-            unreadCount = 0;
             badge.style.display = 'none';
             if (currentRoom) updateLastRead(currentRoom);
             checkScreenState(); 
@@ -1121,6 +1145,7 @@
             } else {
                 fab.style.display = 'flex';
             }
+            if (currentRoom) updateLastRead(currentRoom);
         });
 
         const btnPlus = shadow.getElementById('ls-btn-plus');
@@ -1183,7 +1208,7 @@
             try {
                 await db.collection('rooms').doc(currentRoom).collection('messages').add({
                     type: 'invite', 
-                    text: `${myName} convidou você para ver a programação atual!`, 
+                    text: 'convidou você para ver a programação atual!', 
                     url: window.location.href,
                     sender: myName, 
                     color: myColor,
@@ -1283,7 +1308,7 @@
         async function sendMessage() {
             const text = input.value.trim();
             if (!text || !myName || !currentRoom) return;
-            if (text.length > 300) return alert("Mensagem muito longa.");
+            if (text.length > 390) return alert("Mensagem muito longa.");
             if (!currentRoomKey) return alert("Sessão inválida.");
             
             input.value = '';
