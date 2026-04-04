@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      19.1
+// @version      20.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -37,7 +37,9 @@
             gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
             osc.start();
             osc.stop(ctx.currentTime + 0.1);
-        } catch (e) {}
+        } catch (e) {
+            console.warn("LidySync: Som bloqueado pelo navegador. O usuário precisa interagir com a página (clicar) para permitir áudio.");
+        }
     }
 
     function escapeHTML(str) {
@@ -300,7 +302,9 @@
 
         const wrapper = document.createElement('div');
         wrapper.id = 'ls-wrapper';
-        wrapper.className = localStorage.getItem('ls_theme') || '';
+        
+        let storedTheme = localStorage.getItem('ls_theme');
+        wrapper.className = storedTheme !== null ? storedTheme : 'theme-glass';
         
         wrapper.innerHTML = `
             <div id="ls-chat-window">
@@ -359,9 +363,9 @@
                     <div class="ls-config-section">
                         <span class="ls-label">Preferências Globais</span>
                         <select class="ls-select" id="ls-app-theme" style="margin-bottom: 12px;">
-                            <option value="">Tema Escuro (Padrão)</option>
+                            <option value="theme-glass">Tema Glassmorfismo (Padrão)</option>
+                            <option value="">Tema Escuro</option>
                             <option value="theme-light">Tema Claro</option>
-                            <option value="theme-glass">Tema Glassmorfismo</option>
                             <option value="theme-hellokitty">Tema Hello Kitty</option>
                         </select>
                         <label class="ls-checkbox-group">
@@ -705,10 +709,12 @@
                                 const msgTime = data.timestamp ? data.timestamp.toMillis() : Date.now();
                                 if (msgTime > lastRead && data.sender !== myName) {
                                     unreadEl.style.display = 'block';
-                                    if (myHideApp && myHideRevive && !chatWindow.classList.contains('open')) {
-                                        fab.style.display = 'flex';
+                                    if (!chatWindow.classList.contains('open')) {
                                         badge.style.display = 'flex';
                                         badge.innerText = '!';
+                                        if (myHideApp && myHideRevive) {
+                                            fab.style.display = 'flex';
+                                        }
                                     }
                                 } else {
                                     unreadEl.style.display = 'none';
@@ -776,7 +782,7 @@
                 lobbySettingsOverlay.style.display = 'flex';
                 shadow.getElementById('ls-edit-name').value = myName || '';
                 shadow.getElementById('ls-edit-color').value = myColor || '#6366f1';
-                shadow.getElementById('ls-app-theme').value = localStorage.getItem('ls_theme') || '';
+                shadow.getElementById('ls-app-theme').value = localStorage.getItem('ls_theme') !== null ? localStorage.getItem('ls_theme') : 'theme-glass';
                 shadow.getElementById('ls-app-sound').checked = localStorage.getItem('ls_sound') !== 'false';
                 shadow.getElementById('ls-app-hide').checked = myHideApp;
                 shadow.getElementById('ls-app-revive').checked = myHideRevive;
@@ -817,7 +823,7 @@
             myName = null; currentRoom = null; currentRoomKey = null; savedRooms = [];
             myDeviceId = crypto.randomUUID();
             localStorage.setItem('ls_device_id', myDeviceId);
-            wrapper.className = '';
+            wrapper.className = 'theme-glass';
             checkScreenState();
         });
 
@@ -1056,18 +1062,31 @@
                     const data = change.doc.data();
                     if (change.type === 'added' && !isFirstSnapshot && data.sender !== myName && !data.deleted) {
                         playNotificationSound();
+                        
+                        const msgTime = data.timestamp ? data.timestamp.toMillis() : Date.now();
+                        const lastRead = lastReadTimes[currentRoom] || 0;
+                        
+                        if (msgTime > lastRead && !chatWindow.classList.contains('open')) {
+                            unreadCount++;
+                            badge.style.display = 'flex';
+                            badge.innerText = unreadCount > 5 ? '5+' : unreadCount;
+                            if (myHideApp && myHideRevive) {
+                                fab.style.display = 'flex';
+                            }
+                        }
                     }
                 });
 
-                if (!chatWindow.classList.contains('open') && currentUnread > 0) {
+                if (chatWindow.classList.contains('open')) {
+                    updateLastRead(currentRoom);
+                    unreadCount = 0;
+                    badge.style.display = 'none';
+                } else if (currentUnread > 0) {
                     badge.style.display = 'flex';
                     badge.innerText = currentUnread > 5 ? '5+' : currentUnread;
                     if (myHideApp && myHideRevive) {
                         fab.style.display = 'flex';
                     }
-                } else if (chatWindow.classList.contains('open')) {
-                    badge.style.display = 'none';
-                    updateLastRead(currentRoom);
                 }
                 
                 scrollToBottom();
