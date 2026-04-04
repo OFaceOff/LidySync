@@ -1240,6 +1240,68 @@
         }
 
         shadow.getElementById('ls-send-btn').addEventListener('click', sendMessage);
+
+        const fabAddBtn = shadow.getElementById('ls-fab-add');
+        if (fabAddBtn) {
+            fabAddBtn.addEventListener('click', () => {
+                addRoomOverlay.style.display = 'flex';
+            });
+        }
+
+        if (lobbySettingsBtn) {
+            lobbySettingsBtn.addEventListener('click', () => {
+                lobbySettingsOverlay.style.display = 'flex';
+                shadow.getElementById('ls-app-theme').value = localStorage.getItem('ls_theme') || '';
+                shadow.getElementById('ls-app-sound').checked = localStorage.getItem('ls_sound') !== 'false';
+                shadow.getElementById('ls-app-inchatsound').checked = myInChatSound;
+                shadow.getElementById('ls-app-hidesys').checked = myHideSys;
+                shadow.getElementById('ls-app-hide').checked = myHideApp;
+                shadow.getElementById('ls-app-revive').checked = myHideRevive;
+                shadow.getElementById('ls-app-integrated').checked = myIntegratedMode;
+            });
+        }
+
+        const closeLobbyModal = shadow.getElementById('ls-close-lobby-modal');
+        if (closeLobbyModal) {
+            closeLobbyModal.addEventListener('click', () => {
+                lobbySettingsOverlay.style.display = 'none';
+            });
+        }
+
+        const saveLobbyConfigBtn = shadow.getElementById('ls-save-lobby-config-btn');
+        if (saveLobbyConfigBtn) {
+            saveLobbyConfigBtn.addEventListener('click', () => {
+                const theme = shadow.getElementById('ls-app-theme').value;
+                const sound = shadow.getElementById('ls-app-sound').checked;
+                myInChatSound = shadow.getElementById('ls-app-inchatsound').checked;
+                myHideSys = shadow.getElementById('ls-app-hidesys').checked;
+                myHideApp = shadow.getElementById('ls-app-hide').checked;
+                myHideRevive = shadow.getElementById('ls-app-revive').checked;
+                myIntegratedMode = shadow.getElementById('ls-app-integrated').checked;
+
+                localStorage.setItem('ls_theme', theme);
+                localStorage.setItem('ls_sound', sound);
+                localStorage.setItem('ls_inchat_sounds', myInChatSound);
+                localStorage.setItem('ls_hide_sys', myHideSys);
+                localStorage.setItem('ls_hide_app', myHideApp);
+                localStorage.setItem('ls_hide_revive', myHideRevive);
+                localStorage.setItem('ls_integrated', myIntegratedMode);
+
+                shadow.getElementById('ls-wrapper').className = theme;
+                lobbySettingsOverlay.style.display = 'none';
+                checkScreenState();
+            });
+        }
+
+        const wipeDataBtn = shadow.getElementById('ls-wipe-data-btn');
+        if (wipeDataBtn) {
+            wipeDataBtn.addEventListener('click', () => {
+                if(confirm("Tem certeza que deseja desconectar e apagar todos os dados locais do LidySync?")) {
+                    localStorage.clear();
+                    location.reload();
+                }
+            });
+        }
         
         if (myHideApp) fab.style.display = 'none';
         checkScreenState();
