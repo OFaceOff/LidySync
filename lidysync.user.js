@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      48.0
+// @version      53.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -36,7 +36,7 @@
             localStorage.removeItem(key);
         },
         clear: function() {
-            const keys = ['ls_device_id','ls_username','ls_userpin','ls_usercolor','ls_usertextcolor','ls_useravatar','ls_userbanner','ls_userbio','ls_usercountry','ls_hidechats','ls_current_room','ls_room_key','ls_saved_rooms','ls_last_read','ls_muted_rooms','ls_theme','ls_sound','ls_inchat_sounds','ls_hide_sys','ls_hide_app','ls_hide_revive','ls_integrated','ls_bg_type','ls_bg_color','ls_bg_image','ls_sync_bg','ls_autoplay'];
+            const keys = ['ls_device_id','ls_username','ls_userpin','ls_usercolor','ls_usertextcolor','ls_useravatar','ls_userbanner','ls_userbio','ls_usercountry','ls_userfav','ls_hidechats','ls_current_room','ls_room_key','ls_saved_rooms','ls_last_read','ls_muted_rooms','ls_theme','ls_sound','ls_inchat_sounds','ls_hide_sys','ls_hide_app','ls_hide_revive','ls_integrated','ls_bg_type','ls_bg_color','ls_bg_image','ls_sync_bg','ls_autoplay'];
             if (hasGM) keys.forEach(k => GM_deleteValue(k));
             keys.forEach(k => localStorage.removeItem(k));
         }
@@ -166,6 +166,8 @@
             .ls-tag-verified { background-color: #1da1f2 !important; color: #ffffff !important; border-radius: 50% !important; width: 14px !important; height: 14px !important; display: inline-flex !important; justify-content: center; align-items: center; padding: 0 !important; font-size: 9px !important; border: 1px solid #ffffff; box-shadow: 0 0 4px rgba(29, 161, 242, 0.6); }
             #ls-fab-add { position: absolute; bottom: 20px; right: 20px; width: 50px; height: 50px; background: var(--fab-bg); color: var(--fab-color); border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: var(--fab-shadow); font-size: 24px; transition: 0.2s; z-index: 20; border: none; backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); } #ls-fab-add:hover { transform: scale(1.1); }
             .ls-modal-overlay { position: absolute; top: 54px; left: 0; width: 100%; height: calc(100% - 54px); background-color: var(--bg-modal); z-index: 30; display: none; flex-direction: column; overflow-y: auto; }
+            .ls-modal-overlay-card { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 70; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+            .ls-profile-card { background: var(--bg-surface); width: 90%; max-width: 360px; border-radius: 16px; border: 1px solid var(--border-color); overflow: hidden; display: flex; flex-direction: column; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.5); max-height: 90vh; }
             .ls-modal-content { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
             .ls-label { color: var(--text-muted); font-size: 12px; font-weight: 600; margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
             .ls-input-wrapper { position: relative; width: 100%; display: flex; align-items: center; } .ls-input-text, .ls-select, .ls-textarea, .ls-input-file { background-color: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; color: var(--text-primary); outline: none; font-size: 14px; width: 100%; transition: all 0.2s; } .ls-input-text:focus, .ls-select:focus, .ls-textarea:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15); } .ls-textarea { resize: vertical; min-height: 80px; } .ls-pass-toggle { position: absolute; right: 12px; background: none; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; padding: 4px; border-radius: 4px; } .ls-pass-toggle:hover { color: var(--text-primary); background: rgba(128,128,128,0.1); }
@@ -174,9 +176,9 @@
             .ls-btn-primary { background: var(--btn-primary-bg); color: var(--btn-primary-color); border: none; border-radius: 10px; padding: 14px; font-weight: 600; cursor: pointer; margin-top: 10px; transition: all 0.2s; width: 100%; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); } .ls-btn-primary:hover { transform: translateY(-1px); filter: brightness(1.1); } .ls-btn-secondary { background-color: var(--btn-secondary-bg); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; width: 100%; font-size: 14px; } .ls-btn-secondary:hover { filter: brightness(1.2); } .ls-btn-danger { background-color: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 10px; padding: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; width: 100%; font-size: 14px; } .ls-btn-danger:hover { background-color: #ef4444; color: white; }
             .ls-config-section { background: rgba(128,128,128,0.05); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 8px;}
             
-            .ls-profile-banner { height: 120px; border-radius: 0 0 0 0; background: #6366f1; position: relative; background-size: cover !important; background-position: center !important; }
-            .ls-profile-avatar-large { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.3); flex-shrink: 0; position: relative; border: 4px solid var(--bg-modal); background: var(--bg-surface); background-size: cover !important; background-position: center !important; }
-            .ls-profile-status-indicator { position: absolute; bottom: 2px; right: 2px; width: 16px; height: 16px; border-radius: 50%; border: 3px solid var(--bg-modal); }
+            .ls-profile-banner { height: 120px; background: #6366f1; position: relative; background-size: cover !important; background-position: center !important; border-bottom: 1px solid var(--border-color); }
+            .ls-profile-avatar-large { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.3); flex-shrink: 0; position: relative; border: 4px solid var(--bg-surface); background: var(--bg-surface); background-size: cover !important; background-position: center !important; }
+            .ls-profile-status-indicator { position: absolute; bottom: 2px; right: 2px; width: 16px; height: 16px; border-radius: 50%; border: 3px solid var(--bg-surface); }
             .ls-profile-bio-box { background: rgba(128,128,128,0.05); padding: 12px 16px; border-radius: 10px; border-left: 3px solid var(--border-color); margin-top: 12px; font-size: 13.5px; line-height: 1.5; color: var(--text-primary); }
             .ls-profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
             .ls-profile-stat-box { background: rgba(128,128,128,0.05); border: 1px solid var(--border-color); padding: 12px; border-radius: 10px; text-align: center; }
@@ -227,11 +229,12 @@
                                 <button class="ls-dropdown-item" id="ls-menu-members">👥 Ver Membros</button>
                                 <button class="ls-dropdown-item" id="ls-menu-settings">🎨 Aparência da Sala</button>
                                 <div style="height:1px; background:var(--border-color); margin:4px 0;" id="ls-menu-delete-divider"></div>
+                                <button class="ls-dropdown-item danger" id="ls-menu-leave" style="display:none;">🚪 Sair da Sala</button>
                                 <button class="ls-dropdown-item danger" id="ls-menu-delete">🗑️ Encerrar Sala</button>
                             </div>
                         </div>
-                        <button class="ls-header-btn" id="ls-minimize-btn" title="Ocultar App"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
-                        <button class="ls-header-btn" id="ls-close-btn" title="Fechar Chat"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+                        <button class="ls-header-btn" id="ls-minimize-btn" title="Minimizar"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
+                        <button class="ls-header-btn" id="ls-close-btn" title="Fechar App"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
                     </div>
                 </div>
                 
@@ -266,8 +269,8 @@
                     <button id="ls-fab-add" title="Nova Sala">+</button>
                 </div>
 
-                <div id="ls-lobby-settings-overlay" class="ls-modal-overlay">
-                    <div class="ls-modal-content">
+                <div id="ls-lobby-settings-overlay" class="ls-modal-overlay" style="top: 0; height: 100%;">
+                    <div class="ls-modal-content" style="margin-top:54px;">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <span style="color: var(--text-primary); font-size: 20px; font-weight: 700;">Configurações</span>
                             <button id="ls-close-lobby-modal" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px;">✕</button>
@@ -293,65 +296,90 @@
                     </div>
                 </div>
 
-                <div id="ls-profile-overlay" class="ls-modal-overlay" style="z-index: 60;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding: 16px 24px; position: absolute; width: 100%; z-index: 2;">
-                        <button id="ls-close-profile-modal" style="background:rgba(0,0,0,0.5); border:none; color:white; width:30px; height:30px; border-radius:50%; cursor:pointer; font-size:14px; backdrop-filter:blur(4px);">✕</button>
-                    </div>
-                    <div id="ls-profile-view" style="display: flex; flex-direction: column; flex: 1;">
-                        <div class="ls-profile-banner" id="ls-profile-v-banner"></div>
-                        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: -40px; padding: 0 24px;">
-                            <div class="ls-profile-avatar-large" id="ls-profile-v-avatar"><div class="ls-profile-status-indicator" id="ls-profile-v-status"></div></div>
-                            <button id="ls-btn-edit-profile" class="ls-btn-secondary" style="width: auto; padding: 6px 12px; font-size: 12px; margin-bottom: 5px; background: var(--bg-surface); border: 1px solid var(--border-color);">Editar Perfil</button>
-                        </div>
-                        <div style="padding: 10px 24px 0;">
-                            <div style="font-size:22px; font-weight:800; color:var(--text-primary);" id="ls-profile-v-name">-</div>
-                            <div style="font-size:13px; color:var(--text-muted); margin-top:2px;" id="ls-profile-v-statustext">-</div>
-                        </div>
-                        <div style="padding: 0 24px; margin-top: 16px;">
-                            <span class="ls-profile-stat-label">Bio</span>
-                            <div class="ls-profile-bio-box" id="ls-profile-v-bio">-</div>
-                        </div>
-                        <div style="padding: 0 24px; margin-top: 16px;">
-                            <span class="ls-profile-stat-label">Tags</span>
-                            <div class="ls-tags-container" id="ls-profile-v-tags" style="margin-top:6px;"></div>
-                        </div>
-                        <div class="ls-profile-grid" style="padding: 0 24px 24px;">
-                            <div class="ls-profile-stat-box"><span class="ls-profile-stat-label">País</span><span class="ls-profile-stat-value" id="ls-profile-v-country">-</span></div>
-                            <div class="ls-profile-stat-box"><span class="ls-profile-stat-label">Chats</span><span class="ls-profile-stat-value" id="ls-profile-v-rooms">-</span></div>
-                            <div class="ls-profile-stat-box" style="grid-column: span 2;"><span class="ls-profile-stat-label">Membro desde</span><span class="ls-profile-stat-value" style="font-size:15px;" id="ls-profile-v-created">-</span></div>
-                        </div>
-                    </div>
-                    <div id="ls-profile-edit" class="ls-modal-content" style="display: none; padding-top:60px;">
-                        <div style="text-align:center; margin-bottom: 10px;"><div class="ls-profile-avatar-large" id="ls-profile-e-avatar" style="margin: 0 auto; color: var(--text-primary);"></div></div>
-                        <div style="display: flex; gap: 10px;">
-                            <div style="flex:1;"><span class="ls-label">Foto de Perfil</span>
-                                <div style="display:flex; gap:8px;">
-                                    <input type="file" id="ls-profile-e-avatar-file" accept="image/*" class="ls-input-file" style="padding: 8px; font-size:12px;" />
-                                    <button id="ls-profile-e-avatar-clear" class="ls-btn-danger" style="width:auto; padding:8px; margin:0;" title="Remover Foto">🗑️</button>
-                                </div>
+                <div id="ls-profile-overlay" class="ls-modal-overlay-card">
+                    <div class="ls-profile-card">
+                        <button id="ls-close-profile-modal">✕</button>
+                        
+                        <div id="ls-profile-view" style="display: flex; flex-direction: column; width: 100%; overflow-y: auto;">
+                            <div class="ls-profile-banner" id="ls-profile-v-banner"></div>
+                            <div style="display: flex; justify-content: space-between; align-items: flex-end; padding: 0 20px; margin-top: -40px;">
+                                <div class="ls-profile-avatar-large" id="ls-profile-v-avatar"><div class="ls-profile-status-indicator" id="ls-profile-v-status"></div></div>
+                                <button id="ls-btn-edit-profile" class="ls-btn-secondary" style="width: auto; padding: 6px 16px; font-size: 12px; margin-bottom: 5px; border-radius: 20px; z-index: 5;">Editar Perfil</button>
+                            </div>
+                            <div style="padding: 12px 20px 0;">
+                                <div style="font-size:22px; font-weight:800; color:var(--text-primary); display: flex; align-items: center; gap: 8px;" id="ls-profile-v-name">-</div>
+                                <div style="font-size:13px; color:var(--text-muted); margin-top:2px;" id="ls-profile-v-statustext">-</div>
+                            </div>
+                            <div style="padding: 0 20px; margin-top: 12px;">
+                                <div class="ls-tags-container" id="ls-profile-v-tags"></div>
+                            </div>
+                            <div style="padding: 0 20px; margin-top: 16px;">
+                                <div class="ls-profile-bio-box" id="ls-profile-v-bio" style="margin-top:0;">-</div>
+                            </div>
+                            <div style="padding: 0 20px; margin-top: 12px; display: none;" id="ls-profile-v-fav-container">
+                                <span style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">🍿 Favorito</span>
+                                <div style="color: var(--text-primary); font-size: 14px; font-weight: 500; margin-top: 4px;" id="ls-profile-v-fav">-</div>
+                            </div>
+                            <div class="ls-profile-grid" style="padding: 20px;">
+                                <div class="ls-profile-stat-box"><span class="ls-profile-stat-label">País</span><span class="ls-profile-stat-value" id="ls-profile-v-country">-</span></div>
+                                <div class="ls-profile-stat-box"><span class="ls-profile-stat-label">Chats</span><span class="ls-profile-stat-value" id="ls-profile-v-rooms">-</span></div>
+                                <div class="ls-profile-stat-box" style="grid-column: span 2;"><span class="ls-profile-stat-label">Membro desde</span><span class="ls-profile-stat-value" style="font-size:15px;" id="ls-profile-v-created">-</span></div>
                             </div>
                         </div>
-                        <div style="display: flex; gap: 10px;">
-                            <div style="flex:1;"><span class="ls-label">Capa do Perfil</span>
-                                <div style="display:flex; gap:8px;">
-                                    <input type="file" id="ls-profile-e-banner-file" accept="image/*" class="ls-input-file" style="padding: 8px; font-size:12px;" />
-                                    <button id="ls-profile-e-banner-clear" class="ls-btn-danger" style="width:auto; padding:8px; margin:0;" title="Remover Capa">🗑️</button>
+
+                        <div id="ls-profile-edit" class="ls-modal-content" style="display: none; padding: 20px; overflow-y: auto;">
+                            <div style="font-size: 18px; font-weight: bold; color: var(--text-primary); margin-bottom: 10px; text-align: center;">Editar Perfil</div>
+                            <div style="text-align:center; margin-bottom: 10px;"><div class="ls-profile-avatar-large" id="ls-profile-e-avatar" style="margin: 0 auto; color: var(--text-primary);"></div></div>
+                            <div style="display: flex; gap: 10px;">
+                                <div style="flex:1;"><span class="ls-label">Foto (Avatar)</span>
+                                    <div style="display:flex; gap:8px;">
+                                        <input type="file" id="ls-profile-e-avatar-file" accept="image/*" class="ls-input-file" style="padding: 8px; font-size:12px;" />
+                                        <button id="ls-profile-e-avatar-clear" class="ls-btn-danger" style="width:auto; padding:8px; margin:0;" title="Remover Foto">🗑️</button>
+                                    </div>
                                 </div>
                             </div>
+                            <div style="display: flex; gap: 10px;">
+                                <div style="flex:1;"><span class="ls-label">Capa (Fundo)</span>
+                                    <div style="display:flex; gap:8px;">
+                                        <input type="file" id="ls-profile-e-banner-file" accept="image/*" class="ls-input-file" style="padding: 8px; font-size:12px;" />
+                                        <button id="ls-profile-e-banner-clear" class="ls-btn-danger" style="width:auto; padding:8px; margin:0;" title="Remover Capa">🗑️</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <div style="flex:1;"><span class="ls-label">Cor Principal</span><input type="color" class="ls-input-color" id="ls-profile-e-color" /></div>
+                                <div style="flex:1;"><span class="ls-label">Cor do Texto</span><input type="color" class="ls-input-color" id="ls-profile-e-textcolor" /></div>
+                            </div>
+                            <div>
+                                <span class="ls-label">País</span>
+                                <select class="ls-select" id="ls-profile-e-country">
+                                    <option value="🌍">🌍 Global</option>
+                                    <option value="🇧🇷">🇧🇷 Brasil</option>
+                                    <option value="🇵🇹">🇵🇹 Portugal</option>
+                                    <option value="🇺🇸">🇺🇸 Estados Unidos</option>
+                                    <option value="🇪🇸">🇪🇸 Espanha</option>
+                                    <option value="🇦🇷">🇦🇷 Argentina</option>
+                                    <option value="🇲🇽">🇲🇽 México</option>
+                                    <option value="🇯🇵">🇯🇵 Japão</option>
+                                    <option value="🇫🇷">🇫🇷 França</option>
+                                    <option value="🇮🇹">🇮🇹 Itália</option>
+                                    <option value="🇩🇪">🇩🇪 Alemanha</option>
+                                    <option value="🇬🇧">🇬🇧 Reino Unido</option>
+                                </select>
+                            </div>
+                            <div><span class="ls-label">Filme/Série Favorita</span><input type="text" class="ls-input-text" id="ls-profile-e-fav" placeholder="O que você mais gosta?" maxlength="50" /></div>
+                            <div><span class="ls-label">Bio</span><textarea class="ls-textarea" id="ls-profile-e-bio" placeholder="Fale um pouco sobre você..." maxlength="200"></textarea></div>
+                            <label class="ls-checkbox-group" style="margin-top:5px;"><input type="checkbox" id="ls-profile-e-hiderooms"><span><b>Ocultar quantidade de chats ativos</b></span></label>
+                            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                                <button class="ls-btn-secondary" id="ls-btn-cancel-profile">Cancelar</button>
+                                <button class="ls-btn-primary" id="ls-btn-save-profile" style="margin-top:0;">Salvar Perfil</button>
+                            </div>
                         </div>
-                        <div style="display: flex; gap: 10px;">
-                            <div style="flex:1;"><span class="ls-label">Cor da Bolha</span><input type="color" class="ls-input-color" id="ls-profile-e-color" /></div>
-                            <div style="flex:1;"><span class="ls-label">Cor do Texto</span><input type="color" class="ls-input-color" id="ls-profile-e-textcolor" /></div>
-                        </div>
-                        <div><span class="ls-label">Bio (Fale sobre você)</span><textarea class="ls-textarea" id="ls-profile-e-bio" placeholder="O que você gosta de assistir?" maxlength="200"></textarea></div>
-                        <div><span class="ls-label">País de Residência</span><div style="display:flex; align-items:center; gap:10px;"><span id="ls-profile-e-country-disp" style="font-size: 24px;">🌍</span><button class="ls-btn-secondary" id="ls-btn-get-country" style="padding: 8px; font-size: 12px; margin-top:0;">Permitir e Buscar Bandeira</button></div></div>
-                        <label class="ls-checkbox-group" style="margin-top:10px;"><input type="checkbox" id="ls-profile-e-hiderooms"><span><b>Ocultar quantidade de chats ativos</b></span></label>
-                        <button class="ls-btn-primary" id="ls-btn-save-profile" style="margin-top: 10px;">Salvar Perfil</button>
                     </div>
                 </div>
 
-                <div id="ls-add-room-overlay" class="ls-modal-overlay">
-                    <div class="ls-modal-content">
+                <div id="ls-add-room-overlay" class="ls-modal-overlay" style="top: 0; height: 100%;">
+                    <div class="ls-modal-content" style="margin-top:54px;">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <span style="color: var(--text-primary); font-size: 18px; font-weight: 700;">Nova Conexão</span>
                             <button id="ls-close-add-modal" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px;">✕</button>
@@ -365,8 +393,8 @@
                     </div>
                 </div>
 
-                <div id="ls-settings-overlay" class="ls-modal-overlay">
-                    <div class="ls-modal-content">
+                <div id="ls-settings-overlay" class="ls-modal-overlay" style="top: 0; height: 100%;">
+                    <div class="ls-modal-content" style="margin-top:54px;">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <span style="color: var(--text-primary); font-size: 18px; font-weight: 700;">Aparência da Sala</span>
                             <button id="ls-close-settings-modal" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px;">✕</button>
@@ -386,8 +414,8 @@
                     </div>
                 </div>
 
-                <div id="ls-members-overlay" class="ls-modal-overlay">
-                    <div class="ls-modal-content" style="height: 100%;">
+                <div id="ls-members-overlay" class="ls-modal-overlay" style="top: 0; height: 100%;">
+                    <div class="ls-modal-content" style="margin-top:54px; height: 100%;">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <span style="color: var(--text-primary); font-size: 18px; font-weight: 700;">Membros da Sala</span>
                             <button id="ls-close-members-modal" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px;">✕</button>
@@ -488,6 +516,7 @@
         let myBanner = ls.getItem('ls_userbanner') || '';
         let myBio = ls.getItem('ls_userbio') || '';
         let myCountry = ls.getItem('ls_usercountry') || '🌍';
+        let myFav = ls.getItem('ls_userfav') || '';
         let myHideChats = ls.getItem('ls_hidechats') === 'true';
         let currentRoom = ls.getItem('ls_current_room'); 
         let currentRoomKey = ls.getItem('ls_room_key'); 
@@ -532,6 +561,15 @@
         let isFlooding = false;
         let floodResetTimer = null;
 
+        window.addEventListener('beforeunload', () => {
+            if (currentRoom && currentRoomKey) {
+                db.collection('rooms').doc(currentRoom).collection('messages').add({
+                    type: 'countdown', text: 'SYSTEM_WENT_AWAY', sender: myName, deviceId: myDeviceId, color: myColor, roomKey: currentRoomKey,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(), deleted: false
+                }).catch(()=>{});
+            }
+        });
+
         function checkFlood() {
             if (isFlooding) return true;
             floodCount++;
@@ -539,7 +577,7 @@
             if (floodCount > 20) {
                 isFlooding = true;
                 input.disabled = true;
-                input.placeholder = "Aguarde 5s (Anti-flood)...";
+                input.placeholder = "Você foi silenciado por 5seg digite mais devagar";
                 shadow.getElementById('ls-send-btn').style.pointerEvents = 'none';
                 shadow.getElementById('ls-send-btn').style.opacity = '0.5';
                 setTimeout(() => {
@@ -618,7 +656,7 @@
                 myColor = data.color || shadow.getElementById('ls-setup-color').value;
                 myTextColor = data.textColor || shadow.getElementById('ls-setup-textcolor').value;
                 myBio = data.bio || ''; myCountry = data.country || '🌍'; myHideChats = data.hideChats || false;
-                myAvatar = data.avatar || ''; myBanner = data.banner || '';
+                myAvatar = data.avatar || ''; myBanner = data.banner || ''; myFav = data.fav || '';
                 
                 const keepLogged = shadow.getElementById('ls-setup-keep').checked;
                 if (keepLogged) {
@@ -638,6 +676,7 @@
                 ls.setItem('ls_userbio', myBio); ls.setItem('ls_usercountry', myCountry);
                 ls.setItem('ls_hidechats', myHideChats);
                 ls.setItem('ls_useravatar', myAvatar); ls.setItem('ls_userbanner', myBanner);
+                ls.setItem('ls_userfav', myFav);
                 
                 await syncUserProfile(); checkScreenState();
             } catch (e) { alert("Erro ao conectar ao banco de dados."); }
@@ -799,9 +838,9 @@
             try {
                 const doc = await userRef.get();
                 if (!doc.exists) {
-                    await userRef.set({ username: myName, color: myColor, textColor: myTextColor, deviceId: myDeviceId, pin: myPin, bio: myBio, country: myCountry, hideChats: myHideChats, roomCount: savedRooms.length, avatar: myAvatar, banner: myBanner, tags: [], isBanned: false, banReason: "", createdAt: firebase.firestore.FieldValue.serverTimestamp(), lastSeen: firebase.firestore.FieldValue.serverTimestamp() });
+                    await userRef.set({ username: myName, color: myColor, textColor: myTextColor, deviceId: myDeviceId, pin: myPin, bio: myBio, country: myCountry, fav: myFav, hideChats: myHideChats, roomCount: savedRooms.length, avatar: myAvatar, banner: myBanner, tags: [], isBanned: false, banReason: "", createdAt: firebase.firestore.FieldValue.serverTimestamp(), lastSeen: firebase.firestore.FieldValue.serverTimestamp() });
                 } else {
-                    await userRef.set({ color: myColor, textColor: myTextColor, pin: myPin, bio: myBio, country: myCountry, hideChats: myHideChats, avatar: myAvatar, banner: myBanner, roomCount: savedRooms.length, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+                    await userRef.set({ color: myColor, textColor: myTextColor, pin: myPin, bio: myBio, country: myCountry, fav: myFav, hideChats: myHideChats, avatar: myAvatar, banner: myBanner, roomCount: savedRooms.length, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
                 }
 
                 if (userProfileUnsubscribe) userProfileUnsubscribe();
@@ -844,6 +883,7 @@
 
             shadow.getElementById('ls-profile-v-name').innerText = "Carregando..."; shadow.getElementById('ls-profile-v-country').innerText = "-"; shadow.getElementById('ls-profile-v-bio').innerText = "-"; shadow.getElementById('ls-profile-v-tags').innerHTML = ""; shadow.getElementById('ls-profile-v-created').innerText = "-"; shadow.getElementById('ls-profile-v-rooms').innerText = "-"; shadow.getElementById('ls-profile-v-statustext').innerText = "-";
             shadow.getElementById('ls-profile-v-banner').style.background = '#6366f1';
+            shadow.getElementById('ls-profile-v-fav-container').style.display = 'none';
             
             try {
                 const doc = await db.collection('users').doc(targetUsername).get();
@@ -854,13 +894,13 @@
                     
                     if (data.avatar) {
                         avatar.style.backgroundImage = `url(${data.avatar})`;
+                        avatar.style.backgroundColor = 'transparent';
                         avatar.innerText = '';
                     } else {
                         avatar.style.backgroundImage = 'none';
+                        avatar.style.backgroundColor = data.color || '#6366f1';
                         avatar.innerText = targetUsername.charAt(0).toUpperCase();
                     }
-                    
-                    avatar.style.background = data.avatar ? 'transparent' : (data.color || '#6366f1'); 
                     avatar.style.color = data.textColor || '#ffffff';
                     
                     if (data.banner) {
@@ -870,7 +910,15 @@
                     }
 
                     shadow.getElementById('ls-profile-v-country').innerText = data.country || '🌍';
-                    shadow.getElementById('ls-profile-v-bio').innerText = data.bio || 'Sem bio.';
+                    shadow.getElementById('ls-profile-v-bio').innerText = data.bio || 'Olá! Estou usando o LidySync.';
+                    
+                    const favContainer = shadow.getElementById('ls-profile-v-fav-container');
+                    if (data.fav) {
+                        favContainer.style.display = 'block';
+                        shadow.getElementById('ls-profile-v-fav').innerText = data.fav;
+                    } else {
+                        favContainer.style.display = 'none';
+                    }
                     
                     const tContainer = shadow.getElementById('ls-profile-v-tags');
                     if (data.tags && data.tags.length > 0) { tContainer.innerHTML = buildTagsHTML(currentRoomData && currentRoomData.createdBy === targetUsername, data); } 
@@ -887,12 +935,17 @@
             } catch(e) {}
         }
 
-        shadow.getElementById('ls-btn-open-my-profile').addEventListener('click', () => { lobbySettingsOverlay.style.display = 'none'; openProfile(myName); });
-        shadow.getElementById('ls-close-profile-modal').addEventListener('click', () => { profileOverlay.style.display = 'none'; });
+        shadow.getElementById('ls-btn-open-my-profile').addEventListener('click', () => { openProfile(myName); });
+        
+        shadow.getElementById('ls-close-profile-modal').addEventListener('click', () => { 
+            profileOverlay.style.display = 'none'; 
+            shadow.getElementById('ls-profile-edit').style.display = 'none';
+            shadow.getElementById('ls-profile-view').style.display = 'flex';
+        });
         
         shadow.getElementById('ls-btn-edit-profile').addEventListener('click', () => {
             shadow.getElementById('ls-profile-view').style.display = 'none'; shadow.getElementById('ls-profile-edit').style.display = 'flex'; shadow.getElementById('ls-btn-edit-profile').style.display = 'none';
-            shadow.getElementById('ls-profile-e-color').value = myColor; shadow.getElementById('ls-profile-e-textcolor').value = myTextColor; shadow.getElementById('ls-profile-e-bio').value = myBio; shadow.getElementById('ls-profile-e-country-disp').innerText = myCountry; shadow.getElementById('ls-profile-e-hiderooms').checked = myHideChats;
+            shadow.getElementById('ls-profile-e-color').value = myColor; shadow.getElementById('ls-profile-e-textcolor').value = myTextColor; shadow.getElementById('ls-profile-e-bio').value = myBio; shadow.getElementById('ls-profile-e-country').value = myCountry; shadow.getElementById('ls-profile-e-fav').value = myFav; shadow.getElementById('ls-profile-e-hiderooms').checked = myHideChats;
             
             tempAvatar = myAvatar;
             tempBanner = myBanner;
@@ -900,13 +953,20 @@
             const avatar = shadow.getElementById('ls-profile-e-avatar');
             if (tempAvatar) {
                 avatar.style.backgroundImage = `url(${tempAvatar})`;
+                avatar.style.backgroundColor = 'transparent';
                 avatar.innerText = '';
             } else {
                 avatar.style.backgroundImage = 'none';
-                avatar.style.background = myColor;
+                avatar.style.backgroundColor = myColor;
                 avatar.innerText = myName.charAt(0).toUpperCase();
             }
             avatar.style.color = myTextColor;
+        });
+        
+        shadow.getElementById('ls-btn-cancel-profile').addEventListener('click', () => {
+            shadow.getElementById('ls-profile-edit').style.display = 'none';
+            shadow.getElementById('ls-profile-view').style.display = 'flex';
+            shadow.getElementById('ls-btn-edit-profile').style.display = 'block';
         });
 
         shadow.getElementById('ls-profile-e-avatar-file').addEventListener('change', (e) => {
@@ -918,6 +978,7 @@
                         tempAvatar = compressed;
                         const av = shadow.getElementById('ls-profile-e-avatar');
                         av.style.backgroundImage = `url(${compressed})`;
+                        av.style.backgroundColor = 'transparent';
                         av.innerText = '';
                     });
                 };
@@ -930,7 +991,7 @@
             shadow.getElementById('ls-profile-e-avatar-file').value = '';
             const av = shadow.getElementById('ls-profile-e-avatar');
             av.style.backgroundImage = 'none';
-            av.style.background = shadow.getElementById('ls-profile-e-color').value;
+            av.style.backgroundColor = shadow.getElementById('ls-profile-e-color').value;
             av.innerText = myName.charAt(0).toUpperCase();
         });
 
@@ -953,7 +1014,7 @@
         });
 
         shadow.getElementById('ls-profile-e-color').addEventListener('input', (e) => { 
-            if(!tempAvatar) shadow.getElementById('ls-profile-e-avatar').style.background = e.target.value; 
+            if(!tempAvatar) shadow.getElementById('ls-profile-e-avatar').style.backgroundColor = e.target.value; 
         });
         shadow.getElementById('ls-profile-e-textcolor').addEventListener('input', (e) => { shadow.getElementById('ls-profile-e-avatar').style.color = e.target.value; });
 
@@ -993,9 +1054,11 @@
 
         shadow.getElementById('ls-btn-save-profile').addEventListener('click', async () => {
             myColor = shadow.getElementById('ls-profile-e-color').value; myTextColor = shadow.getElementById('ls-profile-e-textcolor').value; myBio = shadow.getElementById('ls-profile-e-bio').value.trim(); myHideChats = shadow.getElementById('ls-profile-e-hiderooms').checked;
+            myCountry = shadow.getElementById('ls-profile-e-country').value; myFav = shadow.getElementById('ls-profile-e-fav').value.trim();
             myAvatar = tempAvatar; myBanner = tempBanner;
             
             ls.setItem('ls_usercolor', myColor); ls.setItem('ls_usertextcolor', myTextColor); ls.setItem('ls_userbio', myBio); ls.setItem('ls_hidechats', myHideChats);
+            ls.setItem('ls_usercountry', myCountry); ls.setItem('ls_userfav', myFav);
             ls.setItem('ls_useravatar', myAvatar); ls.setItem('ls_userbanner', myBanner);
             
             await syncUserProfile(); openProfile(myName);
@@ -1010,6 +1073,7 @@
                 if (rData && rData.participants && rData.participants.length > 0) {
                     listEl.innerHTML = '';
                     const now = Date.now();
+                    const isAdmMode = (rData.createdBy === myName);
                     for (const p of rData.participants) {
                         if (!userCache[p]) { const uDoc = await db.collection('users').doc(p).get(); if(uDoc.exists) userCache[p] = uDoc.data(); }
                         const isAdm = (rData.createdBy === p); const uData = userCache[p] || {}; const isOnline = uData.lastSeen && (now - uData.lastSeen.toMillis() < 300000); 
@@ -1022,6 +1086,25 @@
                             <div class="ls-room-avatar" style="width:36px; height:36px; font-size:14px; position:relative; background:${bgStyle}; color:${uData.textColor || '#fff'}">${avText}<div class="ls-online-dot" style="display: ${isOnline ? 'block' : 'none'};"></div></div>
                             <div class="ls-room-info" style="display:flex; align-items:center;"><span class="ls-room-name">${p}</span><div class="ls-tags-container" id="ls-member-tags-lobby-${p.replace(/\s/g, '')}"></div></div>
                         `;
+                        
+                        if (isAdmMode && p !== myName) {
+                            const kickBtn = document.createElement('button');
+                            kickBtn.innerHTML = '❌';
+                            kickBtn.title = "Expulsar da sala";
+                            kickBtn.style.cssText = 'background:none; border:none; cursor:pointer; padding:4px 8px; font-size:12px; margin-left:auto; z-index:10;';
+                            kickBtn.addEventListener('click', async (e) => {
+                                e.stopPropagation();
+                                if(confirm(`Deseja realmente expulsar ${p} desta sala?`)) {
+                                    try {
+                                        await db.collection('rooms').doc(roomName).update({ participants: firebase.firestore.FieldValue.arrayRemove(p) });
+                                        sendSystemAction(`SYSTEM_KICKED:${p}`);
+                                        fetchAndRenderMembers(roomName, listEl);
+                                    } catch(err) {}
+                                }
+                            });
+                            item.appendChild(kickBtn);
+                        }
+
                         item.addEventListener('click', () => { openProfile(p); });
                         listEl.appendChild(item);
                         item.querySelector(`#ls-member-tags-lobby-${p.replace(/\s/g, '')}`).innerHTML = buildTagsHTML(isAdm, uData);
@@ -1049,6 +1132,7 @@
                             <button class="ls-dropdown-item" data-action="share" data-name="${room.name}" data-rawpass="${rawPass}">🔗 Compartilhar</button>
                             <button class="ls-dropdown-item" data-action="appearance" data-name="${room.name}">🎨 Aparência do Chat</button>
                             <div style="height:1px; background:var(--border-color); margin:4px 0;" id="ls-menu-delete-divider"></div>
+                            <button class="ls-dropdown-item danger" id="ls-menu-leave" style="display:none;">🚪 Sair da Sala</button>
                             <button class="ls-dropdown-item danger" id="ls-menu-delete">🗑️ Encerrar Sala</button>
                         </div>
                     </div>
@@ -1065,6 +1149,12 @@
                         else if (btn.dataset.action === 'share') { let passToShare = btn.dataset.rawpass; if (!passToShare) { passToShare = prompt("Qual a senha dessa sala para incluir no convite?") || "[Sua Senha]"; if (passToShare !== "[Sua Senha]") { room.rawPass = passToShare; ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); } } const link = `Vem assistir comigo no LidySync!\n🍿 Nome da Sala: ${btn.dataset.name}\n🔑 Senha: ${passToShare}\n\nCaso não tenha a extensão clique aqui para aprender a instalar: https://ofaceoff.github.io/LidySync/index.html`; navigator.clipboard.writeText(link); alert("Convite copiado!"); } 
                         else if (btn.dataset.action === 'appearance') { editingRoomAppearance = btn.dataset.name; settingsOverlay.style.display = 'flex'; db.collection('rooms').doc(btn.dataset.name).collection('settings').doc('shared').get().then(doc => { if(doc.exists) { try { const d = JSON.parse(doc.data().theme); shadow.getElementById('ls-config-bg-type').value = d.bgType || 'color'; shadow.getElementById('ls-config-bg-type').dispatchEvent(new Event('change')); shadow.getElementById('ls-config-bg-color').value = d.bgColor || '#0f172a'; shadow.getElementById('ls-config-bg-image').value = d.bgImage || ''; shadow.getElementById('ls-config-sync').checked = true; } catch(e){} } }); } 
                         else if(btn.dataset.action === 'remove') { savedRooms.splice(btn.dataset.index, 1); ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); await syncUserProfile(); renderSavedRooms(); startLobbyListeners(); }
+                        else if(btn.dataset.action === 'leave') {
+                            if(!confirm("Tem certeza que deseja sair definitivamente desta sala?")) return;
+                            try { await db.collection('rooms').doc(btn.dataset.name).collection('messages').add({ type: 'countdown', text: 'SYSTEM_LEFT_PERMANENTLY', sender: myName, deviceId: myDeviceId, color: myColor, roomKey: btn.dataset.name, timestamp: firebase.firestore.FieldValue.serverTimestamp(), deleted: false }); } catch(e){}
+                            try { await db.collection('rooms').doc(btn.dataset.name).update({ participants: firebase.firestore.FieldValue.arrayRemove(myName) }); } catch(e){}
+                            savedRooms.splice(btn.dataset.index, 1); ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); await syncUserProfile(); renderSavedRooms(); startLobbyListeners();
+                        }
                         else if(btn.dataset.action === 'delete') { 
                             if(!confirm("Encerrar e deletar a sala para todos?")) return; 
                             try { await db.collection('rooms').doc(btn.dataset.name).delete(); } catch(e){} 
@@ -1072,13 +1162,18 @@
                     });
                 });
                 
-                // Block delete button for non-admins visually in the lobby menu too
                 const delBtn = dropMenu.querySelector('#ls-menu-delete');
+                const leaveBtn = dropMenu.querySelector('#ls-menu-leave');
                 const delDiv = dropMenu.querySelector('#ls-menu-delete-divider');
                 db.collection('rooms').doc(room.name).get().then(doc => {
-                    if (doc.exists && doc.data().createdBy !== myName) {
-                        if (delBtn) delBtn.style.display = 'none';
-                        if (delDiv) delDiv.style.display = 'none';
+                    if (doc.exists) {
+                        if (doc.data().createdBy !== myName) {
+                            if (delBtn) delBtn.style.display = 'none';
+                            if (leaveBtn) leaveBtn.style.display = 'flex';
+                        } else {
+                            if (delBtn) delBtn.style.display = 'flex';
+                            if (leaveBtn) leaveBtn.style.display = 'none';
+                        }
                     }
                 }).catch(()=>{});
 
@@ -1096,7 +1191,15 @@
                             if (statusEl && !data.deleted) {
                                 let msgText = data.text;
                                 if (data.type === 'image') msgText = '📷 Imagem'; else if (data.type === 'gif') msgText = '🎞️ GIF'; else if (data.type === 'invite') msgText = '🔗 Convite'; else if (data.type === 'countdown') msgText = 'Ação do Sistema';
-                                if (data.text && data.text.startsWith('SYSTEM_')) { msgText = (myHideSys && (data.text === 'SYSTEM_JOIN' || data.text === 'SYSTEM_LEAVE')) ? 'Mensagem de Sistema' : 'Ação do Sistema'; }
+                                
+                                if (data.text === 'SYSTEM_CREATED') msgText = 'Criou a sala';
+                                else if (data.text === 'SYSTEM_FIRST_JOIN') msgText = 'Entrou na sala';
+                                else if (data.text === 'SYSTEM_LEFT_PERMANENTLY') msgText = 'Saiu da sala';
+                                else if (data.text.startsWith('SYSTEM_KICKED:')) msgText = 'Expulsou um membro';
+                                else if (data.text === 'SYSTEM_WENT_AWAY') msgText = 'Foi embora';
+                                else if (data.text === 'SYSTEM_PAUSE') msgText = 'Pausou a programação';
+                                else if (data.text && data.text.startsWith('SYSTEM_')) { msgText = (myHideSys && (data.text === 'SYSTEM_JOIN' || data.text === 'SYSTEM_LEAVE')) ? 'Mensagem de Sistema' : 'Ação do Sistema'; }
+                                
                                 statusEl.innerText = `${data.sender}: ${msgText}`;
                             } else if (statusEl && data.deleted) { statusEl.innerText = `${data.sender}: 🚫 Mensagem apagada`; }
 
@@ -1130,9 +1233,15 @@
                 const doc = await db.collection('rooms').doc(roomName).get();
                 if(!doc.exists) { alert("Esta sala foi encerrada pelo dono."); savedRooms = savedRooms.filter(r => r.name !== roomName); ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); await syncUserProfile(); renderSavedRooms(); startLobbyListeners(); return; }
                 if(doc.data().password !== savedHash) { alert("A senha desta sala foi alterada. Por favor, adicione-a novamente pelo botão +"); return; }
+                
+                const isNewMember = !doc.data().participants || !doc.data().participants.includes(myName);
+                
                 currentRoom = roomName; currentRoomKey = roomName; ls.setItem('ls_current_room', currentRoom); ls.setItem('ls_room_key', currentRoomKey);
-                db.collection('rooms').doc(currentRoom).set({ participants: firebase.firestore.FieldValue.arrayUnion(myName) }, { merge: true }).catch(()=>{});
-                sendSystemAction('SYSTEM_JOIN'); updateLastRead(currentRoom); checkScreenState();
+                await db.collection('rooms').doc(currentRoom).set({ participants: firebase.firestore.FieldValue.arrayUnion(myName) }, { merge: true }).catch(()=>{});
+                
+                if (isNewMember) sendSystemAction('SYSTEM_FIRST_JOIN');
+                
+                updateLastRead(currentRoom); checkScreenState();
             } catch(e) {}
         }
 
@@ -1160,7 +1269,7 @@
                 currentRoom = roomName; currentRoomKey = roomName;
                 ls.setItem('ls_current_room', currentRoom); ls.setItem('ls_room_key', currentRoomKey);
                 
-                sendSystemAction('SYSTEM_JOIN'); updateLastRead(currentRoom); inputRoom.value = ''; inputPass.value = ''; checkScreenState();
+                sendSystemAction('SYSTEM_CREATED'); updateLastRead(currentRoom); inputRoom.value = ''; inputPass.value = ''; checkScreenState();
             } catch (e) {}
         });
 
@@ -1174,13 +1283,18 @@
                 if(!doc.exists) return alert("Sala não encontrada.");
                 const hashedPass = await hashPassword(roomPass);
                 if(doc.data().password !== hashedPass) return alert("Senha incorreta!");
+                
+                const isNewMember = !doc.data().participants || !doc.data().participants.includes(myName);
+                
                 saveRoomToLocalList(roomName, hashedPass, roomPass);
                 currentRoom = roomName; currentRoomKey = roomName;
                 ls.setItem('ls_current_room', currentRoom); ls.setItem('ls_room_key', currentRoomKey);
                 
-                db.collection('rooms').doc(currentRoom).set({ participants: firebase.firestore.FieldValue.arrayUnion(myName) }, { merge: true }).catch(()=>{});
+                await db.collection('rooms').doc(currentRoom).set({ participants: firebase.firestore.FieldValue.arrayUnion(myName) }, { merge: true }).catch(()=>{});
                 
-                sendSystemAction('SYSTEM_JOIN'); updateLastRead(currentRoom); inputRoom.value = ''; inputPass.value = ''; checkScreenState();
+                if (isNewMember) sendSystemAction('SYSTEM_FIRST_JOIN');
+                
+                updateLastRead(currentRoom); inputRoom.value = ''; inputPass.value = ''; checkScreenState();
             } catch (e) {}
         });
 
@@ -1208,9 +1322,29 @@
         shadow.getElementById('ls-menu-members').addEventListener('click', () => { chatDropdown.classList.remove('show'); membersOverlay.style.display = 'flex'; fetchAndRenderMembers(currentRoom, shadow.getElementById('ls-members-list')); });
         shadow.getElementById('ls-close-members-modal').addEventListener('click', () => { membersOverlay.style.display = 'none'; });
 
-        backBtn.addEventListener('click', () => { 
-            if (isTyping && currentRoom) { clearTimeout(typingTimeout); isTyping = false; db.collection('rooms').doc(currentRoom).update({ typing: firebase.firestore.FieldValue.arrayRemove(myName) }).catch(()=>{}); }
-            sendSystemAction('SYSTEM_LEAVE'); stopChatListeners(); currentRoom = null; currentRoomKey = null; currentRoomData = null; ls.removeItem('ls_current_room'); ls.removeItem('ls_room_key'); checkScreenState(); 
+        shadow.getElementById('ls-menu-leave').addEventListener('click', async () => {
+            chatDropdown.classList.remove('show');
+            if(!confirm("Tem certeza que deseja sair definitivamente desta sala?")) return;
+            sendSystemAction('SYSTEM_LEFT_PERMANENTLY');
+            try { await db.collection('rooms').doc(currentRoom).update({ participants: firebase.firestore.FieldValue.arrayRemove(myName) }); } catch(e){}
+            savedRooms = savedRooms.filter(r => r.name !== currentRoom);
+            ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms));
+            if (isTyping && currentRoom) { clearTimeout(typingTimeout); isTyping = false; }
+            stopChatListeners(); currentRoom = null; currentRoomKey = null; currentRoomData = null; ls.removeItem('ls_current_room'); ls.removeItem('ls_room_key'); checkScreenState();
+        });
+
+        shadow.getElementById('ls-minimize-btn').addEventListener('click', () => {
+            if (myIntegratedMode) { alert("O Chat está no Modo Teatro. Desative essa opção no menu ou nas configurações para minimizar a janela."); return; }
+            chatWindow.classList.remove('open');
+            if (myHideApp) fab.style.display = 'none'; else fab.style.display = 'flex';
+            if (currentRoom) updateLastRead(currentRoom);
+        });
+
+        shadow.getElementById('ls-close-btn').addEventListener('click', () => { 
+            if (myIntegratedMode) { alert("O Chat está no Modo Teatro. Desative essa opção no menu ou nas configurações para fechar o app."); return; }
+            chatWindow.classList.remove('open'); 
+            fab.style.display = 'none';
+            if (currentRoom) updateLastRead(currentRoom);
         });
         
         shadow.getElementById('ls-menu-delete').addEventListener('click', async () => { 
@@ -1232,21 +1366,31 @@
                 } else {
                     currentRoomData = doc.data();
                     
+                    if (currentRoomData.participants && !currentRoomData.participants.includes(myName)) {
+                        alert("Você não faz mais parte desta sala (Saiu ou foi expulso).");
+                        stopChatListeners(); currentRoom = null; currentRoomKey = null; currentRoomData = null; ls.removeItem('ls_current_room'); ls.removeItem('ls_room_key'); 
+                        savedRooms = savedRooms.filter(r => r.name !== doc.id); ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); checkScreenState();
+                        return;
+                    }
+
                     const deleteBtn = shadow.getElementById('ls-menu-delete');
+                    const leaveBtn = shadow.getElementById('ls-menu-leave');
                     const deleteDiv = shadow.getElementById('ls-menu-delete-divider');
                     if (currentRoomData.createdBy === myName) {
                         if (deleteBtn) deleteBtn.style.display = 'flex';
+                        if (leaveBtn) leaveBtn.style.display = 'none';
                         if (deleteDiv) deleteDiv.style.display = 'block';
                     } else {
                         if (deleteBtn) deleteBtn.style.display = 'none';
-                        if (deleteDiv) deleteDiv.style.display = 'none';
+                        if (leaveBtn) leaveBtn.style.display = 'flex';
+                        if (deleteDiv) deleteDiv.style.display = 'block';
                     }
 
                     if (currentRoomData.participants) { currentRoomData.participants.forEach(p => { if (!userCache[p]) { db.collection('users').doc(p).get().then(u => { if (u.exists) userCache[p] = u.data(); }); } }); }
                     
                     const typingEl = shadow.getElementById('ls-typing-indicator');
                     if (currentRoomData.typing && Array.isArray(currentRoomData.typing) && typingEl) {
-                        const typers = currentRoomData.typing.filter(u => u !== myName);
+                        const typers = currentRoomData.typing;
                         if (typers.length === 1) {
                             typingEl.innerText = `${typers[0]} está digitando...`;
                             typingEl.style.display = 'block';
@@ -1287,7 +1431,28 @@
                     if (data.type === 'countdown') {
                         if (data.deleted) return; 
                         lastSender = null; lastMsgType = 'system'; lastTimestamp = msgTimeMs;
-                        if (data.text === 'SYSTEM_JOIN') {
+                        
+                        if (data.text === 'SYSTEM_CREATED') {
+                            if (myHideSys) return;
+                            container.className = 'ls-message-container system-msg-container';
+                            container.innerHTML = `<div class="ls-message system-msg" style="background:transparent!important; box-shadow:none; border:none; padding:4px;">✨ <b>${data.sender}</b> criou a sala <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
+                        } else if (data.text === 'SYSTEM_FIRST_JOIN') {
+                            if (myHideSys) return;
+                            container.className = 'ls-message-container system-msg-container';
+                            container.innerHTML = `<div class="ls-message system-msg" style="background:transparent!important; box-shadow:none; border:none; padding:4px;">👋 <b>${data.sender}</b> agora faz parte dessa sala <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
+                        } else if (data.text === 'SYSTEM_LEFT_PERMANENTLY') {
+                            if (myHideSys) return;
+                            container.className = 'ls-message-container system-msg-container';
+                            container.innerHTML = `<div class="ls-message system-msg" style="background:transparent!important; box-shadow:none; border:none; padding:4px; opacity:0.6;">🚪 <b>${data.sender}</b> não faz mais parte dessa sala <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
+                        } else if (data.text.startsWith('SYSTEM_KICKED:')) {
+                            const targetUser = data.text.split(':')[1];
+                            container.className = 'ls-message-container system-msg-container';
+                            container.innerHTML = `<div class="ls-message system-msg" style="background:rgba(239,68,68,0.1)!important; color:#ef4444; border:1px solid rgba(239,68,68,0.2); padding:6px 12px;">🚫 <b>${targetUser}</b> foi expulso da sala e não faz mais parte dela <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
+                        } else if (data.text === 'SYSTEM_WENT_AWAY') {
+                            if (myHideSys) return;
+                            container.className = 'ls-message-container system-msg-container';
+                            container.innerHTML = `<div class="ls-message system-msg" style="background:transparent!important; box-shadow:none; border:none; padding:4px; opacity:0.6;">🚶 <b>${data.sender}</b> foi embora <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
+                        } else if (data.text === 'SYSTEM_JOIN') {
                             if (myHideSys) return; 
                             container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg" style="background:transparent!important; box-shadow:none; border:none; padding:4px;">👋 <b>${data.sender}</b> entrou na sala <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
