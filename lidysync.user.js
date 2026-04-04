@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      60.0
+// @version      61.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -165,10 +165,9 @@
             .ls-tag-vip { background: linear-gradient(135deg, #fde047, #eab308); color: #000000; border: 1px solid #ca8a04; font-weight: 900; }
             .ls-tag-verified { background-color: #1da1f2 !important; color: #ffffff !important; border-radius: 50% !important; width: 14px !important; height: 14px !important; display: inline-flex !important; justify-content: center; align-items: center; padding: 0 !important; font-size: 9px !important; border: 1px solid #ffffff; box-shadow: 0 0 4px rgba(29, 161, 242, 0.6); }
             #ls-fab-add { position: absolute; bottom: 20px; right: 20px; width: 50px; height: 50px; background: var(--fab-bg); color: var(--fab-color); border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: var(--fab-shadow); font-size: 24px; transition: 0.2s; z-index: 20; border: none; backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); } #ls-fab-add:hover { transform: scale(1.1); }
-            
-            /* Correção Fundamental: Overlays agora sempre respeitam o header */
-            .ls-modal-overlay { position: absolute; top: 54px; left: 0; width: 100%; height: calc(100% - 54px); background-color: var(--bg-modal); z-index: 30; display: none; flex-direction: column; overflow-y: auto; overflow-x: hidden; }
-            
+            .ls-modal-overlay { position: absolute; top: 54px; left: 0; width: 100%; height: calc(100% - 54px); background-color: var(--bg-modal); z-index: 30; display: none; flex-direction: column; overflow-y: auto; }
+            .ls-modal-overlay-card { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 70; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+            .ls-profile-card { background: var(--bg-surface); width: 90%; max-width: 360px; border-radius: 16px; border: 1px solid var(--border-color); overflow: hidden; display: flex; flex-direction: column; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.5); max-height: 90vh; }
             .ls-modal-content { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
             .ls-label { color: var(--text-muted); font-size: 12px; font-weight: 600; margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
             .ls-input-wrapper { position: relative; width: 100%; display: flex; align-items: center; } .ls-input-text, .ls-select, .ls-textarea, .ls-input-file { background-color: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; color: var(--text-primary); outline: none; font-size: 14px; width: 100%; transition: all 0.2s; } .ls-input-text:focus, .ls-select:focus, .ls-textarea:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15); } .ls-textarea { resize: vertical; min-height: 80px; } .ls-pass-toggle { position: absolute; right: 12px; background: none; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; padding: 4px; border-radius: 4px; } .ls-pass-toggle:hover { color: var(--text-primary); background: rgba(128,128,128,0.1); }
@@ -179,7 +178,7 @@
             
             .ls-profile-banner { height: 120px; background: #6366f1; position: relative; background-size: cover !important; background-position: center !important; border-bottom: 1px solid var(--border-color); width: 100%; flex-shrink: 0; }
             .ls-profile-avatar-large { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.3); flex-shrink: 0; position: relative; border: 4px solid var(--bg-modal); background: var(--bg-surface); background-size: cover !important; background-position: center !important; }
-            .ls-profile-status-indicator { position: absolute; bottom: 2px; right: 2px; width: 16px; height: 16px; border-radius: 50%; border: 3px solid var(--bg-modal); }
+            .ls-profile-status-indicator { position: absolute; bottom: 2px; right: 2px; width: 16px; height: 16px; border-radius: 50%; border: 3px solid var(--bg-surface); }
             .ls-profile-bio-box { background: rgba(128,128,128,0.05); padding: 12px 16px; border-radius: 10px; border-left: 3px solid var(--border-color); margin-top: 12px; font-size: 13.5px; line-height: 1.5; color: var(--text-primary); }
             .ls-profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
             .ls-profile-stat-box { background: rgba(128,128,128,0.05); border: 1px solid var(--border-color); padding: 12px; border-radius: 10px; text-align: center; }
@@ -279,8 +278,8 @@
                     <button id="ls-fab-add" title="Nova Sala">+</button>
                 </div>
 
-                <div id="ls-lobby-settings-overlay" class="ls-modal-overlay">
-                    <div class="ls-modal-content">
+                <div id="ls-lobby-settings-overlay" class="ls-modal-overlay" style="top: 0; height: 100%;">
+                    <div class="ls-modal-content" style="margin-top:54px;">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <span style="color: var(--text-primary); font-size: 20px; font-weight: 700;">Configurações</span>
                             <button id="ls-close-lobby-modal" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px;">✕</button>
@@ -306,88 +305,90 @@
                     </div>
                 </div>
 
-                <div id="ls-profile-overlay" class="ls-modal-overlay">
-                    <div id="ls-profile-view" style="display: flex; flex-direction: column; width: 100%; padding-bottom: 20px;">
-                        <div class="ls-profile-banner" id="ls-profile-v-banner">
-                            <button id="ls-close-profile-modal" style="position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); transition: 0.2s;">✕</button>
+                <div id="ls-profile-overlay" class="ls-modal-overlay-card">
+                    <div class="ls-profile-card">
+                        <button id="ls-close-profile-modal">✕</button>
+                        
+                        <div id="ls-profile-view" style="display: flex; flex-direction: column; width: 100%; overflow-y: auto;">
+                            <div class="ls-profile-banner" id="ls-profile-v-banner"></div>
+                            <div style="display: flex; justify-content: space-between; align-items: flex-end; padding: 0 20px; margin-top: -40px;">
+                                <div class="ls-profile-avatar-large" id="ls-profile-v-avatar"><div class="ls-profile-status-indicator" id="ls-profile-v-status"></div></div>
+                                <button id="ls-btn-edit-profile" class="ls-btn-secondary" style="width: auto; padding: 6px 16px; font-size: 12px; margin-bottom: 5px; border-radius: 20px; z-index: 5;">Editar Perfil</button>
+                            </div>
+                            <div style="padding: 12px 20px 0;">
+                                <div style="font-size:22px; font-weight:800; color:var(--text-primary); display: flex; align-items: center; gap: 8px;" id="ls-profile-v-name">-</div>
+                                <div style="font-size:13px; color:var(--text-muted); margin-top:2px;" id="ls-profile-v-statustext">-</div>
+                            </div>
+                            <div style="padding: 0 20px; margin-top: 12px;">
+                                <div class="ls-tags-container" id="ls-profile-v-tags"></div>
+                            </div>
+                            <div style="padding: 0 20px; margin-top: 16px;">
+                                <div class="ls-profile-bio-box" id="ls-profile-v-bio" style="margin-top:0;">-</div>
+                            </div>
+                            <div style="padding: 0 20px; margin-top: 12px; display: none;" id="ls-profile-v-fav-container">
+                                <span style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">🍿 Favorito</span>
+                                <div style="color: var(--text-primary); font-size: 14px; font-weight: 500; margin-top: 4px;" id="ls-profile-v-fav">-</div>
+                            </div>
+                            <div class="ls-profile-grid" style="padding: 20px;">
+                                <div class="ls-profile-stat-box"><span class="ls-profile-stat-label">País</span><span class="ls-profile-stat-value" id="ls-profile-v-country">-</span></div>
+                                <div class="ls-profile-stat-box"><span class="ls-profile-stat-label">Chats</span><span class="ls-profile-stat-value" id="ls-profile-v-rooms">-</span></div>
+                                <div class="ls-profile-stat-box" style="grid-column: span 2;"><span class="ls-profile-stat-label">Membro desde</span><span class="ls-profile-stat-value" style="font-size:15px;" id="ls-profile-v-created">-</span></div>
+                            </div>
                         </div>
-                        <div style="display: flex; justify-content: space-between; align-items: flex-end; padding: 0 20px; margin-top: -40px;">
-                            <div class="ls-profile-avatar-large" id="ls-profile-v-avatar"><div class="ls-profile-status-indicator" id="ls-profile-v-status"></div></div>
-                            <button id="ls-btn-edit-profile" class="ls-btn-secondary" style="width: auto; padding: 6px 16px; font-size: 12px; margin-bottom: 4px; border-radius: 20px;">Editar Perfil</button>
-                        </div>
-                        <div style="padding: 12px 20px 0;">
-                            <div style="font-size:22px; font-weight:800; color:var(--text-primary); display: flex; align-items: center; gap: 8px;" id="ls-profile-v-name">-</div>
-                            <div style="font-size:13px; color:var(--text-muted); margin-top:2px;" id="ls-profile-v-statustext">-</div>
-                        </div>
-                        <div style="padding: 0 20px; margin-top: 12px;">
-                            <div class="ls-tags-container" id="ls-profile-v-tags"></div>
-                        </div>
-                        <div style="padding: 0 20px; margin-top: 16px;">
-                            <div class="ls-profile-bio-box" id="ls-profile-v-bio" style="margin-top:0;">-</div>
-                        </div>
-                        <div style="padding: 0 20px; margin-top: 12px; display: none;" id="ls-profile-v-fav-container">
-                            <span style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">🍿 Favorito</span>
-                            <div style="color: var(--text-primary); font-size: 14px; font-weight: 500; margin-top: 4px;" id="ls-profile-v-fav">-</div>
-                        </div>
-                        <div class="ls-profile-grid" style="padding: 20px;">
-                            <div class="ls-profile-stat-box"><span class="ls-profile-stat-label">País</span><span class="ls-profile-stat-value" id="ls-profile-v-country">-</span></div>
-                            <div class="ls-profile-stat-box"><span class="ls-profile-stat-label">Chats</span><span class="ls-profile-stat-value" id="ls-profile-v-rooms">-</span></div>
-                            <div class="ls-profile-stat-box" style="grid-column: span 2;"><span class="ls-profile-stat-label">Membro desde</span><span class="ls-profile-stat-value" style="font-size:15px;" id="ls-profile-v-created">-</span></div>
-                        </div>
-                    </div>
 
-                    <div id="ls-profile-edit" class="ls-modal-content" style="display: none; padding: 20px;">
-                        <div style="font-size: 18px; font-weight: bold; color: var(--text-primary); margin-bottom: 10px; text-align: center;">Editar Perfil</div>
-                        <div style="text-align:center; margin-bottom: 10px;"><div class="ls-profile-avatar-large" id="ls-profile-e-avatar" style="margin: 0 auto; color: var(--text-primary);"></div></div>
-                        <div style="display: flex; gap: 10px;">
-                            <div style="flex:1;"><span class="ls-label">Foto (Avatar)</span>
-                                <div style="display:flex; gap:8px;">
-                                    <input type="file" id="ls-profile-e-avatar-file" accept="image/*" class="ls-input-file" style="padding: 8px; font-size:12px;" />
-                                    <button id="ls-profile-e-avatar-clear" class="ls-btn-danger" style="width:auto; padding:8px; margin:0;" title="Remover Foto">🗑️</button>
+                        <div id="ls-profile-edit" class="ls-modal-content" style="display: none; padding: 20px; overflow-y: auto;">
+                            <div style="font-size: 18px; font-weight: bold; color: var(--text-primary); margin-bottom: 10px; text-align: center;">Editar Perfil</div>
+                            <div style="text-align:center; margin-bottom: 10px;"><div class="ls-profile-avatar-large" id="ls-profile-e-avatar" style="margin: 0 auto; color: var(--text-primary);"></div></div>
+                            <div style="display: flex; gap: 10px;">
+                                <div style="flex:1;"><span class="ls-label">Foto (Avatar)</span>
+                                    <div style="display:flex; gap:8px;">
+                                        <input type="file" id="ls-profile-e-avatar-file" accept="image/*" class="ls-input-file" style="padding: 8px; font-size:12px;" />
+                                        <button id="ls-profile-e-avatar-clear" class="ls-btn-danger" style="width:auto; padding:8px; margin:0;" title="Remover Foto">🗑️</button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <div style="display: flex; gap: 10px;">
-                            <div style="flex:1;"><span class="ls-label">Capa (Fundo)</span>
-                                <div style="display:flex; gap:8px;">
-                                    <input type="file" id="ls-profile-e-banner-file" accept="image/*" class="ls-input-file" style="padding: 8px; font-size:12px;" />
-                                    <button id="ls-profile-e-banner-clear" class="ls-btn-danger" style="width:auto; padding:8px; margin:0;" title="Remover Capa">🗑️</button>
+                            <div style="display: flex; gap: 10px;">
+                                <div style="flex:1;"><span class="ls-label">Capa (Fundo)</span>
+                                    <div style="display:flex; gap:8px;">
+                                        <input type="file" id="ls-profile-e-banner-file" accept="image/*" class="ls-input-file" style="padding: 8px; font-size:12px;" />
+                                        <button id="ls-profile-e-banner-clear" class="ls-btn-danger" style="width:auto; padding:8px; margin:0;" title="Remover Capa">🗑️</button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <div style="display: flex; gap: 10px;">
-                            <div style="flex:1;"><span class="ls-label">Cor Principal</span><input type="color" class="ls-input-color" id="ls-profile-e-color" /></div>
-                            <div style="flex:1;"><span class="ls-label">Cor do Texto</span><input type="color" class="ls-input-color" id="ls-profile-e-textcolor" /></div>
-                        </div>
-                        <div>
-                            <span class="ls-label">País</span>
-                            <select class="ls-select" id="ls-profile-e-country">
-                                <option value="🌍">🌍 Global</option>
-                                <option value="🇧🇷">🇧🇷 Brasil</option>
-                                <option value="🇵🇹">🇵🇹 Portugal</option>
-                                <option value="🇺🇸">🇺🇸 Estados Unidos</option>
-                                <option value="🇪🇸">🇪🇸 Espanha</option>
-                                <option value="🇦🇷">🇦🇷 Argentina</option>
-                                <option value="🇲🇽">🇲🇽 México</option>
-                                <option value="🇯🇵">🇯🇵 Japão</option>
-                                <option value="🇫🇷">🇫🇷 França</option>
-                                <option value="🇮🇹">🇮🇹 Itália</option>
-                                <option value="🇩🇪">🇩🇪 Alemanha</option>
-                                <option value="🇬🇧">🇬🇧 Reino Unido</option>
-                            </select>
-                        </div>
-                        <div><span class="ls-label">Filme/Série Favorita</span><input type="text" class="ls-input-text" id="ls-profile-e-fav" placeholder="O que você mais gosta?" maxlength="50" /></div>
-                        <div><span class="ls-label">Bio</span><textarea class="ls-textarea" id="ls-profile-e-bio" placeholder="Fale um pouco sobre você..." maxlength="200"></textarea></div>
-                        <label class="ls-checkbox-group" style="margin-top:5px;"><input type="checkbox" id="ls-profile-e-hiderooms"><span><b>Ocultar quantidade de chats ativos</b></span></label>
-                        <div style="display: flex; gap: 10px; margin-top: 10px;">
-                            <button class="ls-btn-secondary" id="ls-btn-cancel-profile">Cancelar</button>
-                            <button class="ls-btn-primary" id="ls-btn-save-profile" style="margin-top:0;">Salvar Perfil</button>
+                            <div style="display: flex; gap: 10px;">
+                                <div style="flex:1;"><span class="ls-label">Cor Principal</span><input type="color" class="ls-input-color" id="ls-profile-e-color" /></div>
+                                <div style="flex:1;"><span class="ls-label">Cor do Texto</span><input type="color" class="ls-input-color" id="ls-profile-e-textcolor" /></div>
+                            </div>
+                            <div>
+                                <span class="ls-label">País</span>
+                                <select class="ls-select" id="ls-profile-e-country">
+                                    <option value="🌍">🌍 Global</option>
+                                    <option value="🇧🇷">🇧🇷 Brasil</option>
+                                    <option value="🇵🇹">🇵🇹 Portugal</option>
+                                    <option value="🇺🇸">🇺🇸 Estados Unidos</option>
+                                    <option value="🇪🇸">🇪🇸 Espanha</option>
+                                    <option value="🇦🇷">🇦🇷 Argentina</option>
+                                    <option value="🇲🇽">🇲🇽 México</option>
+                                    <option value="🇯🇵">🇯🇵 Japão</option>
+                                    <option value="🇫🇷">🇫🇷 França</option>
+                                    <option value="🇮🇹">🇮🇹 Itália</option>
+                                    <option value="🇩🇪">🇩🇪 Alemanha</option>
+                                    <option value="🇬🇧">🇬🇧 Reino Unido</option>
+                                </select>
+                            </div>
+                            <div><span class="ls-label">Filme/Série Favorita</span><input type="text" class="ls-input-text" id="ls-profile-e-fav" placeholder="O que você mais gosta?" maxlength="50" /></div>
+                            <div><span class="ls-label">Bio</span><textarea class="ls-textarea" id="ls-profile-e-bio" placeholder="Fale um pouco sobre você..." maxlength="200"></textarea></div>
+                            <label class="ls-checkbox-group" style="margin-top:5px;"><input type="checkbox" id="ls-profile-e-hiderooms"><span><b>Ocultar quantidade de chats ativos</b></span></label>
+                            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                                <button class="ls-btn-secondary" id="ls-btn-cancel-profile">Cancelar</button>
+                                <button class="ls-btn-primary" id="ls-btn-save-profile" style="margin-top:0;">Salvar Perfil</button>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div id="ls-add-room-overlay" class="ls-modal-overlay">
-                    <div class="ls-modal-content">
+                <div id="ls-add-room-overlay" class="ls-modal-overlay" style="top: 0; height: 100%;">
+                    <div class="ls-modal-content" style="margin-top:54px;">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <span style="color: var(--text-primary); font-size: 18px; font-weight: 700;">Nova Conexão</span>
                             <button id="ls-close-add-modal" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px;">✕</button>
@@ -401,8 +402,8 @@
                     </div>
                 </div>
 
-                <div id="ls-settings-overlay" class="ls-modal-overlay">
-                    <div class="ls-modal-content">
+                <div id="ls-settings-overlay" class="ls-modal-overlay" style="top: 0; height: 100%;">
+                    <div class="ls-modal-content" style="margin-top:54px;">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <span style="color: var(--text-primary); font-size: 18px; font-weight: 700;">Aparência da Sala</span>
                             <button id="ls-close-settings-modal" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px;">✕</button>
@@ -422,8 +423,8 @@
                     </div>
                 </div>
 
-                <div id="ls-members-overlay" class="ls-modal-overlay">
-                    <div class="ls-modal-content" style="height: 100%;">
+                <div id="ls-members-overlay" class="ls-modal-overlay" style="top: 0; height: 100%;">
+                    <div class="ls-modal-content" style="margin-top:54px; height: 100%;">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <span style="color: var(--text-primary); font-size: 18px; font-weight: 700;">Membros da Sala</span>
                             <button id="ls-close-members-modal" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px;">✕</button>
@@ -579,6 +580,7 @@
         let floodResetTimer = null;
         
         let lastDocumentTitle = document.title;
+        let lastPingTime = 0;
 
         window.addEventListener('beforeunload', () => {
             if (currentRoom && currentRoomKey) {
@@ -592,9 +594,19 @@
         function checkFlood() {
             if (isFlooding) return true;
             floodCount++;
-            clearTimeout(floodResetTimer);
+            
+            if (!floodResetTimer) {
+                floodResetTimer = setTimeout(() => {
+                    floodCount = 0;
+                    floodResetTimer = null;
+                }, 10000); 
+            }
+            
             if (floodCount > 20) {
                 isFlooding = true;
+                clearTimeout(floodResetTimer);
+                floodResetTimer = null;
+                
                 input.disabled = true;
                 input.placeholder = "Você foi silenciado por 5seg digite mais devagar";
                 shadow.getElementById('ls-send-btn').style.pointerEvents = 'none';
@@ -610,9 +622,6 @@
                 }, 5000);
                 return true;
             }
-            floodResetTimer = setTimeout(() => {
-                floodCount = 0;
-            }, 8000);
             return false;
         }
 
@@ -1398,7 +1407,7 @@
                     
                     const typingEl = shadow.getElementById('ls-typing-indicator');
                     if (currentRoomData.typing && Array.isArray(currentRoomData.typing) && typingEl) {
-                        const typers = currentRoomData.typing.filter(u => u !== myName);
+                        const typers = currentRoomData.typing;
                         if (typers.length === 1) {
                             typingEl.innerText = `${typers[0]} está digitando...`;
                             typingEl.style.display = 'block';
@@ -1777,9 +1786,6 @@
                 const myUserDoc = await db.collection('users').doc(myName).get();
                 const myTags = myUserDoc.exists ? (myUserDoc.data().tags || []) : [];
                 const isOwnerOrDev = myTags.includes('OWNER') || myTags.includes('DEV');
-                const isMod = myTags.includes('MOD') || isOwnerOrDev;
-                const isRoomAdm = currentRoomData && currentRoomData.createdBy === myName;
-                const canModerateRoom = isMod || isRoomAdm;
 
                 if (cmd === '/timestamp') {
                     const roomInfo = await db.collection('rooms').doc(currentRoom).get();
@@ -1792,15 +1798,6 @@
                         messagesContainer.appendChild(container);
                         scrollToBottom();
                     }
-                    return;
-                }
-
-                if (cmd === '/cleanchat' && canModerateRoom) {
-                    if(!confirm("Deseja realmente apagar TODAS as mensagens deste chat?")) return;
-                    const msgs = await db.collection('rooms').doc(currentRoom).collection('messages').get();
-                    msgs.forEach(doc => {
-                        db.collection('rooms').doc(currentRoom).collection('messages').doc(doc.id).update({ deleted: true }).catch(()=>{});
-                    });
                     return;
                 }
 
@@ -1904,12 +1901,22 @@
         checkScreenState();
         
         let lastDocumentTitle = document.title;
+        let lastPingTime = 0;
         setInterval(() => {
-            if (myName && document.title !== lastDocumentTitle) {
+            if (!myName) return;
+            const now = Date.now();
+            const titleChanged = document.title !== lastDocumentTitle;
+            const needsPing = now - lastPingTime > 120000; 
+
+            if ((titleChanged || needsPing) && document.visibilityState === 'visible') {
                 lastDocumentTitle = document.title;
-                db.collection('users').doc(myName).update({ watching: lastDocumentTitle, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }).catch(()=>{});
+                lastPingTime = now;
+                db.collection('users').doc(myName).update({ 
+                    watching: lastDocumentTitle, 
+                    lastSeen: firebase.firestore.FieldValue.serverTimestamp() 
+                }).catch(()=>{});
             }
-        }, 2000);
+        }, 5000);
     }
 
     const interval = setInterval(() => { if (document.body) injectUI(); }, 1000);
