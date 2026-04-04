@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      22.2
+// @version      23.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -37,7 +37,9 @@
             gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
             osc.start();
             osc.stop(ctx.currentTime + 0.1);
-        } catch (e) {}
+        } catch (e) {
+            console.warn("LidySync: Som bloqueado pelo navegador. Interaja com a página para permitir áudio.");
+        }
     }
 
     function escapeHTML(str) {
@@ -558,6 +560,7 @@
         let roomListener = null;
         let messagesListener = null;
         let settingsListener = null;
+        let userProfileUnsubscribe = null;
         let isFirstSnapshot = true;
         let localStream = null;
         let lobbyUnsubscribes = [];
@@ -654,18 +657,56 @@
             } catch(e){}
         }
 
+        async function syncUserProfile() {
+            if (!myName) return;
+            const userRef = db.collection('users').doc(myName);
+            try {
+                const doc = await userRef.get();
+                if (!doc.exists) {
+                    await userRef.set({
+                        username: myName,
+                        color: myColor,
+                        deviceId: myDeviceId,
+                        tags: [],
+                        isBanned: false,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                } else {
+                    await userRef.set({
+                        color: myColor,
+                        lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                }
+
+                if (userProfileUnsubscribe) userProfileUnsubscribe();
+                userProfileUnsubscribe = userRef.onSnapshot(snap => {
+                    if(snap.exists) {
+                        const data = snap.data();
+                        if(data.isBanned) {
+                            alert("⚠️ Acesso Negado: Você foi banido pelo administrador.");
+                            localStorage.clear();
+                            location.reload();
+                        }
+                        if(data.username && data.username !== myName) {
+                            alert(`⚠️ Moderação: Seu nome foi alterado pelo administrador para "${data.username}".`);
+                            localStorage.setItem('ls_username', data.username);
+                            location.reload();
+                        }
+                    }
+                });
+            } catch(e) { }
+        }
+
         function checkScreenState() {
             settingsOverlay.style.display = 'none';
             addRoomOverlay.style.display = 'none';
             lobbySettingsOverlay.style.display = 'none';
             membersOverlay.style.display = 'none';
             editingRoomAppearance = null;
-            
-            if (myName) {
-                db.collection('users').doc(myName).set({ color: myColor, deviceId: myDeviceId, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
-            }
 
             if (!myName) {
+                if (userProfileUnsubscribe) userProfileUnsubscribe();
                 setupArea.style.display = 'flex';
                 lobbyArea.style.display = 'none';
                 chatArea.style.display = 'none';
@@ -878,7 +919,8 @@
             myColor = shadow.getElementById('ls-setup-color').value;
             localStorage.setItem('ls_username', myName);
             localStorage.setItem('ls_usercolor', myColor);
-            db.collection('users').doc(myName).set({ color: myColor, deviceId: myDeviceId, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
+            
+            await syncUserProfile();
             checkScreenState();
         });
 
@@ -931,8 +973,8 @@
             localStorage.setItem('ls_hide_revive', myHideRevive);
             
             wrapper.className = selectedTheme;
-            db.collection('users').doc(myName).set({ color: myColor, deviceId: myDeviceId, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
-
+            
+            await syncUserProfile();
             lobbySettingsOverlay.style.display = 'none';
             checkScreenState();
         });
@@ -1171,6 +1213,94 @@
                             container.innerHTML = `<div class="ls-message system-msg">🎬 ${data.sender} ${data.text} <span class="ls-msg-time" style="display:block; margin-top:2px;">${formatTime(data.timestamp)}</span></div>`;
                         }
 
+                    } else if (data.type === 'invite') {
+                        if (data.deleted) return;
+                        container.className = 'ls-message-container system-msg-container';
+                        container.innerHTML = `
+                            <div class="ls-message system-msg" style="background: var(--btn-primary-bg) !important; color: var(--btn-primary-color) !important; border:none; padding:0;">
+                                <a href="${data.url}" target="_blank" style="color: inherit; text-decoration: none; display: block; padding: 10px 16px;">
+                                    🍿 ${data.sender} convidou você para ver a programação atual!<br><small style="text-decoration:underline;">Clique para abrir</small>
+                                    <span class="ls-msg-time" style="display:block; margin-top:4px; color:inherit; opacity:0.8;">${formatTime(data.timestamp)}</span>
+                                </a>
+                            </div>
+                        `;
+                    } else if (data.type === 'image' || data.type === 'gif') {
+                        container.className = `ls-message-container ${isMe ? 'sent' : 'received'}`;
+                        
+                        const senderRow = document.createElement('div');
+                        senderRow.className = 'ls-sender-row';
+                        
+                        const nameLabel = document.createElement('span');
+                        nameLabel.className = 'ls-sender-name';
+                        nameLabel.innerText = data.sender;
+                        senderRow.appendChild(nameLabel);
+
+                        const tagsContainer = document.createElement('span');
+                        tagsContainer.className = 'ls-tags-container';
+                        if (isAdm) tagsContainer.innerHTML += `<span class="ls-tag ls-tag-adm">ADM</span>`;
+                        if (userCache[data.sender] && userCache[data.sender].tags) {
+                            userCache[data.sender].tags.forEach(t => {
+                                let c = 'ls-tag-generic';
+                                if (t === 'DEV') c = 'ls-tag-dev';
+                                if (t === 'OWNER') c = 'ls-tag-owner';
+                                if (t === 'Do Biel') c = 'ls-tag-dobiel';
+                                tagsContainer.innerHTML += `<span class="ls-tag ${c}">${t}</span>`;
+                            });
+                        }
+                        senderRow.appendChild(tagsContainer);
+
+                        const timeLabel = document.createElement('span');
+                        timeLabel.className = 'ls-msg-time';
+                        timeLabel.innerText = formatTime(data.timestamp);
+                        senderRow.appendChild(timeLabel);
+                        
+                        if (!data.deleted) {
+                            const actionBtn = document.createElement('span');
+                            actionBtn.className = 'ls-msg-action';
+                            actionBtn.innerText = '↩️';
+                            actionBtn.title = "Responder";
+                            actionBtn.onclick = () => {
+                                replyTarget = { sender: data.sender, text: data.type === 'text' ? data.text : (data.type === 'image' ? 'Imagem' : 'GIF') };
+                                shadow.getElementById('ls-reply-bar-text').innerHTML = `Respondendo <b>${data.sender}</b>: <span style="opacity:0.8;">${replyTarget.text.substring(0, 30)}...</span>`;
+                                shadow.getElementById('ls-reply-bar').style.display = 'block';
+                                input.focus();
+                            };
+                            senderRow.appendChild(actionBtn);
+                        }
+
+                        if (isMe && !data.deleted) {
+                            const delBtn = document.createElement('span');
+                            delBtn.className = 'ls-msg-action';
+                            delBtn.innerText = '🗑️';
+                            delBtn.title = "Apagar";
+                            delBtn.onclick = async () => { try { await messagesRef.doc(docId).set({ deleted: true }, { merge: true }); } catch (e) {} };
+                            senderRow.appendChild(delBtn);
+                        }
+                        
+                        const msgBubble = document.createElement('div');
+                        msgBubble.className = 'ls-message';
+                        msgBubble.style.padding = '4px';
+
+                        if (data.deleted) {
+                            msgBubble.classList.add('deleted-msg');
+                            msgBubble.innerText = "🚫 Imagem apagada";
+                        } else {
+                            let replyHTML = '';
+                            if (data.url && data.url.includes('|-REPLY-|')) {
+                                const parts = data.url.split('|-REPLY-|');
+                                const rSender = parts[0];
+                                const rText = parts[1];
+                                const actualUrl = parts[2];
+                                replyHTML = `<div style="background: rgba(0,0,0,0.2); border-left: 3px solid currentColor; padding: 4px 8px; margin-bottom: 6px; border-radius: 4px; font-size: 11px; opacity: 0.8;"><b>${escapeHTML(rSender)}</b><br>${escapeHTML(rText)}</div>`;
+                                msgBubble.innerHTML = `${replyHTML}<img src="${actualUrl}">`;
+                            } else {
+                                msgBubble.innerHTML = `<img src="${data.url}">`;
+                            }
+                            if(isMe) { msgBubble.style.background = data.color || '#6366f1'; }
+                        }
+
+                        container.appendChild(senderRow);
+                        container.appendChild(msgBubble);
                     } else {
                         container.className = `ls-message-container ${isMe ? 'sent' : 'received'}`;
                         
@@ -1230,30 +1360,7 @@
                         if (data.deleted) {
                             msgBubble.classList.add('deleted-msg');
                             msgBubble.innerText = "🚫 Mensagem apagada";
-                        } else if (data.type === 'invite') {
-                            msgBubble.style.padding = '0';
-                            msgBubble.style.background = 'var(--btn-primary-bg)';
-                            msgBubble.style.color = 'var(--btn-primary-color)';
-                            msgBubble.style.border = 'none';
-                            msgBubble.innerHTML = `<a href="${data.url}" target="_blank" style="color: inherit; text-decoration: none; display: block; padding: 10px 16px;">🍿 ${data.sender} convidou você para ver a programação atual!<br><small style="text-decoration:underline;">Clique para abrir</small></a>`;
-                        } else if (data.type === 'image' || data.type === 'gif') {
-                            msgBubble.style.padding = '4px';
-                            if(isMe) msgBubble.style.background = data.color || '#6366f1';
-                            
-                            let replyHTML = '';
-                            if (data.url && data.url.includes('|-REPLY-|')) {
-                                const parts = data.url.split('|-REPLY-|');
-                                const rSender = parts[0];
-                                const rText = parts[1];
-                                const actualUrl = parts[2];
-                                replyHTML = `<div style="background: rgba(0,0,0,0.2); border-left: 3px solid currentColor; padding: 4px 8px; margin-bottom: 6px; border-radius: 4px; font-size: 11px; opacity: 0.8;"><b>${escapeHTML(rSender)}</b><br>${escapeHTML(rText)}</div>`;
-                                msgBubble.innerHTML = `${replyHTML}<img src="${actualUrl}">`;
-                            } else {
-                                msgBubble.innerHTML = `<img src="${data.url}">`;
-                            }
                         } else {
-                            if(isMe) msgBubble.style.background = data.color || '#6366f1';
-                            
                             let formattedText = linkify(data.text);
                             const replyMatch = formattedText.match(/^\[REPLY:(.*?)\|(.*?)\] /);
                             if (replyMatch) {
@@ -1263,6 +1370,7 @@
                                 formattedText = formattedText.replace(replyMatch[0], blockquote);
                             }
                             msgBubble.innerHTML = formattedText;
+                            if(isMe) { msgBubble.style.background = data.color || '#6366f1'; }
                         }
 
                         container.appendChild(senderRow);
