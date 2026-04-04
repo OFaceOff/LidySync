@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      58.0
+// @version      59.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -492,10 +492,10 @@
         const fab = shadow.getElementById('ls-fab');
         const badge = shadow.getElementById('ls-unread-badge');
         const chatWindow = shadow.getElementById('ls-chat-window');
-        const closeBtn = shadow.getElementById('ls-close-btn');
         const minimizeBtn = shadow.getElementById('ls-minimize-btn');
-        const lobbySettingsBtn = shadow.getElementById('ls-lobby-settings-btn');
+        const closeBtn = shadow.getElementById('ls-close-btn');
         const backBtn = shadow.getElementById('ls-back-btn');
+        const lobbySettingsBtn = shadow.getElementById('ls-lobby-settings-btn');
         const headerText = shadow.getElementById('ls-header-text');
         const chatMenuContainer = shadow.getElementById('ls-chat-menu-container');
         
@@ -1346,6 +1346,21 @@
             try { await db.collection('rooms').doc(currentRoom).delete(); } catch(e){} 
         });
 
+        backBtn.addEventListener('click', () => { 
+            if (isTyping && currentRoom) { 
+                clearTimeout(typingTimeout); 
+                isTyping = false; 
+                db.collection('rooms').doc(currentRoom).update({ typing: firebase.firestore.FieldValue.arrayRemove(myName) }).catch(()=>{}); 
+            }
+            stopChatListeners(); 
+            currentRoom = null; 
+            currentRoomKey = null; 
+            currentRoomData = null; 
+            ls.removeItem('ls_current_room'); 
+            ls.removeItem('ls_room_key'); 
+            checkScreenState(); 
+        });
+
         function startChatListeners() {
             if (!currentRoom) return;
             stopChatListeners(); 
@@ -1760,8 +1775,8 @@
 
                 const myUserDoc = await db.collection('users').doc(myName).get();
                 const myTags = myUserDoc.exists ? (myUserDoc.data().tags || []) : [];
-                const isOwner = myTags.includes('OWNER');
-                const isMod = myTags.includes('MOD') || isOwner;
+                const isOwnerOrDev = myTags.includes('OWNER') || myTags.includes('DEV');
+                const isMod = myTags.includes('MOD') || isOwnerOrDev;
                 const isRoomAdm = currentRoomData && currentRoomData.createdBy === myName;
                 const canModerateRoom = isMod || isRoomAdm;
 
@@ -1788,12 +1803,12 @@
                     return;
                 }
 
-                if (cmd === '/party1' && isOwner) {
+                if (cmd === '/party1' && isOwnerOrDev) {
                     try { await db.collection('rooms').doc(currentRoom).collection('messages').add({ type: 'party', text: 'iniciou uma festa!', sender: myName, deviceId: myDeviceId, color: myColor, roomKey: currentRoomKey, timestamp: firebase.firestore.FieldValue.serverTimestamp(), deleted: false }); updateLastRead(currentRoom); } catch (e) {}
                     return;
                 }
                 
-                if (cmd === '/stopparty1' && isOwner) {
+                if (cmd === '/stopparty1' && isOwnerOrDev) {
                     try { await db.collection('rooms').doc(currentRoom).collection('messages').add({ type: 'stopparty', text: 'parou a festa!', sender: myName, deviceId: myDeviceId, color: myColor, roomKey: currentRoomKey, timestamp: firebase.firestore.FieldValue.serverTimestamp(), deleted: false }); updateLastRead(currentRoom); } catch (e) {}
                     return;
                 }
@@ -1887,6 +1902,7 @@
         if (myHideApp) fab.style.display = 'none';
         checkScreenState();
         
+        let lastDocumentTitle = document.title;
         setInterval(() => {
             if (myName && document.title !== lastDocumentTitle) {
                 lastDocumentTitle = document.title;
