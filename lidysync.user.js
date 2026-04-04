@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      22.1
+// @version      22.2
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -37,9 +37,7 @@
             gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
             osc.start();
             osc.stop(ctx.currentTime + 0.1);
-        } catch (e) {
-            console.warn("LidySync: Som bloqueado pelo navegador. O usuário precisa interagir com a página (clicar) para permitir áudio.");
-        }
+        } catch (e) {}
     }
 
     function escapeHTML(str) {
@@ -568,26 +566,42 @@
 
         // === DRAG & RESIZE LOGIC ===
         const header = shadow.getElementById('ls-header');
-        let isDragging = false, startX, startY, startRight, startBottom;
+        let isDragging = false, startX, startY, currentLeft, currentTop;
 
         header.addEventListener('mousedown', (e) => {
             if (e.target.closest('.ls-header-btns') || e.target.closest('button')) return;
             isDragging = true;
-            startX = e.clientX; startY = e.clientY;
+            
             const rect = chatWindow.getBoundingClientRect();
-            startRight = window.innerWidth - rect.right;
-            startBottom = window.innerHeight - rect.bottom;
+            if (chatWindow.style.position !== 'fixed') {
+                chatWindow.style.position = 'fixed';
+                chatWindow.style.margin = '0';
+                chatWindow.style.bottom = 'auto';
+                chatWindow.style.right = 'auto';
+            }
+            currentLeft = rect.left;
+            currentTop = rect.top;
+            
+            chatWindow.style.left = currentLeft + 'px';
+            chatWindow.style.top = currentTop + 'px';
+            
+            startX = e.clientX; 
+            startY = e.clientY;
             chatWindow.style.transition = 'none';
-            chatWindow.style.bottom = startBottom + 'px';
-            chatWindow.style.right = startRight + 'px';
         });
 
         window.addEventListener('mousemove', (e) => {
             if (!isDragging) return;
-            const dx = startX - e.clientX;
-            const dy = startY - e.clientY;
-            chatWindow.style.right = (startRight + dx) + 'px';
-            chatWindow.style.bottom = (startBottom + dy) + 'px';
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            startX = e.clientX;
+            startY = e.clientY;
+            
+            currentLeft += dx;
+            currentTop += dy;
+            
+            chatWindow.style.left = currentLeft + 'px';
+            chatWindow.style.top = currentTop + 'px';
         });
 
         window.addEventListener('mouseup', () => {
@@ -864,6 +878,7 @@
             myColor = shadow.getElementById('ls-setup-color').value;
             localStorage.setItem('ls_username', myName);
             localStorage.setItem('ls_usercolor', myColor);
+            db.collection('users').doc(myName).set({ color: myColor, deviceId: myDeviceId, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
             checkScreenState();
         });
 
@@ -1440,6 +1455,7 @@
             try {
                 await db.collection('rooms').doc(currentRoom).collection('messages').add({
                     type: 'invite', 
+                    text: 'convidou você para ver a programação atual!', 
                     url: window.location.href,
                     sender: myName, 
                     color: myColor,
