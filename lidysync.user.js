@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      23.1
+// @version      24.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -190,6 +190,24 @@
 
             #ls-chat-window { width: 350px; height: 580px; background-color: var(--bg-base); border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.6); display: none; flex-direction: column; margin-bottom: 15px; overflow: hidden; border: 1px solid var(--border-color); position: relative; backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); transition: background-color 0.3s, backdrop-filter 0.3s; resize: both; min-width: 300px; min-height: 400px; max-width: 90vw; max-height: 90vh; }
             #ls-chat-window.open { display: flex; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+            
+            /* INTEGRATED MODE CSS */
+            #ls-chat-window.integrated {
+                position: fixed !important;
+                top: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+                left: auto !important;
+                height: 100vh !important;
+                max-height: 100vh !important;
+                border-radius: 0 !important;
+                margin: 0 !important;
+                resize: none !important;
+                box-shadow: -5px 0 25px rgba(0,0,0,0.5) !important;
+            }
+            #ls-chat-window.integrated #ls-close-btn { display: none !important; }
+            #ls-chat-window.integrated #ls-header { cursor: default !important; }
+
             @keyframes slideUp { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
             
             #ls-header { background-color: var(--bg-overlay); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); color: var(--text-primary); padding: 16px; display: flex; justify-content: space-between; align-items: center; font-size: 15px; font-weight: 600; z-index: 10; border-bottom: 1px solid var(--border-color); cursor: grab; }
@@ -398,6 +416,10 @@
                             <input type="checkbox" id="ls-app-revive" checked>
                             <span><b>Despertar com Notificação</b><br><small style="color: var(--text-muted);">Reaparece se chegar mensagem.</small></span>
                         </label>
+                        <label class="ls-checkbox-group">
+                            <input type="checkbox" id="ls-app-integrated">
+                            <span><b>Modo Teatro (Integrado)</b><br><small style="color: var(--text-muted);">Fixa o chat na direita da tela.</small></span>
+                        </label>
                     </div>
                     <div class="ls-config-section" style="margin-top:auto;">
                         <button class="ls-btn-danger" id="ls-wipe-data-btn">Desconectar e Apagar Dados</button>
@@ -552,6 +574,7 @@
         let myAutoPlay = localStorage.getItem('ls_autoplay') !== 'false'; 
         let myHideApp = localStorage.getItem('ls_hide_app') === 'true';
         let myHideRevive = localStorage.getItem('ls_hide_revive') !== 'false';
+        let myIntegratedMode = localStorage.getItem('ls_integrated') === 'true';
         
         let editingRoomAppearance = null;
         let unreadCount = 0;
@@ -573,6 +596,8 @@
 
         header.addEventListener('mousedown', (e) => {
             if (e.target.closest('.ls-header-btns') || e.target.closest('button')) return;
+            if (myIntegratedMode) return; // Prevent drag in integrated mode
+
             isDragging = true;
             
             const rect = chatWindow.getBoundingClientRect();
@@ -613,6 +638,27 @@
                 chatWindow.style.transition = 'background-color 0.3s, backdrop-filter 0.3s';
             }
         });
+
+        function toggleIntegratedMode(active) {
+            if (active && currentRoom) {
+                document.documentElement.style.paddingRight = '350px';
+                document.documentElement.style.boxSizing = 'border-box';
+                chatWindow.classList.add('integrated');
+                chatWindow.classList.add('open');
+                chatWindow.style.left = 'auto';
+                chatWindow.style.top = '0';
+                fab.style.display = 'none';
+                badge.style.display = 'none';
+            } else {
+                document.documentElement.style.paddingRight = '';
+                chatWindow.classList.remove('integrated');
+                chatWindow.style.left = '';
+                chatWindow.style.top = '';
+                if (currentRoom && !chatWindow.classList.contains('open')) {
+                    if (!myHideApp) fab.style.display = 'flex';
+                }
+            }
+        }
 
         shadow.addEventListener('click', (e) => {
             if(!e.target.closest('.ls-dropdown-container')) {
@@ -705,6 +751,10 @@
             membersOverlay.style.display = 'none';
             editingRoomAppearance = null;
 
+            if (myName) {
+                db.collection('users').doc(myName).set({ color: myColor, deviceId: myDeviceId, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
+            }
+
             if (!myName) {
                 if (userProfileUnsubscribe) userProfileUnsubscribe();
                 setupArea.style.display = 'flex';
@@ -714,6 +764,7 @@
                 lobbySettingsBtn.style.display = 'none';
                 backBtn.style.display = 'none';
                 headerText.innerText = "LidySync";
+                toggleIntegratedMode(false);
                 stopLobbyListeners();
             } else if (!currentRoom || !currentRoomKey) {
                 setupArea.style.display = 'none';
@@ -723,6 +774,7 @@
                 lobbySettingsBtn.style.display = 'flex';
                 backBtn.style.display = 'none';
                 headerText.innerText = `Lobby (${myName})`;
+                toggleIntegratedMode(false);
                 renderSavedRooms();
                 startLobbyListeners();
             } else {
@@ -734,6 +786,7 @@
                 backBtn.style.display = 'flex';
                 headerText.innerText = `${currentRoom}`;
                 if (!mySyncBg) applyBackground(myBgType, myBgColor, myBgImage);
+                if (myIntegratedMode) toggleIntegratedMode(true);
                 stopLobbyListeners();
                 startChatListeners();
             }
@@ -847,7 +900,7 @@
                                 const msgTime = data.timestamp ? data.timestamp.toMillis() : Date.now();
                                 if (msgTime > lastRead && data.sender !== myName) {
                                     unreadEl.style.display = 'block';
-                                    if (!chatWindow.classList.contains('open')) {
+                                    if (!chatWindow.classList.contains('open') && !myIntegratedMode) {
                                         badge.style.display = 'flex';
                                         badge.innerText = '!';
                                         if (myHideApp && myHideRevive) {
@@ -935,6 +988,7 @@
                 shadow.getElementById('ls-app-sound').checked = localStorage.getItem('ls_sound') !== 'false';
                 shadow.getElementById('ls-app-hide').checked = myHideApp;
                 shadow.getElementById('ls-app-revive').checked = myHideRevive;
+                shadow.getElementById('ls-app-integrated').checked = myIntegratedMode;
             }
         });
 
@@ -964,6 +1018,7 @@
             const soundEnabled = shadow.getElementById('ls-app-sound').checked;
             myHideApp = shadow.getElementById('ls-app-hide').checked;
             myHideRevive = shadow.getElementById('ls-app-revive').checked;
+            myIntegratedMode = shadow.getElementById('ls-app-integrated').checked;
 
             localStorage.setItem('ls_username', myName);
             localStorage.setItem('ls_usercolor', myColor);
@@ -971,6 +1026,7 @@
             localStorage.setItem('ls_sound', soundEnabled);
             localStorage.setItem('ls_hide_app', myHideApp);
             localStorage.setItem('ls_hide_revive', myHideRevive);
+            localStorage.setItem('ls_integrated', myIntegratedMode);
             
             wrapper.className = selectedTheme;
             
@@ -1390,12 +1446,15 @@
                         const msgTime = data.timestamp ? data.timestamp.toMillis() : Date.now();
                         const lastRead = lastReadTimes[currentRoom] || 0;
                         
-                        if (msgTime > lastRead && !chatWindow.classList.contains('open')) {
-                            unreadCount++;
-                            badge.style.display = 'flex';
-                            badge.innerText = unreadCount > 5 ? '5+' : unreadCount;
-                            if (myHideApp && myHideRevive) {
-                                fab.style.display = 'flex';
+                        if (msgTime > lastRead && (!chatWindow.classList.contains('open') || myIntegratedMode)) {
+                            // If integrated mode is on, we don't show the fab, so no badge needed there.
+                            if (!myIntegratedMode) {
+                                unreadCount++;
+                                badge.style.display = 'flex';
+                                badge.innerText = unreadCount > 5 ? '5+' : unreadCount;
+                                if (myHideApp && myHideRevive) {
+                                    fab.style.display = 'flex';
+                                }
                             }
                         }
                     }
@@ -1405,7 +1464,7 @@
                     updateLastRead(currentRoom);
                     unreadCount = 0;
                     badge.style.display = 'none';
-                } else if (currentUnread > 0) {
+                } else if (currentUnread > 0 && !myIntegratedMode) {
                     badge.style.display = 'flex';
                     badge.innerText = currentUnread > 5 ? '5+' : currentUnread;
                     if (myHideApp && myHideRevive) {
@@ -1489,6 +1548,10 @@
         });
 
         closeBtn.addEventListener('click', () => { 
+            if (myIntegratedMode) {
+                alert("O Chat está no Modo Teatro. Desative essa opção nas configurações de Perfil para ocultar a janela.");
+                return;
+            }
             chatWindow.classList.remove('open'); 
             if (myHideApp) {
                 fab.style.display = 'none';
