@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      23.0
+// @version      23.1
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -318,7 +318,7 @@
         wrapper.id = 'ls-wrapper';
         
         let storedTheme = localStorage.getItem('ls_theme');
-        wrapper.className = storedTheme !== null ? storedTheme : 'theme-glass';
+        wrapper.className = storedTheme !== null ? storedTheme : '';
         
         wrapper.innerHTML = `
             <div id="ls-chat-window">
@@ -352,7 +352,7 @@
                         <span style="font-size: 32px; font-weight: 800; background: linear-gradient(135deg, #6366f1, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: block; margin-bottom: 4px;">LidySync</span>
                         <span style="color: var(--text-primary); font-size: 16px; font-weight: 600;">Bem-vindo!</span>
                     </div>
-                    <div><span class="ls-label">Nome de Usuário</span><input type="text" class="ls-input-text" id="ls-setup-name" placeholder="Ex: Amor" maxlength="100" /></div>
+                    <div><span class="ls-label">Nome de Usuário</span><input type="text" class="ls-input-text" id="ls-setup-name" placeholder="Adicione seu apelido" maxlength="100" /></div>
                     <div><span class="ls-label">Cor da sua Bolha</span><input type="color" class="ls-input-color" id="ls-setup-color" value="#6366f1" /></div>
                     <button class="ls-btn-primary" id="ls-setup-btn">Começar</button>
                 </div>
@@ -378,8 +378,8 @@
                     <div class="ls-config-section">
                         <span class="ls-label">Preferências Globais</span>
                         <select class="ls-select" id="ls-app-theme" style="margin-bottom: 12px;">
-                            <option value="theme-glass">Tema Glassmorfismo (Padrão)</option>
-                            <option value="">Tema Escuro</option>
+                            <option value="">Tema Escuro (Padrão)</option>
+                            <option value="theme-glass">Tema Glassmorfismo</option>
                             <option value="theme-light">Tema Claro</option>
                             <option value="theme-hellokitty">Tema Hello Kitty</option>
                         </select>
@@ -931,7 +931,7 @@
                 lobbySettingsOverlay.style.display = 'flex';
                 shadow.getElementById('ls-edit-name').value = myName || '';
                 shadow.getElementById('ls-edit-color').value = myColor || '#6366f1';
-                shadow.getElementById('ls-app-theme').value = localStorage.getItem('ls_theme') !== null ? localStorage.getItem('ls_theme') : 'theme-glass';
+                shadow.getElementById('ls-app-theme').value = localStorage.getItem('ls_theme') !== null ? localStorage.getItem('ls_theme') : '';
                 shadow.getElementById('ls-app-sound').checked = localStorage.getItem('ls_sound') !== 'false';
                 shadow.getElementById('ls-app-hide').checked = myHideApp;
                 shadow.getElementById('ls-app-revive').checked = myHideRevive;
@@ -985,7 +985,7 @@
             myName = null; currentRoom = null; currentRoomKey = null; savedRooms = [];
             myDeviceId = crypto.randomUUID();
             localStorage.setItem('ls_device_id', myDeviceId);
-            wrapper.className = 'theme-glass';
+            wrapper.className = '';
             checkScreenState();
         });
 
