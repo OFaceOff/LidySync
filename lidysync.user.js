@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      26.0
+// @version      26.1
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -193,17 +193,18 @@
             
             /* INTEGRATED MODE CSS */
             #ls-chat-window.integrated {
-                position: fixed !important;
-                top: 0 !important;
-                right: 0 !important;
-                bottom: 0 !important;
-                left: auto !important;
-                height: 100vh !important;
+                position: relative !important;
+                width: 100% !important;
+                height: 100% !important;
                 max-height: 100vh !important;
                 border-radius: 0 !important;
                 margin: 0 !important;
                 resize: none !important;
                 box-shadow: -5px 0 25px rgba(0,0,0,0.5) !important;
+                top: auto !important;
+                left: auto !important;
+                right: auto !important;
+                bottom: auto !important;
             }
             #ls-chat-window.integrated #ls-close-btn { display: none !important; }
             #ls-chat-window.integrated #ls-header { cursor: default !important; }
@@ -579,6 +580,7 @@
         let editingRoomAppearance = null;
         let unreadCount = 0;
         let replyTarget = null;
+        let isCurrentlyIntegrated = false;
 
         let roomListener = null;
         let messagesListener = null;
@@ -596,7 +598,7 @@
 
         header.addEventListener('mousedown', (e) => {
             if (e.target.closest('.ls-header-btns') || e.target.closest('button')) return;
-            if (myIntegratedMode) return; // Prevent drag in integrated mode
+            if (isCurrentlyIntegrated) return;
 
             isDragging = true;
             
@@ -641,19 +643,54 @@
 
         function toggleIntegratedMode(active) {
             if (active && currentRoom) {
+                if (isCurrentlyIntegrated) return;
+                isCurrentlyIntegrated = true;
+
                 document.documentElement.style.paddingRight = '350px';
                 document.documentElement.style.boxSizing = 'border-box';
+                
                 chatWindow.classList.add('integrated');
                 chatWindow.classList.add('open');
-                chatWindow.style.left = 'auto';
-                chatWindow.style.top = '0';
-                fab.style.display = 'none';
-                badge.style.display = 'none';
-            } else {
-                document.documentElement.style.paddingRight = '';
-                chatWindow.classList.remove('integrated');
+                
+                chatWindow.style.position = '';
                 chatWindow.style.left = '';
                 chatWindow.style.top = '';
+                chatWindow.style.right = '';
+                chatWindow.style.bottom = '';
+                chatWindow.style.margin = '';
+                chatWindow.style.height = '';
+                chatWindow.style.width = '';
+                
+                fab.style.display = 'none';
+                badge.style.display = 'none';
+
+                host.style.cssText = 'position: fixed !important; top: 0 !important; right: 0 !important; bottom: 0 !important; width: 350px !important; height: 100vh !important; z-index: 2147483647 !important; pointer-events: none !important;';
+                const wrapperEl = shadow.getElementById('ls-wrapper');
+                wrapperEl.style.height = '100%';
+                wrapperEl.style.width = '100%';
+                wrapperEl.style.justifyContent = 'flex-start';
+            } else {
+                if (!isCurrentlyIntegrated) return;
+                isCurrentlyIntegrated = false;
+
+                document.documentElement.style.paddingRight = '';
+                chatWindow.classList.remove('integrated');
+                
+                chatWindow.style.position = '';
+                chatWindow.style.left = '';
+                chatWindow.style.top = '';
+                chatWindow.style.right = '';
+                chatWindow.style.bottom = '';
+                chatWindow.style.margin = '';
+                chatWindow.style.height = '';
+                chatWindow.style.width = '';
+
+                host.style.cssText = 'position: fixed !important; bottom: 90px !important; right: 20px !important; z-index: 2147483647 !important; pointer-events: none !important;';
+                const wrapperEl = shadow.getElementById('ls-wrapper');
+                wrapperEl.style.height = 'auto';
+                wrapperEl.style.width = 'auto';
+                wrapperEl.style.justifyContent = 'flex-end';
+
                 if (currentRoom && !chatWindow.classList.contains('open')) {
                     if (!myHideApp) fab.style.display = 'flex';
                 }
