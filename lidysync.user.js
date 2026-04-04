@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      25.0
+// @version      26.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -906,7 +906,7 @@
                                 const msgTime = data.timestamp ? data.timestamp.toMillis() : Date.now();
                                 if (msgTime > lastRead && data.sender !== myName) {
                                     unreadEl.style.display = 'block';
-                                    if (!chatWindow.classList.contains('open')) {
+                                    if (!chatWindow.classList.contains('open') && !myIntegratedMode) {
                                         badge.style.display = 'flex';
                                         badge.innerText = '!';
                                         if (myHideApp && myHideRevive) {
@@ -1203,6 +1203,7 @@
             if (!currentRoom) return;
             stopChatListeners(); 
 
+            const roomJoinTime = Date.now();
             isFirstSnapshot = true;
             messagesContainer.innerHTML = '';
             userCache = {};
@@ -1272,8 +1273,7 @@
                         } else if (data.text === 'SYSTEM_LEAVE') {
                             container.innerHTML = `<div class="ls-message system-msg" style="background:transparent!important; box-shadow:none; border:none; padding:4px; opacity:0.6;">🚪 <b>${data.sender}</b> saiu <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
                         } else if (data.text === 'SYSTEM_PAUSE') {
-                            container.innerHTML = `<div class="ls-message system-msg">⏸️ <b>${data.sender}</b> pausou a sincronização! <span class="ls-msg-time" style="display:block; margin-top:2px;">${formatTime(data.timestamp)}</span></div>`;
-                            if (myAutoPlay) { document.querySelectorAll('video').forEach(v => v.pause()); }
+                            container.innerHTML = `<div class="ls-message system-msg">⏸️ <b>${data.sender}</b> pausou a programação! <span class="ls-msg-time" style="display:block; margin-top:2px;">${formatTime(data.timestamp)}</span></div>`;
                         } else {
                             container.innerHTML = `<div class="ls-message system-msg">🎬 ${data.sender} ${data.text} <span class="ls-msg-time" style="display:block; margin-top:2px;">${formatTime(data.timestamp)}</span></div>`;
                         }
@@ -1446,23 +1446,31 @@
 
                 snapshot.docChanges().forEach((change) => {
                     const data = change.doc.data();
-                    if (change.type === 'added' && data.type === 'countdown' && !isFirstSnapshot && !data.deleted) {
-                        if (data.text === 'iniciou a sincronização!') runVisualCountdown(data.sender);
-                    }
-                    if (change.type === 'added' && !isFirstSnapshot && data.sender !== myName && !data.deleted) {
-                        playNotificationSound();
-                        
+                    
+                    if (change.type === 'added' && !data.deleted) {
                         const msgTime = data.timestamp ? data.timestamp.toMillis() : Date.now();
-                        const lastRead = lastReadTimes[currentRoom] || 0;
                         
-                        if (msgTime > lastRead && !chatWindow.classList.contains('open')) {
-                            // If integrated mode is on, we don't show the fab, so no badge needed there.
-                            if (!myIntegratedMode) {
-                                unreadCount++;
-                                badge.style.display = 'flex';
-                                badge.innerText = unreadCount > 5 ? '5+' : unreadCount;
-                                if (myHideApp && myHideRevive) {
-                                    fab.style.display = 'flex';
+                        if (msgTime > roomJoinTime) {
+                            if (data.type === 'countdown') {
+                                if (data.text === 'iniciou a programação!') {
+                                    runVisualCountdown(data.sender);
+                                } else if (data.text === 'SYSTEM_PAUSE') {
+                                    if (myAutoPlay) { document.querySelectorAll('video').forEach(v => v.pause()); }
+                                }
+                            }
+    
+                            if (data.sender !== myName) {
+                                playNotificationSound();
+                                
+                                if (!chatWindow.classList.contains('open') || myIntegratedMode) {
+                                    if (!myIntegratedMode) {
+                                        unreadCount++;
+                                        badge.style.display = 'flex';
+                                        badge.innerText = unreadCount > 5 ? '5+' : unreadCount;
+                                        if (myHideApp && myHideRevive) {
+                                            fab.style.display = 'flex';
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1649,7 +1657,7 @@
 
         shadow.getElementById('btn-action-countdown').addEventListener('click', async () => {
             plusPanel.style.display = 'none';
-            sendSystemAction('iniciou a sincronização!');
+            sendSystemAction('iniciou a programação!');
         });
 
         shadow.getElementById('btn-action-pause').addEventListener('click', async () => {
