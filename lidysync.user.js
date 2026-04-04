@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      33.0
+// @version      36.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -40,6 +40,38 @@
         } catch (e) {
             console.warn("LidySync: Som bloqueado pelo navegador.");
         }
+    }
+
+    function playSendSound() {
+        if (localStorage.getItem('ls_sound') === 'false' || localStorage.getItem('ls_inchat_sounds') === 'false') return;
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(300, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.08);
+            gain.gain.setValueAtTime(0.05, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+            osc.start(); osc.stop(ctx.currentTime + 0.08);
+        } catch(e){}
+    }
+
+    function playReceiveSound() {
+        if (localStorage.getItem('ls_sound') === 'false' || localStorage.getItem('ls_inchat_sounds') === 'false') return;
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(800, ctx.currentTime);
+            osc.frequency.setValueAtTime(1200, ctx.currentTime + 0.05); 
+            gain.gain.setValueAtTime(0.05, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+            osc.start(); osc.stop(ctx.currentTime + 0.15);
+        } catch(e){}
     }
 
     function escapeHTML(str) {
@@ -242,7 +274,7 @@
             .ls-room-options:hover { background: rgba(128,128,128,0.1); color: var(--text-primary); }
 
             /* TAGS UI */
-            .ls-tags-container { display: inline-flex; gap: 4px; align-items: center; vertical-align: middle; }
+            .ls-tags-container { display: inline-flex; gap: 4px; align-items: center; vertical-align: middle; flex-wrap: wrap; }
             .ls-tag { font-size: 8px; font-weight: 800; padding: 2px 5px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
             .ls-tag-adm { background-color: #ef4444; color: #ffffff; }
             .ls-tag-dev { background-color: #eab308; color: #000000; }
@@ -259,8 +291,10 @@
             .ls-label { color: var(--text-muted); font-size: 12px; font-weight: 600; margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
             
             .ls-input-wrapper { position: relative; width: 100%; display: flex; align-items: center; }
-            .ls-input-text, .ls-select { background-color: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; color: var(--text-primary); outline: none; font-size: 14px; width: 100%; transition: all 0.2s; }
-            .ls-input-text:focus, .ls-select:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15); }
+            .ls-input-text, .ls-select, .ls-textarea { background-color: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; color: var(--text-primary); outline: none; font-size: 14px; width: 100%; transition: all 0.2s; }
+            .ls-input-text:focus, .ls-select:focus, .ls-textarea:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15); }
+            .ls-textarea { resize: vertical; min-height: 80px; }
+            
             .ls-pass-toggle { position: absolute; right: 12px; background: none; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; padding: 4px; border-radius: 4px; }
             .ls-pass-toggle:hover { color: var(--text-primary); background: rgba(128,128,128,0.1); }
             
@@ -279,6 +313,13 @@
             
             .ls-config-section { background: rgba(128,128,128,0.05); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 8px;}
             
+            /* PROFILE CARD STYLES */
+            .ls-profile-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+            .ls-profile-avatar-large { width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.3); flex-shrink: 0; position: relative;}
+            .ls-profile-status-indicator { position: absolute; bottom: 2px; right: 2px; width: 16px; height: 16px; border-radius: 50%; border: 3px solid var(--bg-modal); }
+            .ls-profile-info-row { margin-bottom: 12px; font-size: 14px; color: var(--text-primary); }
+            .ls-profile-info-label { color: var(--text-muted); font-size: 11px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px; display: block; margin-bottom: 4px; }
+
             #ls-chat-area { flex: 1; display: none; flex-direction: column; overflow: hidden; position: relative; }
             #ls-messages { flex: 1; padding: 20px 16px; overflow-y: auto; background-color: transparent; display: flex; flex-direction: column; gap: 14px; }
             
@@ -295,7 +336,8 @@
             .ls-message-container.received { align-self: flex-start; align-items: flex-start; }
             
             .ls-sender-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; padding: 0 4px; }
-            .ls-sender-name { font-size: 11px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.3px; }
+            .ls-sender-name { font-size: 11px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.3px; cursor: pointer; transition: 0.2s; }
+            .ls-sender-name:hover { text-decoration: underline; color: var(--text-primary); }
             .ls-msg-time { font-size: 9px; color: var(--text-muted); opacity: 0.7; font-weight: normal; margin-left: 4px; }
             
             .ls-msg-action { display: none; cursor: pointer; font-size: 13px; filter: grayscale(100%); transition: 0.2s; opacity: 0.6; margin: 0 2px; }
@@ -310,7 +352,7 @@
             .ls-message.deleted-msg { background-color: transparent !important; color: var(--text-muted); font-style: italic; border: 1px solid var(--border-color); border-radius: 12px !important; font-size: 13px; box-shadow: none; }
             
             .sent .ls-message:not(.deleted-msg) { border-radius: 14px 14px 4px 14px; }
-            .received .ls-message:not(.deleted-msg) { border-radius: 14px 14px 14px 4px; background-color: var(--received-msg) !important; color: var(--text-primary); border: 1px solid var(--border-color); }
+            .received .ls-message:not(.deleted-msg) { border-radius: 14px 14px 14px 4px; background-color: var(--received-msg) !important; border: 1px solid var(--border-color); }
             
             #ls-input-area { display: flex; padding: 12px 16px; background-color: var(--bg-overlay); gap: 10px; align-items: center; position: relative; flex-wrap: nowrap; border-top: 1px solid var(--border-color); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
             .ls-icon-btn { flex-shrink: 0; background: none; border: none; color: var(--text-muted); font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; transition: color 0.2s, transform 0.2s; border-radius: 8px; }
@@ -358,7 +400,7 @@
                         <span id="ls-header-text">LidySync</span>
                     </span>
                     <div class="ls-header-btns">
-                        <button class="ls-header-btn" id="ls-lobby-settings-btn" title="Configurações do Perfil" style="display:none;">⚙️</button>
+                        <button class="ls-header-btn" id="ls-lobby-settings-btn" title="Configurações" style="display:none;">⚙️</button>
                         <div class="ls-dropdown-container" id="ls-chat-menu-container" style="display:none;">
                             <button class="ls-header-btn" id="ls-chat-menu-btn" title="Opções da Sala">⋮</button>
                             <div class="ls-dropdown-menu" id="ls-chat-dropdown">
@@ -389,8 +431,14 @@
                             <span id="ls-forgot-pin" style="color: var(--text-muted); font-size: 11px; cursor: pointer; text-decoration: underline;">Esqueci meu PIN</span>
                         </div>
                     </div>
-                    <div style="margin-top: 12px;"><span class="ls-label">Cor da sua Bolha</span><input type="color" class="ls-input-color" id="ls-setup-color" value="#6366f1" /></div>
-                    <button class="ls-btn-primary" id="ls-setup-btn" style="margin-top: 16px;">Começar</button>
+                    <div style="margin-top: 12px; display: flex; gap: 10px;">
+                        <div style="flex:1;"><span class="ls-label">Cor da Bolha</span><input type="color" class="ls-input-color" id="ls-setup-color" value="#6366f1" /></div>
+                        <div style="flex:1;"><span class="ls-label">Cor do Texto</span><input type="color" class="ls-input-color" id="ls-setup-textcolor" value="#ffffff" /></div>
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-top: 16px;">
+                        <button class="ls-btn-primary" id="ls-login-btn" style="flex: 1; margin-top: 0;">Entrar</button>
+                        <button class="ls-btn-secondary" id="ls-register-btn" style="flex: 1; margin-top: 0;">Registrar</button>
+                    </div>
                 </div>
 
                 <div id="ls-lobby-area" class="ls-screen" style="padding: 16px;">
@@ -403,13 +451,12 @@
 
                 <div id="ls-lobby-settings-overlay" class="ls-modal-overlay">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;">
-                        <span style="color: var(--text-primary); font-size: 20px; font-weight: 700;">Configurações do App</span>
+                        <span style="color: var(--text-primary); font-size: 20px; font-weight: 700;">Configurações</span>
                         <button id="ls-close-lobby-modal" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px;">✕</button>
                     </div>
                     <div class="ls-config-section">
-                        <span class="ls-label">Perfil</span>
-                        <div style="margin-bottom: 12px;"><input type="text" class="ls-input-text" id="ls-edit-name" placeholder="Apelido" maxlength="100" /></div>
-                        <div><span class="ls-label">Cor da Bolha</span><input type="color" class="ls-input-color" id="ls-edit-color" /></div>
+                        <span class="ls-label">Sua Conta</span>
+                        <button class="ls-btn-secondary" id="ls-btn-open-my-profile">👤 Ver Meu Perfil</button>
                     </div>
                     <div class="ls-config-section">
                         <span class="ls-label">Preferências Globais</span>
@@ -422,6 +469,10 @@
                         <label class="ls-checkbox-group">
                             <input type="checkbox" id="ls-app-sound" checked>
                             <span><b>Mudo (Sem Sons)</b><br><small style="color: var(--text-muted);">Desmarque para mutar todos os sons.</small></span>
+                        </label>
+                        <label class="ls-checkbox-group">
+                            <input type="checkbox" id="ls-app-inchatsound" checked>
+                            <span><b>Sons no Chat</b><br><small style="color: var(--text-muted);">Sons rápidos ao enviar e receber.</small></span>
                         </label>
                         <label class="ls-checkbox-group">
                             <input type="checkbox" id="ls-app-hidesys">
@@ -447,6 +498,56 @@
                         <button class="ls-btn-danger" id="ls-wipe-data-btn">Desconectar e Apagar Dados</button>
                     </div>
                     <button class="ls-btn-primary" id="ls-save-lobby-config-btn" style="margin-top: 10px;">Salvar Alterações</button>
+                </div>
+
+                <div id="ls-profile-overlay" class="ls-modal-overlay" style="z-index: 60;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+                        <span style="color: var(--text-primary); font-size: 18px; font-weight: 700;">Perfil</span>
+                        <div style="display:flex; gap: 12px; align-items:center;">
+                            <button id="ls-btn-edit-profile" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:13px; text-decoration:underline; display:none;">Editar Perfil</button>
+                            <button id="ls-close-profile-modal" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px;">✕</button>
+                        </div>
+                    </div>
+                    
+                    <div id="ls-profile-view" style="display: flex; flex-direction: column;">
+                        <div class="ls-profile-header">
+                            <div class="ls-profile-avatar-large" id="ls-profile-v-avatar">
+                                <div class="ls-profile-status-indicator" id="ls-profile-v-status"></div>
+                            </div>
+                            <div style="display:flex; flex-direction:column; gap:4px;">
+                                <span style="font-size:20px; font-weight:800; color:var(--text-primary);" id="ls-profile-v-name">-</span>
+                                <span style="font-size:13px; color:var(--text-muted);" id="ls-profile-v-statustext">-</span>
+                            </div>
+                        </div>
+                        <div class="ls-profile-info-row"><span class="ls-profile-info-label">País</span> <span id="ls-profile-v-country">-</span></div>
+                        <div class="ls-profile-info-row"><span class="ls-profile-info-label">Bio</span> <span id="ls-profile-v-bio">-</span></div>
+                        <div class="ls-profile-info-row"><span class="ls-profile-info-label">Tags</span> <div class="ls-tags-container" id="ls-profile-v-tags" style="margin-top:4px;"></div></div>
+                        <div class="ls-profile-info-row"><span class="ls-profile-info-label">Criação do Perfil</span> <span id="ls-profile-v-created">-</span></div>
+                        <div class="ls-profile-info-row"><span class="ls-profile-info-label">Chats Ativos</span> <span id="ls-profile-v-rooms">-</span></div>
+                    </div>
+
+                    <div id="ls-profile-edit" style="display: none; flex-direction: column; gap: 12px;">
+                        <div style="text-align:center; margin-bottom: 10px;">
+                            <div class="ls-profile-avatar-large" id="ls-profile-e-avatar" style="margin: 0 auto; color: var(--text-primary);"></div>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <div style="flex:1;"><span class="ls-label">Cor da Bolha</span><input type="color" class="ls-input-color" id="ls-profile-e-color" /></div>
+                            <div style="flex:1;"><span class="ls-label">Cor do Texto</span><input type="color" class="ls-input-color" id="ls-profile-e-textcolor" /></div>
+                        </div>
+                        <div><span class="ls-label">Bio (Fale sobre você)</span><textarea class="ls-textarea" id="ls-profile-e-bio" placeholder="O que você gosta de assistir?" maxlength="200"></textarea></div>
+                        <div>
+                            <span class="ls-label">País de Residência</span>
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <span id="ls-profile-e-country-disp" style="font-size: 24px;">🌍</span>
+                                <button class="ls-btn-secondary" id="ls-btn-get-country" style="padding: 8px; font-size: 12px; margin-top:0;">Permitir e Buscar Bandeira</button>
+                            </div>
+                        </div>
+                        <label class="ls-checkbox-group" style="margin-top:10px;">
+                            <input type="checkbox" id="ls-profile-e-hiderooms">
+                            <span><b>Ocultar quantidade de chats ativos</b></span>
+                        </label>
+                        <button class="ls-btn-primary" id="ls-btn-save-profile" style="margin-top: 20px;">Salvar Perfil</button>
+                    </div>
                 </div>
 
                 <div id="ls-add-room-overlay" class="ls-modal-overlay">
@@ -573,8 +674,11 @@
         const settingsOverlay = shadow.getElementById('ls-settings-overlay');
         const membersOverlay = shadow.getElementById('ls-members-overlay');
         const lobbySettingsOverlay = shadow.getElementById('ls-lobby-settings-overlay');
+        const profileOverlay = shadow.getElementById('ls-profile-overlay');
         const messagesContainer = shadow.getElementById('ls-messages');
         const input = shadow.getElementById('ls-input');
+        const inputSetupName = shadow.getElementById('ls-setup-name');
+        const inputSetupPin = shadow.getElementById('ls-setup-pin');
 
         let myDeviceId = localStorage.getItem('ls_device_id');
         if (!myDeviceId) {
@@ -584,13 +688,19 @@
 
         let myName = localStorage.getItem('ls_username');
         let myColor = localStorage.getItem('ls_usercolor') || '#6366f1';
+        let myTextColor = localStorage.getItem('ls_usertextcolor') || '#ffffff';
         let myPin = localStorage.getItem('ls_userpin') || null;
+
+        let myBio = localStorage.getItem('ls_userbio') || '';
+        let myCountry = localStorage.getItem('ls_usercountry') || '🌍';
+        let myHideChats = localStorage.getItem('ls_hidechats') === 'true';
 
         let currentRoom = localStorage.getItem('ls_current_room'); 
         let currentRoomKey = localStorage.getItem('ls_room_key'); 
         
         let savedRooms = JSON.parse(localStorage.getItem('ls_saved_rooms') || '[]');
         let lastReadTimes = JSON.parse(localStorage.getItem('ls_last_read') || '{}');
+        let mutedRooms = JSON.parse(localStorage.getItem('ls_muted_rooms') || '[]');
         
         let myBgType = localStorage.getItem('ls_bg_type') || 'color';
         let myBgColor = localStorage.getItem('ls_bg_color') || '#0f172a';
@@ -601,6 +711,7 @@
         let myHideRevive = localStorage.getItem('ls_hide_revive') !== 'false';
         let myIntegratedMode = localStorage.getItem('ls_integrated') === 'true';
         let myHideSys = localStorage.getItem('ls_hide_sys') === 'true';
+        let myInChatSound = localStorage.getItem('ls_inchat_sounds') !== 'false';
         
         let editingRoomAppearance = null;
         let unreadCount = 0;
@@ -620,6 +731,95 @@
         // === FORGOT PIN ALERT ===
         shadow.getElementById('ls-forgot-pin').addEventListener('click', () => {
             alert("No momento o serviço de recuperação de PIN está desativado, em breve criaremos nosso discord para tickets de suporte e ajuda, obrigado!");
+        });
+
+        // === ENTER KEY LOGIN/REGISTER ===
+        inputSetupName.addEventListener('keypress', (e) => { if (e.key === 'Enter') shadow.getElementById('ls-login-btn').click(); });
+        inputSetupPin.addEventListener('keypress', (e) => { if (e.key === 'Enter') shadow.getElementById('ls-login-btn').click(); });
+
+        // === REGISTRAR ===
+        shadow.getElementById('ls-register-btn').addEventListener('click', async () => {
+            const name = inputSetupName.value.trim();
+            const pin = inputSetupPin.value.trim();
+
+            if (!name) return alert("Digite um apelido!");
+            if (name.length > 100) return alert("O apelido deve ter no máximo 100 caracteres.");
+            if (!pin || pin.length < 4) return alert("Digite um PIN válido (mínimo de 4 dígitos).");
+
+            try {
+                const userDoc = await db.collection('users').doc(name).get();
+                if (userDoc.exists) {
+                    return alert("Este apelido já está em uso! Clique em 'Entrar' se for a sua conta.");
+                }
+
+                const snapshot = await db.collection('users').where('deviceId', '==', myDeviceId).get();
+                if (snapshot.size >= 3) {
+                    return alert("Você já atingiu o limite de 3 perfis criados neste dispositivo.");
+                }
+
+                myName = name;
+                myPin = pin;
+                myColor = shadow.getElementById('ls-setup-color').value;
+                myTextColor = shadow.getElementById('ls-setup-textcolor').value;
+                
+                localStorage.setItem('ls_username', myName);
+                localStorage.setItem('ls_usercolor', myColor);
+                localStorage.setItem('ls_usertextcolor', myTextColor);
+                localStorage.setItem('ls_userpin', myPin);
+                
+                await syncUserProfile();
+                checkScreenState();
+
+            } catch (e) {
+                alert("Erro ao conectar ao banco de dados.");
+            }
+        });
+
+        // === ENTRAR ===
+        shadow.getElementById('ls-login-btn').addEventListener('click', async () => {
+            const name = inputSetupName.value.trim();
+            const pin = inputSetupPin.value.trim();
+
+            if (!name || !pin) return alert("Preencha o Apelido e o PIN para entrar.");
+
+            try {
+                const userDoc = await db.collection('users').doc(name).get();
+                if (!userDoc.exists) {
+                    return alert("Usuário não encontrado! Verifique o nome ou clique em 'Registrar'.");
+                }
+
+                const data = userDoc.data();
+                
+                if (data.isBanned) {
+                    return alert("Você foi banido por: " + (data.banReason || "Violação das regras."));
+                }
+
+                if (data.pin !== pin) {
+                    return alert("PIN incorreto!");
+                }
+
+                myName = name;
+                myPin = pin;
+                myColor = data.color || shadow.getElementById('ls-setup-color').value;
+                myTextColor = data.textColor || shadow.getElementById('ls-setup-textcolor').value;
+                myBio = data.bio || '';
+                myCountry = data.country || '🌍';
+                myHideChats = data.hideChats || false;
+                
+                localStorage.setItem('ls_username', myName);
+                localStorage.setItem('ls_usercolor', myColor);
+                localStorage.setItem('ls_usertextcolor', myTextColor);
+                localStorage.setItem('ls_userpin', myPin);
+                localStorage.setItem('ls_userbio', myBio);
+                localStorage.setItem('ls_usercountry', myCountry);
+                localStorage.setItem('ls_hidechats', myHideChats);
+                
+                await syncUserProfile();
+                checkScreenState();
+
+            } catch (e) {
+                alert("Erro ao conectar ao banco de dados.");
+            }
         });
 
         // === MENTIONS SYSTEM ===
@@ -860,17 +1060,28 @@
                     await userRef.set({
                         username: myName,
                         color: myColor,
+                        textColor: myTextColor,
                         deviceId: myDeviceId,
                         pin: myPin,
+                        bio: myBio,
+                        country: myCountry,
+                        hideChats: myHideChats,
+                        roomCount: savedRooms.length,
                         tags: [],
                         isBanned: false,
+                        banReason: "",
                         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                         lastSeen: firebase.firestore.FieldValue.serverTimestamp()
                     });
                 } else {
                     await userRef.set({
                         color: myColor,
+                        textColor: myTextColor,
                         pin: myPin,
+                        bio: myBio,
+                        country: myCountry,
+                        hideChats: myHideChats,
+                        roomCount: savedRooms.length,
                         lastSeen: firebase.firestore.FieldValue.serverTimestamp()
                     }, { merge: true });
                 }
@@ -880,7 +1091,7 @@
                     if(snap.exists) {
                         const data = snap.data();
                         if(data.isBanned) {
-                            alert("⚠️ Acesso Negado: Você foi banido pelo administrador.");
+                            alert("⚠️ Acesso Negado: Você foi banido. Motivo: " + (data.banReason || "Violação das regras."));
                             localStorage.clear();
                             location.reload();
                         }
@@ -899,10 +1110,13 @@
             addRoomOverlay.style.display = 'none';
             lobbySettingsOverlay.style.display = 'none';
             membersOverlay.style.display = 'none';
+            profileOverlay.style.display = 'none';
             editingRoomAppearance = null;
 
-            if (myName) {
-                db.collection('users').doc(myName).set({ color: myColor, deviceId: myDeviceId, pin: myPin, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
+            if (myIntegratedMode) {
+                toggleIntegratedMode(true);
+            } else {
+                toggleIntegratedMode(false);
             }
 
             if (!myName || !myPin) {
@@ -914,7 +1128,6 @@
                 lobbySettingsBtn.style.display = 'none';
                 backBtn.style.display = 'none';
                 headerText.innerText = "LidySync";
-                toggleIntegratedMode(false);
                 stopLobbyListeners();
             } else if (!currentRoom || !currentRoomKey) {
                 setupArea.style.display = 'none';
@@ -924,8 +1137,6 @@
                 lobbySettingsBtn.style.display = 'flex';
                 backBtn.style.display = 'none';
                 headerText.innerText = `Lobby (${myName})`;
-                if (myIntegratedMode) toggleIntegratedMode(true);
-                else toggleIntegratedMode(false);
                 renderSavedRooms();
                 startLobbyListeners();
             } else {
@@ -937,9 +1148,210 @@
                 backBtn.style.display = 'flex';
                 headerText.innerText = `${currentRoom}`;
                 if (!mySyncBg) applyBackground(myBgType, myBgColor, myBgImage);
-                if (myIntegratedMode) toggleIntegratedMode(true);
                 stopLobbyListeners();
                 startChatListeners();
+            }
+        }
+
+        // === PROFILE LOGIC ===
+        async function openProfile(targetUsername) {
+            shadow.querySelectorAll('.ls-dropdown-menu').forEach(m => m.classList.remove('show'));
+            profileOverlay.style.display = 'flex';
+            shadow.getElementById('ls-profile-view').style.display = 'flex';
+            shadow.getElementById('ls-profile-edit').style.display = 'none';
+            
+            const btnEdit = shadow.getElementById('ls-btn-edit-profile');
+            if (targetUsername === myName) {
+                btnEdit.style.display = 'block';
+            } else {
+                btnEdit.style.display = 'none';
+            }
+
+            // Fallback UI
+            shadow.getElementById('ls-profile-v-name').innerText = "Carregando...";
+            shadow.getElementById('ls-profile-v-country').innerText = "-";
+            shadow.getElementById('ls-profile-v-bio').innerText = "-";
+            shadow.getElementById('ls-profile-v-tags').innerHTML = "";
+            shadow.getElementById('ls-profile-v-created').innerText = "-";
+            shadow.getElementById('ls-profile-v-rooms').innerText = "-";
+            shadow.getElementById('ls-profile-v-statustext').innerText = "";
+            
+            try {
+                const doc = await db.collection('users').doc(targetUsername).get();
+                if(doc.exists) {
+                    const data = doc.data();
+                    
+                    shadow.getElementById('ls-profile-v-name').innerText = targetUsername;
+                    
+                    const avatar = shadow.getElementById('ls-profile-v-avatar');
+                    avatar.innerText = targetUsername.charAt(0).toUpperCase();
+                    avatar.style.background = data.color || '#6366f1';
+                    avatar.style.color = data.textColor || '#ffffff';
+                    
+                    shadow.getElementById('ls-profile-v-country').innerText = data.country || '🌍';
+                    shadow.getElementById('ls-profile-v-bio').innerText = data.bio || 'Sem bio.';
+                    
+                    const tContainer = shadow.getElementById('ls-profile-v-tags');
+                    tContainer.innerHTML = '';
+                    if (data.tags && data.tags.length > 0) {
+                        data.tags.forEach(t => {
+                            let c = 'ls-tag-generic';
+                            if (t === 'DEV') c = 'ls-tag-dev';
+                            if (t === 'OWNER') c = 'ls-tag-owner';
+                            if (t === 'MOD') c = 'ls-tag-mod';
+                            if (t === 'Do Biel') c = 'ls-tag-dobiel';
+                            tContainer.innerHTML += `<span class="ls-tag ${c}">${t}</span>`;
+                        });
+                    } else {
+                        tContainer.innerHTML = `<span style="color:var(--text-muted); font-size:12px;">(Você ainda não tem tags.)</span>`;
+                    }
+
+                    if (data.createdAt) {
+                        shadow.getElementById('ls-profile-v-created').innerText = data.createdAt.toDate().toLocaleDateString();
+                    }
+
+                    if (data.hideChats && targetUsername !== myName) {
+                        shadow.getElementById('ls-profile-v-rooms').innerText = "Oculto";
+                    } else {
+                        shadow.getElementById('ls-profile-v-rooms').innerText = data.roomCount || 0;
+                    }
+
+                    const statusInd = shadow.getElementById('ls-profile-v-status');
+                    const statusText = shadow.getElementById('ls-profile-v-statustext');
+                    if (data.lastSeen && (Date.now() - data.lastSeen.toMillis() < 300000)) {
+                        statusInd.style.background = '#22c55e'; // Online
+                        statusText.innerText = '🟢 Online';
+                    } else {
+                        statusInd.style.background = '#94a3b8'; // Offline
+                        statusText.innerText = '🔴 Offline';
+                    }
+
+                } else {
+                    shadow.getElementById('ls-profile-v-name').innerText = "Usuário não encontrado.";
+                }
+            } catch(e) {}
+        }
+
+        shadow.getElementById('ls-btn-open-my-profile').addEventListener('click', () => {
+            lobbySettingsOverlay.style.display = 'none';
+            openProfile(myName);
+        });
+
+        shadow.getElementById('ls-close-profile-modal').addEventListener('click', () => {
+            profileOverlay.style.display = 'none';
+        });
+
+        shadow.getElementById('ls-btn-edit-profile').addEventListener('click', () => {
+            shadow.getElementById('ls-profile-view').style.display = 'none';
+            shadow.getElementById('ls-profile-edit').style.display = 'flex';
+            shadow.getElementById('ls-btn-edit-profile').style.display = 'none';
+
+            shadow.getElementById('ls-profile-e-color').value = myColor;
+            shadow.getElementById('ls-profile-e-textcolor').value = myTextColor;
+            shadow.getElementById('ls-profile-e-bio').value = myBio;
+            shadow.getElementById('ls-profile-e-country-disp').innerText = myCountry;
+            shadow.getElementById('ls-profile-e-hiderooms').checked = myHideChats;
+            
+            const avatar = shadow.getElementById('ls-profile-e-avatar');
+            avatar.innerText = myName.charAt(0).toUpperCase();
+            avatar.style.background = myColor;
+            avatar.style.color = myTextColor;
+        });
+
+        shadow.getElementById('ls-profile-e-color').addEventListener('input', (e) => {
+            shadow.getElementById('ls-profile-e-avatar').style.background = e.target.value;
+        });
+        shadow.getElementById('ls-profile-e-textcolor').addEventListener('input', (e) => {
+            shadow.getElementById('ls-profile-e-avatar').style.color = e.target.value;
+        });
+
+        shadow.getElementById('ls-btn-get-country').addEventListener('click', async () => {
+            try {
+                const res = await fetch('https://ipapi.co/json/');
+                const data = await res.json();
+                if (data.country_code) {
+                    const codePoints = data.country_code.toUpperCase().split('').map(char => 127397 + char.charCodeAt());
+                    const flag = String.fromCodePoint(...codePoints);
+                    shadow.getElementById('ls-profile-e-country-disp').innerText = flag;
+                    myCountry = flag;
+                } else { alert("Não foi possível detectar o país."); }
+            } catch(e) { alert("Erro ao buscar localização."); }
+        });
+
+        shadow.getElementById('ls-btn-save-profile').addEventListener('click', async () => {
+            myColor = shadow.getElementById('ls-profile-e-color').value;
+            myTextColor = shadow.getElementById('ls-profile-e-textcolor').value;
+            myBio = shadow.getElementById('ls-profile-e-bio').value.trim();
+            myHideChats = shadow.getElementById('ls-profile-e-hiderooms').checked;
+            
+            localStorage.setItem('ls_usercolor', myColor);
+            localStorage.setItem('ls_usertextcolor', myTextColor);
+            localStorage.setItem('ls_userbio', myBio);
+            localStorage.setItem('ls_hidechats', myHideChats);
+
+            await syncUserProfile();
+            openProfile(myName);
+        });
+
+        // ============================
+
+        async function fetchAndRenderMembers(roomName, listEl) {
+            listEl.innerHTML = '<span style="color:var(--text-muted); font-size:13px;">Carregando...</span>';
+            try {
+                const rDoc = await db.collection('rooms').doc(roomName).get();
+                if (!rDoc.exists) {
+                    listEl.innerHTML = '<span style="color:var(--text-muted); font-size:13px;">Sala não encontrada.</span>';
+                    return;
+                }
+                const rData = rDoc.data();
+                if (rData && rData.participants && rData.participants.length > 0) {
+                    listEl.innerHTML = '';
+                    const now = Date.now();
+                    for (const p of rData.participants) {
+                        if (!userCache[p]) {
+                            const uDoc = await db.collection('users').doc(p).get();
+                            if(uDoc.exists) userCache[p] = uDoc.data();
+                        }
+                        
+                        const isAdm = (rData.createdBy === p);
+                        const uData = userCache[p] || {};
+                        const isOnline = uData.lastSeen && (now - uData.lastSeen.toMillis() < 300000); 
+
+                        const item = document.createElement('div');
+                        item.className = 'ls-room-item';
+                        item.style.cursor = 'pointer';
+                        
+                        item.innerHTML = `
+                            <div class="ls-room-avatar" style="width:36px; height:36px; font-size:14px; position:relative; background:${uData.color || '#6366f1'}; color:${uData.textColor || '#fff'}">
+                                ${p.charAt(0).toUpperCase()}
+                                <div class="ls-online-dot" style="display: ${isOnline ? 'block' : 'none'};"></div>
+                            </div>
+                            <div class="ls-room-info" style="display:flex; align-items:center;">
+                                <span class="ls-room-name">${p}</span>
+                                <div class="ls-tags-container" id="ls-member-tags-lobby-${p.replace(/\s/g, '')}"></div>
+                            </div>
+                        `;
+                        item.addEventListener('click', () => { openProfile(p); });
+                        listEl.appendChild(item);
+                        
+                        const tContainer = item.querySelector(`#ls-member-tags-lobby-${p.replace(/\s/g, '')}`);
+                        if (isAdm) tContainer.innerHTML += `<span class="ls-tag ls-tag-adm">ADM</span>`;
+                        if (uData.tags) {
+                            uData.tags.forEach(t => {
+                                let c = 'ls-tag-generic';
+                                if (t === 'DEV') c = 'ls-tag-dev';
+                                if (t === 'OWNER') c = 'ls-tag-owner';
+                                if (t === 'MOD') c = 'ls-tag-mod';
+                                if (t === 'Do Biel') c = 'ls-tag-dobiel';
+                                tContainer.innerHTML += `<span class="ls-tag ${c}">${t}</span>`;
+                            });
+                        }
+                    }
+                } else {
+                    listEl.innerHTML = '<span style="color:var(--text-muted); font-size:13px;">Nenhum membro encontrado.</span>';
+                }
+            } catch(e) {
+                listEl.innerHTML = '<span style="color:var(--text-muted); font-size:13px;">Erro ao carregar membros.</span>';
             }
         }
 
@@ -958,17 +1370,20 @@
                 const initial = room.name.charAt(0).toUpperCase();
                 
                 let rawPass = room.rawPass || '';
+                let isMuted = mutedRooms.includes(room.name);
 
                 item.innerHTML = `
                     <div class="ls-room-avatar">${initial}</div>
                     <div class="ls-room-info">
-                        <div class="ls-room-name">${room.name}</div>
+                        <div class="ls-room-name">${room.name} ${isMuted ? '🔕' : ''}</div>
                         <div class="ls-room-status" id="ls-status-${room.name}">Toque para entrar</div>
                     </div>
                     <div class="ls-room-unread" id="ls-unread-${room.name}"></div>
                     <div class="ls-dropdown-container">
                         <button class="ls-room-options" data-index="${index}">⋮</button>
                         <div class="ls-dropdown-menu" id="ls-drop-${index}">
+                            <button class="ls-dropdown-item" data-action="members" data-name="${room.name}">👥 Ver Membros</button>
+                            <button class="ls-dropdown-item" data-action="mute" data-name="${room.name}">${isMuted ? '🔔 Reativar Som' : '🔕 Silenciar Chat'}</button>
                             <button class="ls-dropdown-item" data-action="share" data-name="${room.name}" data-rawpass="${rawPass}">🔗 Compartilhar</button>
                             <button class="ls-dropdown-item" data-action="appearance" data-name="${room.name}">🎨 Aparência do Chat</button>
                             <div style="height:1px; background:var(--border-color); margin:4px 0;"></div>
@@ -993,7 +1408,20 @@
                     btn.addEventListener('click', async (e) => {
                         e.stopPropagation();
                         dropMenu.classList.remove('show');
-                        if (btn.dataset.action === 'share') {
+                        
+                        if (btn.dataset.action === 'members') {
+                            membersOverlay.style.display = 'flex';
+                            fetchAndRenderMembers(btn.dataset.name, shadow.getElementById('ls-members-list'));
+                        } else if (btn.dataset.action === 'mute') {
+                            const rName = btn.dataset.name;
+                            if(mutedRooms.includes(rName)) {
+                                mutedRooms = mutedRooms.filter(r => r !== rName);
+                            } else {
+                                mutedRooms.push(rName);
+                            }
+                            localStorage.setItem('ls_muted_rooms', JSON.stringify(mutedRooms));
+                            renderSavedRooms();
+                        } else if (btn.dataset.action === 'share') {
                             let passToShare = btn.dataset.rawpass;
                             if (!passToShare) {
                                 passToShare = prompt("Qual a senha dessa sala para incluir no convite?") || "[Sua Senha]";
@@ -1023,6 +1451,7 @@
                         } else if(btn.dataset.action === 'remove') {
                             savedRooms.splice(btn.dataset.index, 1);
                             localStorage.setItem('ls_saved_rooms', JSON.stringify(savedRooms));
+                            await syncUserProfile();
                             renderSavedRooms();
                             startLobbyListeners();
                         }
@@ -1042,6 +1471,7 @@
                             const data = snap.docs[0].data();
                             const statusEl = shadow.getElementById(`ls-status-${room.name}`);
                             const unreadEl = shadow.getElementById(`ls-unread-${room.name}`);
+                            
                             if (statusEl && !data.deleted) {
                                 let msgText = data.text;
                                 if (data.type === 'image') msgText = '📷 Imagem';
@@ -1073,6 +1503,7 @@
                                         if (myHideApp && myHideRevive) {
                                             fab.style.display = 'flex';
                                         }
+                                        if(!mutedRooms.includes(room.name)) playNotificationSound();
                                     }
                                 } else {
                                     unreadEl.style.display = 'none';
@@ -1107,6 +1538,7 @@
                     alert("Esta sala foi encerrada pelo dono.");
                     savedRooms = savedRooms.filter(r => r.name !== roomName);
                     localStorage.setItem('ls_saved_rooms', JSON.stringify(savedRooms));
+                    await syncUserProfile();
                     renderSavedRooms();
                     startLobbyListeners();
                     return;
@@ -1126,127 +1558,8 @@
             } catch(e) {}
         }
 
-        shadow.getElementById('ls-setup-btn').addEventListener('click', async () => {
-            const name = shadow.getElementById('ls-setup-name').value.trim();
-            const pin = shadow.getElementById('ls-setup-pin').value.trim();
+        shadow.getElementById('ls-setup-btn').addEventListener('click', () => shadow.getElementById('ls-login-btn').click());
 
-            if (!name) return alert("Digite um apelido!");
-            if (name.length > 100) return alert("O apelido deve ter no máximo 100 caracteres.");
-            if (!pin || pin.length < 4) return alert("Digite um PIN válido (mínimo de 4 dígitos).");
-
-            try {
-                const userDoc = await db.collection('users').doc(name).get();
-                
-                if (userDoc.exists) {
-                    const data = userDoc.data();
-                    if (data.pin && data.pin !== pin) {
-                        return alert("PIN incorreto! Este usuário já existe e está protegido.");
-                    } else if (!data.pin && data.deviceId !== myDeviceId) {
-                        return alert("Este apelido já está em uso!");
-                    }
-                } else {
-                    const snapshot = await db.collection('users').where('deviceId', '==', myDeviceId).get();
-                    if (snapshot.size >= 3) {
-                        return alert("Você já atingiu o limite de 3 perfis criados neste dispositivo.");
-                    }
-                }
-            } catch (e) {
-                console.error("Erro ao verificar usuário:", e);
-                return alert("Erro ao conectar ao banco de dados.");
-            }
-
-            myName = name;
-            myPin = pin;
-            myColor = shadow.getElementById('ls-setup-color').value;
-            
-            localStorage.setItem('ls_username', myName);
-            localStorage.setItem('ls_usercolor', myColor);
-            localStorage.setItem('ls_userpin', myPin);
-            
-            await syncUserProfile();
-            checkScreenState();
-        });
-
-        lobbySettingsBtn.addEventListener('click', () => {
-            if (lobbySettingsOverlay.style.display === 'flex') {
-                lobbySettingsOverlay.style.display = 'none';
-            } else {
-                lobbySettingsOverlay.style.display = 'flex';
-                shadow.getElementById('ls-edit-name').value = myName || '';
-                shadow.getElementById('ls-edit-color').value = myColor || '#6366f1';
-                shadow.getElementById('ls-app-theme').value = localStorage.getItem('ls_theme') !== null ? localStorage.getItem('ls_theme') : '';
-                shadow.getElementById('ls-app-sound').checked = localStorage.getItem('ls_sound') !== 'false';
-                shadow.getElementById('ls-app-hide').checked = myHideApp;
-                shadow.getElementById('ls-app-revive').checked = myHideRevive;
-                shadow.getElementById('ls-app-integrated').checked = myIntegratedMode;
-                shadow.getElementById('ls-app-hidesys').checked = myHideSys;
-            }
-        });
-
-        shadow.getElementById('ls-close-lobby-modal').addEventListener('click', () => {
-            lobbySettingsOverlay.style.display = 'none';
-        });
-
-        shadow.getElementById('ls-save-lobby-config-btn').addEventListener('click', async () => {
-            const name = shadow.getElementById('ls-edit-name').value.trim();
-            
-            if (name && name !== myName) {
-                if (name.length > 100) return alert("O apelido deve ter no máximo 100 caracteres.");
-                try {
-                    const userDoc = await db.collection('users').doc(name).get();
-                    if (userDoc.exists) {
-                         const data = userDoc.data();
-                         if (data.pin && data.pin !== myPin) {
-                             return alert("PIN incorreto ou usuário já existe.");
-                         }
-                    } else {
-                         const snapshot = await db.collection('users').where('deviceId', '==', myDeviceId).get();
-                         if (snapshot.size >= 3) {
-                             return alert("Você já atingiu o limite de 3 perfis criados neste dispositivo.");
-                         }
-                    }
-                } catch(e) {}
-                myName = name;
-            } else if (name) {
-                myName = name;
-            }
-
-            myColor = shadow.getElementById('ls-edit-color').value;
-            
-            const selectedTheme = shadow.getElementById('ls-app-theme').value;
-            const soundEnabled = shadow.getElementById('ls-app-sound').checked;
-            myHideApp = shadow.getElementById('ls-app-hide').checked;
-            myHideRevive = shadow.getElementById('ls-app-revive').checked;
-            myIntegratedMode = shadow.getElementById('ls-app-integrated').checked;
-            myHideSys = shadow.getElementById('ls-app-hidesys').checked;
-
-            localStorage.setItem('ls_username', myName);
-            localStorage.setItem('ls_usercolor', myColor);
-            localStorage.setItem('ls_theme', selectedTheme);
-            localStorage.setItem('ls_sound', soundEnabled);
-            localStorage.setItem('ls_hide_app', myHideApp);
-            localStorage.setItem('ls_hide_revive', myHideRevive);
-            localStorage.setItem('ls_integrated', myIntegratedMode);
-            localStorage.setItem('ls_hide_sys', myHideSys);
-            
-            wrapper.className = selectedTheme;
-            
-            await syncUserProfile();
-            lobbySettingsOverlay.style.display = 'none';
-            checkScreenState();
-        });
-
-        shadow.getElementById('ls-wipe-data-btn').addEventListener('click', () => {
-            if(!confirm("Deseja apagar todos os seus dados e salas salvas deste navegador?")) return;
-            localStorage.clear(); 
-            myName = null; myPin = null; currentRoom = null; currentRoomKey = null; savedRooms = [];
-            myDeviceId = crypto.randomUUID();
-            localStorage.setItem('ls_device_id', myDeviceId);
-            wrapper.className = '';
-            checkScreenState();
-        });
-
-        shadow.getElementById('ls-fab-add').addEventListener('click', () => { addRoomOverlay.style.display = 'flex'; });
         shadow.getElementById('ls-close-add-modal').addEventListener('click', () => { addRoomOverlay.style.display = 'none'; });
 
         const inputRoom = shadow.getElementById('ls-lobby-room');
@@ -1268,6 +1581,7 @@
                 await docRef.set({ password: hashedPass, createdBy: myName, deviceId: myDeviceId, createdAt: firebase.firestore.FieldValue.serverTimestamp(), participants: [myName] });
                 
                 saveRoomToLocalList(roomName, hashedPass, roomPass);
+                await syncUserProfile();
                 currentRoom = roomName; currentRoomKey = roomName;
                 localStorage.setItem('ls_current_room', currentRoom); localStorage.setItem('ls_room_key', currentRoomKey);
                 
@@ -1288,6 +1602,7 @@
                 const hashedPass = await hashPassword(roomPass);
                 if(doc.data().password !== hashedPass) return alert("Senha incorreta!");
                 saveRoomToLocalList(roomName, hashedPass, roomPass);
+                await syncUserProfile();
                 currentRoom = roomName; currentRoomKey = roomName;
                 localStorage.setItem('ls_current_room', currentRoom); localStorage.setItem('ls_room_key', currentRoomKey);
                 
@@ -1355,51 +1670,7 @@
         shadow.getElementById('ls-menu-members').addEventListener('click', () => {
             chatDropdown.classList.remove('show');
             membersOverlay.style.display = 'flex';
-            
-            const list = shadow.getElementById('ls-members-list');
-            list.innerHTML = '<span style="color:var(--text-muted); font-size:13px;">Carregando...</span>';
-            
-            if (currentRoomData && currentRoomData.participants) {
-                list.innerHTML = '';
-                const now = Date.now();
-
-                currentRoomData.participants.forEach(p => {
-                    const item = document.createElement('div');
-                    item.className = 'ls-room-item';
-                    item.style.cursor = 'default';
-                    
-                    const isAdm = (currentRoomData.createdBy === p);
-                    const isOnline = userCache[p] && userCache[p].lastSeen && (now - userCache[p].lastSeen.toMillis() < 300000); 
-
-                    item.innerHTML = `
-                        <div class="ls-room-avatar" style="width:36px; height:36px; font-size:14px; position:relative;">
-                            ${p.charAt(0).toUpperCase()}
-                            <div class="ls-online-dot" style="display: ${isOnline ? 'block' : 'none'};"></div>
-                        </div>
-                        <div class="ls-room-info" style="display:flex; align-items:center;">
-                            <span class="ls-room-name">${p}</span>
-                            <div class="ls-tags-container" id="ls-member-tags-${p.replace(/\s/g, '')}"></div>
-                        </div>
-                    `;
-                    list.appendChild(item);
-                    
-                    const tContainer = item.querySelector(`#ls-member-tags-${p.replace(/\s/g, '')}`);
-                    if (isAdm) tContainer.innerHTML += `<span class="ls-tag ls-tag-adm">ADM</span>`;
-                    
-                    if (userCache[p] && userCache[p].tags) {
-                        userCache[p].tags.forEach(t => {
-                            let c = 'ls-tag-generic';
-                            if (t === 'DEV') c = 'ls-tag-dev';
-                            if (t === 'OWNER') c = 'ls-tag-owner';
-                            if (t === 'MOD') c = 'ls-tag-mod';
-                            if (t === 'Do Biel') c = 'ls-tag-dobiel';
-                            tContainer.innerHTML += `<span class="ls-tag ${c}">${t}</span>`;
-                        });
-                    }
-                });
-            } else {
-                list.innerHTML = '<span style="color:var(--text-muted); font-size:13px;">Nenhum membro encontrado.</span>';
-            }
+            fetchAndRenderMembers(currentRoom, shadow.getElementById('ls-members-list'));
         });
 
         shadow.getElementById('ls-close-members-modal').addEventListener('click', () => { 
@@ -1524,6 +1795,7 @@
                         const nameLabel = document.createElement('span');
                         nameLabel.className = 'ls-sender-name';
                         nameLabel.innerText = data.sender;
+                        nameLabel.onclick = () => openProfile(data.sender);
                         senderRow.appendChild(nameLabel);
 
                         const tagsContainer = document.createElement('span');
@@ -1572,6 +1844,13 @@
                         const msgBubble = document.createElement('div');
                         msgBubble.className = 'ls-message';
                         msgBubble.style.padding = '4px';
+                        
+                        // Aplica cor do texto se existir, senão usa branco padrão do sender
+                        if(data.textColor) {
+                            msgBubble.style.color = data.textColor;
+                        } else if (isMe) {
+                            msgBubble.style.color = '#ffffff';
+                        }
 
                         if (data.deleted) {
                             msgBubble.classList.add('deleted-msg');
@@ -1602,6 +1881,7 @@
                         const nameLabel = document.createElement('span');
                         nameLabel.className = 'ls-sender-name';
                         nameLabel.innerText = data.sender;
+                        nameLabel.onclick = () => openProfile(data.sender);
                         senderRow.appendChild(nameLabel);
 
                         const tagsContainer = document.createElement('span');
@@ -1649,6 +1929,12 @@
                         
                         const msgBubble = document.createElement('div');
                         msgBubble.className = 'ls-message';
+
+                        if(data.textColor) {
+                            msgBubble.style.color = data.textColor;
+                        } else if (isMe) {
+                            msgBubble.style.color = '#ffffff';
+                        }
 
                         if (data.deleted) {
                             msgBubble.classList.add('deleted-msg');
@@ -1702,18 +1988,16 @@
                             }
     
                             if (data.sender !== myName) {
-                                playNotificationSound();
-                                
-                                if (!chatWindow.classList.contains('open') || myIntegratedMode) {
-                                    // Se está no modo integrado, só mostra badge se o chat não estiver visível
-                                    if (!myIntegratedMode) {
-                                        unreadCount++;
-                                        badge.style.display = 'flex';
-                                        badge.innerText = unreadCount > 5 ? '5+' : unreadCount;
-                                        if (myHideApp && myHideRevive) {
-                                            fab.style.display = 'flex';
-                                        }
+                                if (!chatWindow.classList.contains('open') && !myIntegratedMode) {
+                                    if(!mutedRooms.includes(currentRoom)) playNotificationSound();
+                                    unreadCount++;
+                                    badge.style.display = 'flex';
+                                    badge.innerText = unreadCount > 5 ? '5+' : unreadCount;
+                                    if (myHideApp && myHideRevive) {
+                                        fab.style.display = 'flex';
                                     }
+                                } else {
+                                    if(!mutedRooms.includes(currentRoom)) playReceiveSound();
                                 }
                             }
                         }
@@ -1924,6 +2208,7 @@
                     deleted: false
                 });
                 updateLastRead(currentRoom);
+                playSendSound();
             } catch (e) {}
         });
 
@@ -1962,6 +2247,7 @@
                     deleted: false
                 });
                 updateLastRead(currentRoom);
+                playSendSound();
             } catch (e) {}
         });
 
@@ -2018,6 +2304,7 @@
                     deleted: false
                 });
                 updateLastRead(currentRoom);
+                playSendSound();
             } catch (e) {}
         }
 
@@ -2042,16 +2329,17 @@
                     sender: myName, 
                     deviceId: myDeviceId,
                     color: myColor, 
+                    textColor: myTextColor,
                     roomKey: currentRoomKey,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp(), 
                     deleted: false
                 });
                 updateLastRead(currentRoom);
+                playSendSound();
             } catch (e) {}
         }
 
         shadow.getElementById('ls-send-btn').addEventListener('click', sendMessage);
-        input.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
         
         if (myHideApp) fab.style.display = 'none';
         checkScreenState();
