@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      42.0
+// @version      43.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -179,7 +179,7 @@
             .ls-profile-stat-value { font-size: 18px; font-weight: 700; color: var(--text-primary); display: block; margin-top: 4px; }
             .ls-profile-stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
 
-            #ls-chat-area { flex: 1; display: none; flex-direction: column; overflow: hidden; position: relative; } #ls-messages { flex: 1; padding: 20px 16px; overflow-y: auto; background-color: transparent; display: flex; flex-direction: column; gap: 14px; }
+            #ls-chat-area { flex: 1; display: none; flex-direction: column; overflow: hidden; position: relative; } #ls-messages { flex: 1; padding: 20px 16px 8px; overflow-y: auto; background-color: transparent; display: flex; flex-direction: column; gap: 14px; }
             #ls-reply-bar { display: none; background: rgba(0,0,0,0.2); padding: 8px 12px; border-left: 3px solid #6366f1; margin: 0 16px 10px; border-radius: 4px; font-size: 12px; color: var(--text-muted); position: relative; } #ls-reply-bar-close { position: absolute; right: 8px; top: 8px; cursor: pointer; font-size: 14px; color: inherit; border: none; background: none; }
             #ls-mention-panel { position: absolute; bottom: 60px; left: 16px; background-color: var(--bg-overlay); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: none; flex-direction: column; min-width: 150px; max-height: 180px; overflow-y: auto; z-index: 50; padding: 4px 0; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); } .ls-mention-item { padding: 8px 16px; color: var(--text-primary); font-size: 13px; cursor: pointer; font-weight: 500; } .ls-mention-item:hover, .ls-mention-item.active { background-color: rgba(128,128,128,0.15); }
             .ls-message-container { display: flex; flex-direction: column; max-width: 85%; position: relative; } .ls-message-container.sent { align-self: flex-end; align-items: flex-end; } .ls-message-container.received { align-self: flex-start; align-items: flex-start; }
@@ -404,6 +404,7 @@
 
                 <div id="ls-chat-area">
                     <div id="ls-messages"></div>
+                    <div id="ls-typing-indicator" style="display: none; padding: 0 16px 8px; font-size: 11px; color: var(--text-muted); font-style: italic; min-height: 16px;"></div>
                     <div id="ls-reply-bar"><span id="ls-reply-bar-text"></span><button id="ls-reply-bar-close">✕</button></div>
                     <div id="ls-countdown-overlay"><div id="ls-countdown-number">3</div><div id="ls-countdown-text">Preparando...</div></div>
                     <div id="ls-mention-panel"></div>
@@ -506,6 +507,9 @@
         let lobbyUnsubscribes = [];
         let currentRoomData = null;
         let userCache = {};
+        
+        let isTyping = false;
+        let typingTimeout = null;
 
         shadow.getElementById('ls-forgot-pin').addEventListener('click', () => {
             alert("No momento o serviço de recuperação de PIN está desativado, em breve criaremos nosso discord para tickets de suporte e ajuda, obrigado!");
@@ -595,6 +599,18 @@
         let isMentioning = false; let activeMentionIndex = 0; let mentionMatches = [];
 
         input.addEventListener('input', (e) => {
+            if (currentRoom && currentRoomKey) {
+                if (!isTyping) {
+                    isTyping = true;
+                    db.collection('rooms').doc(currentRoom).set({ typing: firebase.firestore.FieldValue.arrayUnion(myName) }, { merge: true }).catch(()=>{});
+                }
+                clearTimeout(typingTimeout);
+                typingTimeout = setTimeout(() => {
+                    isTyping = false;
+                    db.collection('rooms').doc(currentRoom).set({ typing: firebase.firestore.FieldValue.arrayRemove(myName) }, { merge: true }).catch(()=>{});
+                }, 2000);
+            }
+
             const val = input.value; const cursorPos = input.selectionStart;
             const textBeforeCursor = val.substring(0, cursorPos);
             const match = textBeforeCursor.match(/(?:^|\s)@([^@\n]*)$/);
@@ -630,7 +646,14 @@
             mentionPanel.style.display = 'none'; isMentioning = false;
         }
 
-        input.addEventListener('blur', () => { setTimeout(() => { mentionPanel.style.display = 'none'; isMentioning = false; }, 150); });
+        input.addEventListener('blur', () => { 
+            setTimeout(() => { mentionPanel.style.display = 'none'; isMentioning = false; }, 150); 
+            if (isTyping && currentRoom) {
+                clearTimeout(typingTimeout);
+                isTyping = false;
+                db.collection('rooms').doc(currentRoom).set({ typing: firebase.firestore.FieldValue.arrayRemove(myName) }, { merge: true }).catch(()=>{});
+            }
+        });
 
         const header = shadow.getElementById('ls-header');
         let isDragging = false, startX, startY, currentLeft, currentTop;
@@ -1122,7 +1145,11 @@
         shadow.getElementById('ls-menu-members').addEventListener('click', () => { chatDropdown.classList.remove('show'); membersOverlay.style.display = 'flex'; fetchAndRenderMembers(currentRoom, shadow.getElementById('ls-members-list')); });
         shadow.getElementById('ls-close-members-modal').addEventListener('click', () => { membersOverlay.style.display = 'none'; });
 
-        backBtn.addEventListener('click', () => { sendSystemAction('SYSTEM_LEAVE'); stopChatListeners(); currentRoom = null; currentRoomKey = null; currentRoomData = null; ls.removeItem('ls_current_room'); ls.removeItem('ls_room_key'); checkScreenState(); });
+        backBtn.addEventListener('click', () => { 
+            if (isTyping && currentRoom) { clearTimeout(typingTimeout); isTyping = false; db.collection('rooms').doc(currentRoom).set({ typing: firebase.firestore.FieldValue.arrayRemove(myName) }, { merge: true }).catch(()=>{}); }
+            sendSystemAction('SYSTEM_LEAVE'); stopChatListeners(); currentRoom = null; currentRoomKey = null; currentRoomData = null; ls.removeItem('ls_current_room'); ls.removeItem('ls_room_key'); checkScreenState(); 
+        });
+        
         shadow.getElementById('ls-menu-delete').addEventListener('click', async () => { chatDropdown.classList.remove('show'); if(!confirm("Encerrar e deletar a sala para todos?")) return; try { await db.collection('rooms').doc(currentRoom).delete(); } catch(e){} });
 
         function startChatListeners() {
@@ -1137,6 +1164,22 @@
                 } else {
                     currentRoomData = doc.data();
                     if (currentRoomData.participants) { currentRoomData.participants.forEach(p => { if (!userCache[p]) { db.collection('users').doc(p).get().then(u => { if (u.exists) userCache[p] = u.data(); }); } }); }
+                    
+                    const typingEl = shadow.getElementById('ls-typing-indicator');
+                    if (currentRoomData.typing && typingEl) {
+                        const typers = currentRoomData.typing.filter(u => u !== myName);
+                        if (typers.length === 1) {
+                            typingEl.innerText = `${typers[0]} está digitando...`;
+                            typingEl.style.display = 'block';
+                        } else if (typers.length > 1) {
+                            typingEl.innerText = `Alguns usuários estão digitando...`;
+                            typingEl.style.display = 'block';
+                        } else {
+                            typingEl.style.display = 'none';
+                        }
+                    } else if (typingEl) {
+                        typingEl.style.display = 'none';
+                    }
                 }
             });
 
@@ -1419,6 +1462,13 @@
             let finalText = rawText;
             if (replyTarget) { finalText = `[REPLY:${replyTarget.sender}|${replyTarget.text}] ${rawText}`; replyTarget = null; shadow.getElementById('ls-reply-bar').style.display = 'none'; }
             input.value = '';
+            
+            if (isTyping) {
+                clearTimeout(typingTimeout);
+                isTyping = false;
+                db.collection('rooms').doc(currentRoom).set({ typing: firebase.firestore.FieldValue.arrayRemove(myName) }, { merge: true }).catch(()=>{});
+            }
+
             try { await db.collection('rooms').doc(currentRoom).collection('messages').add({ type: 'text', text: finalText, sender: myName, deviceId: myDeviceId, color: myColor, textColor: myTextColor, roomKey: currentRoomKey, timestamp: firebase.firestore.FieldValue.serverTimestamp(), deleted: false }); updateLastRead(currentRoom); playSendSound(); } catch (e) {}
         }
 
