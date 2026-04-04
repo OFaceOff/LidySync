@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      22.0
+// @version      22.1
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -37,7 +37,9 @@
             gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
             osc.start();
             osc.stop(ctx.currentTime + 0.1);
-        } catch (e) {}
+        } catch (e) {
+            console.warn("LidySync: Som bloqueado pelo navegador. O usuário precisa interagir com a página (clicar) para permitir áudio.");
+        }
     }
 
     function escapeHTML(str) {
@@ -645,8 +647,11 @@
             membersOverlay.style.display = 'none';
             editingRoomAppearance = null;
             
+            if (myName) {
+                db.collection('users').doc(myName).set({ color: myColor, deviceId: myDeviceId, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
+            }
+
             if (!myName) {
-                db.collection('users').doc(myName).set({ color: myColor, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
                 setupArea.style.display = 'flex';
                 lobbyArea.style.display = 'none';
                 chatArea.style.display = 'none';
@@ -859,7 +864,6 @@
             myColor = shadow.getElementById('ls-setup-color').value;
             localStorage.setItem('ls_username', myName);
             localStorage.setItem('ls_usercolor', myColor);
-            db.collection('users').doc(myName).set({ color: myColor, deviceId: myDeviceId, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
             checkScreenState();
         });
 
