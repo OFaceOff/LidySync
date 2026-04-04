@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      40.0
+// @version      42.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -70,15 +70,21 @@
 
     function buildTagsHTML(isAdm, uData) {
         let html = '';
-        if (isAdm) html += `<span class="ls-tag ls-tag-adm">ADM</span>`;
+        if (isAdm) html += `<span class="ls-tag ls-tag-adm" title="Este usuário é o Administrador desse chat e ele pode alterar ou deletar o chat atual.">ADM</span>`;
         if (uData && uData.tags) {
             uData.tags.forEach(t => {
                 let c = 'ls-tag-generic';
-                if (t === 'DEV') c = 'ls-tag-dev';
-                if (t === 'OWNER') c = 'ls-tag-owner';
-                if (t === 'MOD') c = 'ls-tag-mod';
-                if (t === 'Do Biel') c = 'ls-tag-dobiel';
-                html += `<span class="ls-tag ${c}">${t}</span>`;
+                let text = t;
+                let title = '';
+                
+                if (t === 'DEV') { c = 'ls-tag-dev'; title = 'Este usuário faz parte da equipe de desenvolvimento da FStudio'; }
+                else if (t === 'OWNER') { c = 'ls-tag-owner'; title = 'Este usuário detém a posse do aplicativo, ele que manda e desmanda, quer coisas novas ? pede pra ele que é ele que adiciona :3'; }
+                else if (t === 'MOD') { c = 'ls-tag-mod'; title = 'Este usuário faz parte da equipe de moderação e está aqui para te ajudar'; }
+                else if (t === 'LINDA DE MORRER' || t === 'Do Biel') { c = 'ls-tag-linda'; text = 'LINDA DE MORRER'; title = 'Essa pessoa é considerada muito linda por quem deu a tag a ela.'; }
+                else if (t === 'VERIFICADO') { c = 'ls-tag-verified'; text = '✓'; title = 'Usuário Verificado e Oficial'; }
+                else if (t === 'VIP') { c = 'ls-tag-vip'; title = 'Membro VIP - Apoiador da Comunidade'; }
+                
+                html += `<span class="ls-tag ${c}" title="${title}">${text}</span>`;
             });
         }
         return html;
@@ -127,20 +133,22 @@
             #ls-header:active { cursor: grabbing; } .ls-header-btns { display: flex; gap: 8px; align-items: center; cursor: default; } .ls-header-btn { cursor: pointer; color: var(--text-muted); font-size: 18px; background: none; border: none; transition: color 0.2s; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px;} .ls-header-btn:hover { color: var(--text-primary); background: rgba(128,128,128,0.1); }
             .ls-dropdown-container { position: relative; } .ls-dropdown-menu { position: absolute; right: 0; top: calc(100% + 5px); background-color: var(--bg-overlay); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: none; flex-direction: column; min-width: 200px; z-index: 50; overflow: hidden; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); } .ls-dropdown-menu.show { display: flex; animation: fadeIn 0.15s ease-out; } @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } } .ls-dropdown-item { padding: 12px 16px; color: var(--text-primary); font-size: 13.5px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; background: none; border: none; text-align: left; width: 100%; font-weight: 500; } .ls-dropdown-item:hover { background-color: rgba(128,128,128,0.1); } .ls-dropdown-item.danger { color: #ef4444; }
             .ls-screen { flex: 1; display: none; flex-direction: column; padding: 20px; background-color: transparent; gap: 16px; position: relative; overflow-y: auto;}
-            #ls-room-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; padding-bottom: 70px; } .ls-room-item { display: flex; align-items: center; padding: 12px; background: rgba(128,128,128,0.05); border: 1px solid var(--border-color); border-radius: 12px; cursor: pointer; transition: 0.2s; position: relative; } .ls-room-item:hover { background: rgba(128,128,128,0.1); } .ls-room-avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #8b5cf6); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; color: white; margin-right: 12px; flex-shrink: 0; position: relative; } .ls-online-dot { position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; background: #22c55e; border-radius: 50%; border: 2px solid var(--bg-surface); display: none; } .ls-room-info { flex: 1; overflow: hidden; } .ls-room-name { color: var(--text-primary); font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px; } .ls-room-status { color: var(--text-muted); font-size: 12px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ls-room-unread { width: 10px; height: 10px; background: #ef4444; border-radius: 50%; display: none; margin-left: 8px; flex-shrink: 0; } .ls-room-options { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: 0.2s; margin-left: 4px; } .ls-room-options:hover { background: rgba(128,128,128,0.1); color: var(--text-primary); }
-            .ls-tags-container { display: inline-flex; gap: 4px; align-items: center; vertical-align: middle; flex-wrap: wrap; } .ls-tag { font-size: 8px; font-weight: 800; padding: 2px 5px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; } .ls-tag-adm { background-color: #ef4444; color: #ffffff; } .ls-tag-dev { background-color: #eab308; color: #000000; } .ls-tag-owner { background-color: #2d0778; color: #ffffff; } .ls-tag-mod { background-color: #345beb; color: #ffffff; } .ls-tag-dobiel { background-color: #fbcfe8; color: #be185d; } .ls-tag-generic { background-color: rgba(128,128,128,0.2); color: inherit; }
+            #ls-room-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; padding-bottom: 70px; } .ls-room-item { display: flex; align-items: center; padding: 12px; background: rgba(128,128,128,0.05); border: 1px solid var(--border-color); border-radius: 12px; cursor: pointer; transition: 0.2s; position: relative; } .ls-room-item:hover { background: rgba(128,128,128,0.1); } .ls-room-avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #8b5cf6); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; color: white; margin-right: 12px; flex-shrink: 0; position: relative; background-size: cover !important; background-position: center !important; } .ls-online-dot { position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; background: #22c55e; border-radius: 50%; border: 2px solid var(--bg-surface); display: none; } .ls-room-info { flex: 1; overflow: hidden; } .ls-room-name { color: var(--text-primary); font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px; } .ls-room-status { color: var(--text-muted); font-size: 12px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ls-room-unread { width: 10px; height: 10px; background: #ef4444; border-radius: 50%; display: none; margin-left: 8px; flex-shrink: 0; } .ls-room-options { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: 0.2s; margin-left: 4px; } .ls-room-options:hover { background: rgba(128,128,128,0.1); color: var(--text-primary); }
+            .ls-tags-container { display: inline-flex; gap: 4px; align-items: center; vertical-align: middle; flex-wrap: wrap; } .ls-tag { font-size: 8px; font-weight: 800; padding: 2px 5px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; cursor: help; } .ls-tag-adm { background-color: #ef4444; color: #ffffff; } .ls-tag-dev { background-color: #eab308; color: #000000; } .ls-tag-owner { background-color: #2d0778; color: #ffffff; } .ls-tag-mod { background-color: #345beb; color: #ffffff; } .ls-tag-linda { background-color: #fbcfe8; color: #be185d; } .ls-tag-generic { background-color: rgba(128,128,128,0.2); color: inherit; }
+            .ls-tag-vip { background: linear-gradient(135deg, #f59e0b, #d97706); color: #ffffff; border: 1px solid #fbbf24; }
+            .ls-tag-verified { background-color: #1da1f2 !important; color: #ffffff !important; border-radius: 50% !important; width: 14px !important; height: 14px !important; display: inline-flex !important; justify-content: center; align-items: center; padding: 0 !important; font-size: 9px !important; border: 1px solid #ffffff; box-shadow: 0 0 4px rgba(29, 161, 242, 0.6); }
             #ls-fab-add { position: absolute; bottom: 20px; right: 20px; width: 50px; height: 50px; background: var(--fab-bg); color: var(--fab-color); border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: var(--fab-shadow); font-size: 24px; transition: 0.2s; z-index: 20; border: none; backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); } #ls-fab-add:hover { transform: scale(1.1); }
             .ls-modal-overlay { position: absolute; top: 54px; left: 0; width: 100%; height: calc(100% - 54px); background-color: var(--bg-modal); z-index: 30; display: none; flex-direction: column; overflow-y: auto; }
             .ls-modal-content { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
             .ls-label { color: var(--text-muted); font-size: 12px; font-weight: 600; margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
-            .ls-input-wrapper { position: relative; width: 100%; display: flex; align-items: center; } .ls-input-text, .ls-select, .ls-textarea { background-color: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; color: var(--text-primary); outline: none; font-size: 14px; width: 100%; transition: all 0.2s; } .ls-input-text:focus, .ls-select:focus, .ls-textarea:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15); } .ls-textarea { resize: vertical; min-height: 80px; } .ls-pass-toggle { position: absolute; right: 12px; background: none; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; padding: 4px; border-radius: 4px; } .ls-pass-toggle:hover { color: var(--text-primary); background: rgba(128,128,128,0.1); }
+            .ls-input-wrapper { position: relative; width: 100%; display: flex; align-items: center; } .ls-input-text, .ls-select, .ls-textarea, .ls-input-file { background-color: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; color: var(--text-primary); outline: none; font-size: 14px; width: 100%; transition: all 0.2s; } .ls-input-text:focus, .ls-select:focus, .ls-textarea:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15); } .ls-textarea { resize: vertical; min-height: 80px; } .ls-pass-toggle { position: absolute; right: 12px; background: none; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; padding: 4px; border-radius: 4px; } .ls-pass-toggle:hover { color: var(--text-primary); background: rgba(128,128,128,0.1); }
             .ls-input-color { width: 100%; height: 42px; border: none; border-radius: 10px; cursor: pointer; background: none; padding: 0; } .ls-input-color::-webkit-color-swatch-wrapper { padding: 0; } .ls-input-color::-webkit-color-swatch { border: 1px solid var(--border-color); border-radius: 10px; }
             .ls-checkbox-group { display: flex; align-items: flex-start; gap: 10px; color: var(--text-primary); font-size: 13.5px; margin-top: 5px; cursor: pointer; line-height: 1.5; }
             .ls-btn-primary { background: var(--btn-primary-bg); color: var(--btn-primary-color); border: none; border-radius: 10px; padding: 14px; font-weight: 600; cursor: pointer; margin-top: 10px; transition: all 0.2s; width: 100%; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); } .ls-btn-primary:hover { transform: translateY(-1px); filter: brightness(1.1); } .ls-btn-secondary { background-color: var(--btn-secondary-bg); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; width: 100%; font-size: 14px; } .ls-btn-secondary:hover { filter: brightness(1.2); } .ls-btn-danger { background-color: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 10px; padding: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; width: 100%; font-size: 14px; } .ls-btn-danger:hover { background-color: #ef4444; color: white; }
             .ls-config-section { background: rgba(128,128,128,0.05); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 8px;}
             
-            .ls-profile-banner { height: 120px; border-radius: 0 0 0 0; background: #6366f1; position: relative; }
-            .ls-profile-avatar-large { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.3); flex-shrink: 0; position: relative; border: 4px solid var(--bg-modal); background: var(--bg-surface); }
+            .ls-profile-banner { height: 120px; border-radius: 0 0 0 0; background: #6366f1; position: relative; background-size: cover !important; background-position: center !important; }
+            .ls-profile-avatar-large { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.3); flex-shrink: 0; position: relative; border: 4px solid var(--bg-modal); background: var(--bg-surface); background-size: cover !important; background-position: center !important; }
             .ls-profile-status-indicator { position: absolute; bottom: 2px; right: 2px; width: 16px; height: 16px; border-radius: 50%; border: 3px solid var(--bg-modal); }
             .ls-profile-bio-box { background: rgba(128,128,128,0.05); padding: 12px 16px; border-radius: 10px; border-left: 3px solid var(--border-color); margin-top: 12px; font-size: 13.5px; line-height: 1.5; color: var(--text-primary); }
             .ls-profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
@@ -218,6 +226,10 @@
                         <button class="ls-btn-primary" id="ls-login-btn" style="flex: 1; margin-top: 0;">Entrar</button>
                         <button class="ls-btn-secondary" id="ls-register-btn" style="flex: 1; margin-top: 0;">Registrar</button>
                     </div>
+                    <label class="ls-checkbox-group" style="margin-top:12px; justify-content: center;">
+                        <input type="checkbox" id="ls-setup-keep" checked>
+                        <span style="font-weight: 500;">Manter logado</span>
+                    </label>
                 </div>
 
                 <div id="ls-lobby-area" class="ls-screen" style="padding: 16px;">
@@ -283,6 +295,22 @@
                     </div>
                     <div id="ls-profile-edit" class="ls-modal-content" style="display: none; padding-top:60px;">
                         <div style="text-align:center; margin-bottom: 10px;"><div class="ls-profile-avatar-large" id="ls-profile-e-avatar" style="margin: 0 auto; color: var(--text-primary);"></div></div>
+                        <div style="display: flex; gap: 10px;">
+                            <div style="flex:1;"><span class="ls-label">Foto de Perfil</span>
+                                <div style="display:flex; gap:8px;">
+                                    <input type="file" id="ls-profile-e-avatar-file" accept="image/*" class="ls-input-file" style="padding: 8px; font-size:12px;" />
+                                    <button id="ls-profile-e-avatar-clear" class="ls-btn-danger" style="width:auto; padding:8px; margin:0;" title="Remover Foto">🗑️</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <div style="flex:1;"><span class="ls-label">Capa do Perfil</span>
+                                <div style="display:flex; gap:8px;">
+                                    <input type="file" id="ls-profile-e-banner-file" accept="image/*" class="ls-input-file" style="padding: 8px; font-size:12px;" />
+                                    <button id="ls-profile-e-banner-clear" class="ls-btn-danger" style="width:auto; padding:8px; margin:0;" title="Remover Capa">🗑️</button>
+                                </div>
+                            </div>
+                        </div>
                         <div style="display: flex; gap: 10px;">
                             <div style="flex:1;"><span class="ls-label">Cor da Bolha</span><input type="color" class="ls-input-color" id="ls-profile-e-color" /></div>
                             <div style="flex:1;"><span class="ls-label">Cor do Texto</span><input type="color" class="ls-input-color" id="ls-profile-e-textcolor" /></div>
@@ -411,15 +439,20 @@
             localStorage.setItem('ls_device_id', myDeviceId);
         }
 
-        let myName = localStorage.getItem('ls_username');
+        let myName = sessionStorage.getItem('ls_username') || localStorage.getItem('ls_username');
+        let myPin = sessionStorage.getItem('ls_userpin') || localStorage.getItem('ls_userpin');
         let myColor = localStorage.getItem('ls_usercolor') || '#6366f1';
         let myTextColor = localStorage.getItem('ls_usertextcolor') || '#ffffff';
-        let myPin = localStorage.getItem('ls_userpin') || null;
+        let myAvatar = localStorage.getItem('ls_useravatar') || '';
+        let myBanner = localStorage.getItem('ls_userbanner') || '';
         let myBio = localStorage.getItem('ls_userbio') || '';
         let myCountry = localStorage.getItem('ls_usercountry') || '🌍';
         let myHideChats = localStorage.getItem('ls_hidechats') === 'true';
         let currentRoom = localStorage.getItem('ls_current_room'); 
         let currentRoomKey = localStorage.getItem('ls_room_key'); 
+        
+        let tempAvatar = '';
+        let tempBanner = '';
         
         let savedRooms = JSON.parse(localStorage.getItem('ls_saved_rooms') || '[]');
         let lastReadTimes = JSON.parse(localStorage.getItem('ls_last_read') || '{}');
@@ -475,8 +508,21 @@
                 myColor = shadow.getElementById('ls-setup-color').value;
                 myTextColor = shadow.getElementById('ls-setup-textcolor').value;
                 
-                localStorage.setItem('ls_username', myName); localStorage.setItem('ls_usercolor', myColor);
-                localStorage.setItem('ls_usertextcolor', myTextColor); localStorage.setItem('ls_userpin', myPin);
+                const keepLogged = shadow.getElementById('ls-setup-keep').checked;
+                if (keepLogged) {
+                    localStorage.setItem('ls_username', myName);
+                    localStorage.setItem('ls_userpin', myPin);
+                    sessionStorage.removeItem('ls_username');
+                    sessionStorage.removeItem('ls_userpin');
+                } else {
+                    sessionStorage.setItem('ls_username', myName);
+                    sessionStorage.setItem('ls_userpin', myPin);
+                    localStorage.removeItem('ls_username');
+                    localStorage.removeItem('ls_userpin');
+                }
+
+                localStorage.setItem('ls_usercolor', myColor);
+                localStorage.setItem('ls_usertextcolor', myTextColor);
                 await syncUserProfile(); checkScreenState();
             } catch (e) { alert("Erro ao conectar ao banco de dados."); }
         });
@@ -497,11 +543,26 @@
                 myColor = data.color || shadow.getElementById('ls-setup-color').value;
                 myTextColor = data.textColor || shadow.getElementById('ls-setup-textcolor').value;
                 myBio = data.bio || ''; myCountry = data.country || '🌍'; myHideChats = data.hideChats || false;
+                myAvatar = data.avatar || ''; myBanner = data.banner || '';
                 
-                localStorage.setItem('ls_username', myName); localStorage.setItem('ls_usercolor', myColor);
-                localStorage.setItem('ls_usertextcolor', myTextColor); localStorage.setItem('ls_userpin', myPin);
+                const keepLogged = shadow.getElementById('ls-setup-keep').checked;
+                if (keepLogged) {
+                    localStorage.setItem('ls_username', myName);
+                    localStorage.setItem('ls_userpin', myPin);
+                    sessionStorage.removeItem('ls_username');
+                    sessionStorage.removeItem('ls_userpin');
+                } else {
+                    sessionStorage.setItem('ls_username', myName);
+                    sessionStorage.setItem('ls_userpin', myPin);
+                    localStorage.removeItem('ls_username');
+                    localStorage.removeItem('ls_userpin');
+                }
+                
+                localStorage.setItem('ls_usercolor', myColor);
+                localStorage.setItem('ls_usertextcolor', myTextColor);
                 localStorage.setItem('ls_userbio', myBio); localStorage.setItem('ls_usercountry', myCountry);
                 localStorage.setItem('ls_hidechats', myHideChats);
+                localStorage.setItem('ls_useravatar', myAvatar); localStorage.setItem('ls_userbanner', myBanner);
                 
                 await syncUserProfile(); checkScreenState();
             } catch (e) { alert("Erro ao conectar ao banco de dados."); }
@@ -644,9 +705,9 @@
             try {
                 const doc = await userRef.get();
                 if (!doc.exists) {
-                    await userRef.set({ username: myName, color: myColor, textColor: myTextColor, deviceId: myDeviceId, pin: myPin, bio: myBio, country: myCountry, hideChats: myHideChats, roomCount: savedRooms.length, tags: [], isBanned: false, banReason: "", createdAt: firebase.firestore.FieldValue.serverTimestamp(), lastSeen: firebase.firestore.FieldValue.serverTimestamp() });
+                    await userRef.set({ username: myName, color: myColor, textColor: myTextColor, deviceId: myDeviceId, pin: myPin, bio: myBio, country: myCountry, hideChats: myHideChats, roomCount: savedRooms.length, avatar: myAvatar, banner: myBanner, tags: [], isBanned: false, banReason: "", createdAt: firebase.firestore.FieldValue.serverTimestamp(), lastSeen: firebase.firestore.FieldValue.serverTimestamp() });
                 } else {
-                    await userRef.set({ color: myColor, textColor: myTextColor, pin: myPin, bio: myBio, country: myCountry, hideChats: myHideChats, roomCount: savedRooms.length, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+                    await userRef.set({ color: myColor, textColor: myTextColor, pin: myPin, bio: myBio, country: myCountry, hideChats: myHideChats, avatar: myAvatar, banner: myBanner, roomCount: savedRooms.length, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
                 }
 
                 if (userProfileUnsubscribe) userProfileUnsubscribe();
@@ -696,10 +757,23 @@
                     const data = doc.data();
                     shadow.getElementById('ls-profile-v-name').innerText = targetUsername;
                     const avatar = shadow.getElementById('ls-profile-v-avatar');
-                    avatar.innerText = targetUsername.charAt(0).toUpperCase();
-                    avatar.style.background = data.color || '#6366f1'; avatar.style.color = data.textColor || '#ffffff';
                     
-                    shadow.getElementById('ls-profile-v-banner').style.background = `linear-gradient(135deg, ${data.color || '#6366f1'}, #1e293b)`;
+                    if (data.avatar) {
+                        avatar.style.backgroundImage = `url(${data.avatar})`;
+                        avatar.innerText = '';
+                    } else {
+                        avatar.style.backgroundImage = 'none';
+                        avatar.innerText = targetUsername.charAt(0).toUpperCase();
+                    }
+                    
+                    avatar.style.background = data.avatar ? 'transparent' : (data.color || '#6366f1'); 
+                    avatar.style.color = data.textColor || '#ffffff';
+                    
+                    if (data.banner) {
+                        shadow.getElementById('ls-profile-v-banner').style.background = `url(${data.banner}) center/cover`;
+                    } else {
+                        shadow.getElementById('ls-profile-v-banner').style.background = `linear-gradient(135deg, ${data.color || '#6366f1'}, #1e293b)`;
+                    }
 
                     shadow.getElementById('ls-profile-v-country').innerText = data.country || '🌍';
                     shadow.getElementById('ls-profile-v-bio').innerText = data.bio || 'Sem bio.';
@@ -721,29 +795,115 @@
 
         shadow.getElementById('ls-btn-open-my-profile').addEventListener('click', () => { lobbySettingsOverlay.style.display = 'none'; openProfile(myName); });
         shadow.getElementById('ls-close-profile-modal').addEventListener('click', () => { profileOverlay.style.display = 'none'; });
+        
         shadow.getElementById('ls-btn-edit-profile').addEventListener('click', () => {
             shadow.getElementById('ls-profile-view').style.display = 'none'; shadow.getElementById('ls-profile-edit').style.display = 'flex'; shadow.getElementById('ls-btn-edit-profile').style.display = 'none';
             shadow.getElementById('ls-profile-e-color').value = myColor; shadow.getElementById('ls-profile-e-textcolor').value = myTextColor; shadow.getElementById('ls-profile-e-bio').value = myBio; shadow.getElementById('ls-profile-e-country-disp').innerText = myCountry; shadow.getElementById('ls-profile-e-hiderooms').checked = myHideChats;
-            const avatar = shadow.getElementById('ls-profile-e-avatar'); avatar.innerText = myName.charAt(0).toUpperCase(); avatar.style.background = myColor; avatar.style.color = myTextColor;
+            
+            tempAvatar = myAvatar;
+            tempBanner = myBanner;
+            
+            const avatar = shadow.getElementById('ls-profile-e-avatar');
+            if (tempAvatar) {
+                avatar.style.backgroundImage = `url(${tempAvatar})`;
+                avatar.innerText = '';
+            } else {
+                avatar.style.backgroundImage = 'none';
+                avatar.style.background = myColor;
+                avatar.innerText = myName.charAt(0).toUpperCase();
+            }
+            avatar.style.color = myTextColor;
         });
 
-        shadow.getElementById('ls-profile-e-color').addEventListener('input', (e) => { shadow.getElementById('ls-profile-e-avatar').style.background = e.target.value; });
+        shadow.getElementById('ls-profile-e-avatar-file').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    compressImage(event.target.result, (compressed) => {
+                        tempAvatar = compressed;
+                        const av = shadow.getElementById('ls-profile-e-avatar');
+                        av.style.backgroundImage = `url(${compressed})`;
+                        av.innerText = '';
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        shadow.getElementById('ls-profile-e-avatar-clear').addEventListener('click', () => {
+            tempAvatar = '';
+            shadow.getElementById('ls-profile-e-avatar-file').value = '';
+            const av = shadow.getElementById('ls-profile-e-avatar');
+            av.style.backgroundImage = 'none';
+            av.style.background = shadow.getElementById('ls-profile-e-color').value;
+            av.innerText = myName.charAt(0).toUpperCase();
+        });
+
+        shadow.getElementById('ls-profile-e-banner-file').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    compressImage(event.target.result, (compressed) => {
+                        tempBanner = compressed;
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        shadow.getElementById('ls-profile-e-banner-clear').addEventListener('click', () => {
+            tempBanner = '';
+            shadow.getElementById('ls-profile-e-banner-file').value = '';
+        });
+
+        shadow.getElementById('ls-profile-e-color').addEventListener('input', (e) => { 
+            if(!tempAvatar) shadow.getElementById('ls-profile-e-avatar').style.background = e.target.value; 
+        });
         shadow.getElementById('ls-profile-e-textcolor').addEventListener('input', (e) => { shadow.getElementById('ls-profile-e-avatar').style.color = e.target.value; });
 
-        shadow.getElementById('ls-btn-get-country').addEventListener('click', async () => {
+        shadow.getElementById('ls-btn-get-country').addEventListener('click', async (e) => {
+            e.preventDefault();
+            const btn = e.target;
+            const originalText = btn.innerText;
+            btn.innerText = "Buscando...";
+            
             try {
-                const res = await fetch('https://get.geojs.io/v1/ip/country.json'); const data = await res.json();
-                if (data.country) {
-                    const codePoints = data.country.toUpperCase().split('').map(char => 127397 + char.charCodeAt(0));
+                let cCode = null;
+                
+                try {
+                    const res = await fetch('https://api.country.is/'); 
+                    const data = await res.json();
+                    cCode = data.country;
+                } catch(err) {
+                    const res2 = await fetch('https://ipapi.co/json/'); 
+                    const data2 = await res2.json();
+                    cCode = data2.country_code || data2.country;
+                }
+                
+                if (cCode) {
+                    const codePoints = cCode.toUpperCase().split('').map(char => 127397 + char.charCodeAt(0));
                     const flag = String.fromCodePoint(...codePoints);
-                    shadow.getElementById('ls-profile-e-country-disp').innerText = flag; myCountry = flag;
-                } else { alert("Não foi possível detectar o país."); }
-            } catch(e) { alert("Erro ao buscar localização. Tente novamente."); }
+                    shadow.getElementById('ls-profile-e-country-disp').innerText = flag; 
+                    myCountry = flag;
+                } else { 
+                    alert("Não foi possível detectar o país."); 
+                }
+            } catch(error) { 
+                alert("Erro ao buscar localização. Verifique sua conexão ou extensões de bloqueio."); 
+            }
+            
+            btn.innerText = originalText;
         });
 
         shadow.getElementById('ls-btn-save-profile').addEventListener('click', async () => {
             myColor = shadow.getElementById('ls-profile-e-color').value; myTextColor = shadow.getElementById('ls-profile-e-textcolor').value; myBio = shadow.getElementById('ls-profile-e-bio').value.trim(); myHideChats = shadow.getElementById('ls-profile-e-hiderooms').checked;
+            myAvatar = tempAvatar; myBanner = tempBanner;
+            
             localStorage.setItem('ls_usercolor', myColor); localStorage.setItem('ls_usertextcolor', myTextColor); localStorage.setItem('ls_userbio', myBio); localStorage.setItem('ls_hidechats', myHideChats);
+            localStorage.setItem('ls_useravatar', myAvatar); localStorage.setItem('ls_userbanner', myBanner);
+            
             await syncUserProfile(); openProfile(myName);
         });
 
@@ -759,9 +919,13 @@
                     for (const p of rData.participants) {
                         if (!userCache[p]) { const uDoc = await db.collection('users').doc(p).get(); if(uDoc.exists) userCache[p] = uDoc.data(); }
                         const isAdm = (rData.createdBy === p); const uData = userCache[p] || {}; const isOnline = uData.lastSeen && (now - uData.lastSeen.toMillis() < 300000); 
+                        
+                        const bgStyle = uData.avatar ? `url(${uData.avatar})` : (uData.color || '#6366f1');
+                        const avText = uData.avatar ? '' : p.charAt(0).toUpperCase();
+
                         const item = document.createElement('div'); item.className = 'ls-room-item'; item.style.cursor = 'pointer';
                         item.innerHTML = `
-                            <div class="ls-room-avatar" style="width:36px; height:36px; font-size:14px; position:relative; background:${uData.color || '#6366f1'}; color:${uData.textColor || '#fff'}">${p.charAt(0).toUpperCase()}<div class="ls-online-dot" style="display: ${isOnline ? 'block' : 'none'};"></div></div>
+                            <div class="ls-room-avatar" style="width:36px; height:36px; font-size:14px; position:relative; background:${bgStyle}; color:${uData.textColor || '#fff'}">${avText}<div class="ls-online-dot" style="display: ${isOnline ? 'block' : 'none'};"></div></div>
                             <div class="ls-room-info" style="display:flex; align-items:center;"><span class="ls-room-name">${p}</span><div class="ls-tags-container" id="ls-member-tags-lobby-${p.replace(/\s/g, '')}"></div></div>
                         `;
                         item.addEventListener('click', () => { openProfile(p); });
@@ -958,15 +1122,26 @@
             messagesListener = messagesRef.orderBy('timestamp', 'asc').limitToLast(50).onSnapshot((snapshot) => {
                 messagesContainer.innerHTML = '';
                 let currentUnread = 0; const lastRead = lastReadTimes[currentRoom] || 0; const myCleanName = myName.replace(/\s/g, '').toLowerCase();
+                
+                let lastSender = null;
+                let lastMsgType = null;
+                let lastTimestamp = 0;
 
                 snapshot.forEach((doc) => {
                     const data = doc.data(); const docId = doc.id; const isMe = data.sender === myName; const isAdm = currentRoomData && currentRoomData.createdBy === data.sender;
-                    if (!isMe && !data.deleted) { const msgTime = data.timestamp ? data.timestamp.toMillis() : Date.now(); if (msgTime > lastRead) currentUnread++; }
+                    const msgTimeMs = data.timestamp ? data.timestamp.toMillis() : Date.now();
+                    if (!isMe && !data.deleted) { if (msgTimeMs > lastRead) currentUnread++; }
+
+                    let isSameSender = false;
+                    if (lastSender === data.sender && lastMsgType === 'user' && (data.type === 'text' || data.type === 'image' || data.type === 'gif') && (msgTimeMs - lastTimestamp < 300000)) {
+                        isSameSender = true;
+                    }
 
                     const container = document.createElement('div');
                     
                     if (data.type === 'countdown') {
                         if (data.deleted) return; 
+                        lastSender = null; lastMsgType = 'system'; lastTimestamp = msgTimeMs;
                         if (data.text === 'SYSTEM_JOIN') {
                             if (myHideSys) return; 
                             container.className = 'ls-message-container system-msg-container';
@@ -984,6 +1159,7 @@
                         }
                     } else if (data.type === 'invite') {
                         if (data.deleted) return;
+                        lastSender = null; lastMsgType = 'system'; lastTimestamp = msgTimeMs;
                         container.className = 'ls-message-container system-msg-container';
                         container.innerHTML = `
                             <div class="ls-message system-msg" style="background: var(--btn-primary-bg) !important; color: var(--btn-primary-color) !important; border:none; padding:0;">
@@ -993,51 +1169,19 @@
                                 </a>
                             </div>
                         `;
-                    } else if (data.type === 'image' || data.type === 'gif') {
+                    } else if (data.type === 'text' || data.type === 'image' || data.type === 'gif') {
                         container.className = `ls-message-container ${isMe ? 'sent' : 'received'}`;
+                        if (isSameSender) container.style.marginTop = '-8px';
+                        
                         const senderRow = document.createElement('div'); senderRow.className = 'ls-sender-row';
-                        const nameLabel = document.createElement('span'); nameLabel.className = 'ls-sender-name'; nameLabel.innerText = data.sender; nameLabel.onclick = () => openProfile(data.sender); senderRow.appendChild(nameLabel);
-                        const tagsContainer = document.createElement('span'); tagsContainer.className = 'ls-tags-container';
-                        tagsContainer.innerHTML = buildTagsHTML(isAdm, userCache[data.sender]);
-                        senderRow.appendChild(tagsContainer);
-                        const timeLabel = document.createElement('span'); timeLabel.className = 'ls-msg-time'; timeLabel.innerText = formatTime(data.timestamp); senderRow.appendChild(timeLabel);
                         
-                        if (!data.deleted) {
-                            const actionBtn = document.createElement('span'); actionBtn.className = 'ls-msg-action'; actionBtn.innerText = '↩️'; actionBtn.title = "Responder";
-                            actionBtn.onclick = () => { replyTarget = { sender: data.sender, text: data.type === 'text' ? data.text : (data.type === 'image' ? 'Imagem' : 'GIF') }; shadow.getElementById('ls-reply-bar-text').innerHTML = `Respondendo <b>${data.sender}</b>: <span style="opacity:0.8;">${replyTarget.text.substring(0, 30)}...</span>`; shadow.getElementById('ls-reply-bar').style.display = 'block'; input.focus(); };
-                            senderRow.appendChild(actionBtn);
-                        }
-
-                        if (isMe && !data.deleted) {
-                            const delBtn = document.createElement('span'); delBtn.className = 'ls-msg-action'; delBtn.innerText = '🗑️'; delBtn.title = "Apagar";
-                            delBtn.onclick = async () => { try { await messagesRef.doc(docId).set({ deleted: true }, { merge: true }); } catch (e) {} };
-                            senderRow.appendChild(delBtn);
+                        if (!isSameSender) {
+                            const nameLabel = document.createElement('span'); nameLabel.className = 'ls-sender-name'; nameLabel.innerText = data.sender; nameLabel.onclick = () => openProfile(data.sender); senderRow.appendChild(nameLabel);
+                            const tagsContainer = document.createElement('span'); tagsContainer.className = 'ls-tags-container';
+                            tagsContainer.innerHTML = buildTagsHTML(isAdm, userCache[data.sender]);
+                            senderRow.appendChild(tagsContainer);
                         }
                         
-                        const msgBubble = document.createElement('div'); msgBubble.className = 'ls-message'; msgBubble.style.padding = '4px';
-                        
-                        if(data.textColor) { msgBubble.style.color = data.textColor; } else if (isMe) { msgBubble.style.color = '#ffffff'; }
-
-                        if (data.deleted) {
-                            msgBubble.classList.add('deleted-msg'); msgBubble.innerText = "🚫 Imagem apagada";
-                        } else {
-                            let replyHTML = '';
-                            if (data.url && data.url.includes('|-REPLY-|')) {
-                                const parts = data.url.split('|-REPLY-|');
-                                replyHTML = `<div style="background: rgba(0,0,0,0.2); border-left: 3px solid currentColor; padding: 4px 8px; margin-bottom: 6px; border-radius: 4px; font-size: 11px; opacity: 0.8;"><b>${escapeHTML(parts[0])}</b><br>${escapeHTML(parts[1])}</div>`;
-                                msgBubble.innerHTML = `${replyHTML}<img src="${parts[2]}">`;
-                            } else { msgBubble.innerHTML = `<img src="${data.url}">`; }
-                            if(isMe) { msgBubble.style.background = data.color || '#6366f1'; }
-                        }
-                        container.appendChild(senderRow); container.appendChild(msgBubble);
-                    } else {
-                        container.className = `ls-message-container ${isMe ? 'sent' : 'received'}`;
-                        const senderRow = document.createElement('div'); senderRow.className = 'ls-sender-row';
-                        const nameLabel = document.createElement('span'); nameLabel.className = 'ls-sender-name'; nameLabel.innerText = data.sender; nameLabel.onclick = () => openProfile(data.sender); senderRow.appendChild(nameLabel);
-
-                        const tagsContainer = document.createElement('span'); tagsContainer.className = 'ls-tags-container';
-                        tagsContainer.innerHTML = buildTagsHTML(isAdm, userCache[data.sender]);
-                        senderRow.appendChild(tagsContainer);
                         const timeLabel = document.createElement('span'); timeLabel.className = 'ls-msg-time'; timeLabel.innerText = formatTime(data.timestamp); senderRow.appendChild(timeLabel);
                         
                         if (!data.deleted) {
@@ -1053,26 +1197,42 @@
                         }
                         
                         const msgBubble = document.createElement('div'); msgBubble.className = 'ls-message';
+                        if (data.type === 'image' || data.type === 'gif') msgBubble.style.padding = '4px';
 
                         if(data.textColor) { msgBubble.style.color = data.textColor; } else if (isMe) { msgBubble.style.color = '#ffffff'; }
 
                         if (data.deleted) {
-                            msgBubble.classList.add('deleted-msg'); msgBubble.innerText = "🚫 Mensagem apagada";
+                            msgBubble.classList.add('deleted-msg'); msgBubble.innerText = (data.type === 'text') ? "🚫 Mensagem apagada" : "🚫 Imagem apagada";
                         } else {
-                            let formattedText = linkify(data.text);
-                            const replyMatch = formattedText.match(/^\[REPLY:(.*?)\|(.*?)\] /);
-                            if (replyMatch) {
-                                const blockquote = `<div style="background: rgba(0,0,0,0.2); border-left: 3px solid currentColor; padding: 4px 8px; margin-bottom: 6px; border-radius: 4px; font-size: 11px; opacity: 0.8;"><b>${replyMatch[1]}</b><br>${replyMatch[2]}</div>`;
-                                formattedText = formattedText.replace(replyMatch[0], blockquote);
+                            let replyHTML = '';
+                            let formattedText = '';
+                            
+                            if (data.type === 'image' || data.type === 'gif') {
+                                 if (data.url && data.url.includes('|-REPLY-|')) {
+                                     const parts = data.url.split('|-REPLY-|');
+                                     replyHTML = `<div style="background: rgba(0,0,0,0.2); border-left: 3px solid currentColor; padding: 4px 8px; margin-bottom: 6px; border-radius: 4px; font-size: 11px; opacity: 0.8;"><b>${escapeHTML(parts[0])}</b><br>${escapeHTML(parts[1])}</div>`;
+                                     msgBubble.innerHTML = `${replyHTML}<img src="${parts[2]}">`;
+                                 } else { msgBubble.innerHTML = `<img src="${data.url}">`; }
+                            } else {
+                                 formattedText = linkify(data.text);
+                                 const replyMatch = formattedText.match(/^\[REPLY:(.*?)\|(.*?)\] /);
+                                 if (replyMatch) {
+                                     const blockquote = `<div style="background: rgba(0,0,0,0.2); border-left: 3px solid currentColor; padding: 4px 8px; margin-bottom: 6px; border-radius: 4px; font-size: 11px; opacity: 0.8;"><b>${replyMatch[1]}</b><br>${replyMatch[2]}</div>`;
+                                     formattedText = formattedText.replace(replyMatch[0], blockquote);
+                                 }
+                                 formattedText = formattedText.replace(/(^|\s)@([a-zA-Z0-9_]+)/g, (match, space, nameMatch) => {
+                                     if (nameMatch.toLowerCase() === myCleanName) return `${space}<span style="background: var(--fab-bg); color: var(--fab-color); padding: 2px 6px; border-radius: 8px; font-weight: bold; box-shadow: 0 0 10px rgba(99,102,241,0.5);">@${nameMatch}</span>`;
+                                     else return `${space}<span style="color: #8b5cf6; font-weight: bold;">@${nameMatch}</span>`;
+                                 });
+                                 msgBubble.innerHTML = formattedText;
                             }
-                            formattedText = formattedText.replace(/(^|\s)@([a-zA-Z0-9_]+)/g, (match, space, nameMatch) => {
-                                if (nameMatch.toLowerCase() === myCleanName) return `${space}<span style="background: var(--fab-bg); color: var(--fab-color); padding: 2px 6px; border-radius: 8px; font-weight: bold; box-shadow: 0 0 10px rgba(99,102,241,0.5);">@${nameMatch}</span>`;
-                                else return `${space}<span style="color: #8b5cf6; font-weight: bold;">@${nameMatch}</span>`;
-                            });
-                            msgBubble.innerHTML = formattedText;
                             if(isMe) { msgBubble.style.background = data.color || '#6366f1'; }
                         }
                         container.appendChild(senderRow); container.appendChild(msgBubble);
+                        
+                        lastSender = data.sender;
+                        lastMsgType = 'user';
+                        lastTimestamp = msgTimeMs;
                     }
                     if (container.innerHTML !== "") messagesContainer.appendChild(container);
                 });
@@ -1298,6 +1458,7 @@
             wipeDataBtn.addEventListener('click', () => {
                 if(confirm("Tem certeza que deseja desconectar e apagar todos os dados locais do LidySync?")) {
                     localStorage.clear();
+                    sessionStorage.clear();
                     location.reload();
                 }
             });
