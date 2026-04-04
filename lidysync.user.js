@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      26.1
+// @version      28.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -38,7 +38,7 @@
             osc.start();
             osc.stop(ctx.currentTime + 0.1);
         } catch (e) {
-            console.warn("LidySync: Som bloqueado pelo navegador. Interaja com a página para permitir áudio.");
+            console.warn("LidySync: Som bloqueado pelo navegador.");
         }
     }
 
@@ -191,20 +191,22 @@
             #ls-chat-window { width: 350px; height: 580px; background-color: var(--bg-base); border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.6); display: none; flex-direction: column; margin-bottom: 15px; overflow: hidden; border: 1px solid var(--border-color); position: relative; backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); transition: background-color 0.3s, backdrop-filter 0.3s; resize: both; min-width: 300px; min-height: 400px; max-width: 90vw; max-height: 90vh; }
             #ls-chat-window.open { display: flex; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
             
-            /* INTEGRATED MODE CSS */
+            /* CSS MODO TEATRO / INTEGRADO */
             #ls-chat-window.integrated {
-                position: relative !important;
+                position: absolute !important;
+                top: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+                left: 0 !important;
                 width: 100% !important;
                 height: 100% !important;
                 max-height: 100vh !important;
                 border-radius: 0 !important;
                 margin: 0 !important;
+                border: none !important;
+                border-left: 1px solid var(--border-color) !important;
                 resize: none !important;
                 box-shadow: -5px 0 25px rgba(0,0,0,0.5) !important;
-                top: auto !important;
-                left: auto !important;
-                right: auto !important;
-                bottom: auto !important;
             }
             #ls-chat-window.integrated #ls-close-btn { display: none !important; }
             #ls-chat-window.integrated #ls-header { cursor: default !important; }
@@ -218,7 +220,7 @@
             .ls-header-btn:hover { color: var(--text-primary); background: rgba(128,128,128,0.1); }
             
             .ls-dropdown-container { position: relative; }
-            .ls-dropdown-menu { position: absolute; right: 0; top: calc(100% + 5px); background-color: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: none; flex-direction: column; min-width: 180px; z-index: 50; overflow: hidden; }
+            .ls-dropdown-menu { position: absolute; right: 0; top: calc(100% + 5px); background-color: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: none; flex-direction: column; min-width: 200px; z-index: 50; overflow: hidden; }
             .ls-dropdown-menu.show { display: flex; animation: fadeIn 0.15s ease-out; }
             @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
             .ls-dropdown-item { padding: 12px 16px; color: var(--text-primary); font-size: 13.5px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; background: none; border: none; text-align: left; width: 100%; font-weight: 500; }
@@ -337,7 +339,7 @@
         wrapper.id = 'ls-wrapper';
         
         let storedTheme = localStorage.getItem('ls_theme');
-        wrapper.className = storedTheme !== null ? storedTheme : '';
+        wrapper.className = storedTheme !== null ? storedTheme : 'theme-glass';
         
         wrapper.innerHTML = `
             <div id="ls-chat-window">
@@ -354,6 +356,8 @@
                         <div class="ls-dropdown-container" id="ls-chat-menu-container" style="display:none;">
                             <button class="ls-header-btn" id="ls-chat-menu-btn" title="Opções da Sala">⋮</button>
                             <div class="ls-dropdown-menu" id="ls-chat-dropdown">
+                                <button class="ls-dropdown-item" id="ls-menu-theater">🖥️ Modo Teatro</button>
+                                <button class="ls-dropdown-item" id="ls-menu-share">🔗 Compartilhar Chat</button>
                                 <button class="ls-dropdown-item" id="ls-menu-members">👥 Ver Membros</button>
                                 <button class="ls-dropdown-item" id="ls-menu-settings">🎨 Aparência da Sala</button>
                                 <div style="height:1px; background:var(--border-color); margin:4px 0;"></div>
@@ -397,8 +401,8 @@
                     <div class="ls-config-section">
                         <span class="ls-label">Preferências Globais</span>
                         <select class="ls-select" id="ls-app-theme" style="margin-bottom: 12px;">
-                            <option value="">Tema Escuro (Padrão)</option>
-                            <option value="theme-glass">Tema Glassmorfismo</option>
+                            <option value="theme-glass">Tema Glassmorfismo (Padrão)</option>
+                            <option value="">Tema Escuro</option>
                             <option value="theme-light">Tema Claro</option>
                             <option value="theme-hellokitty">Tema Hello Kitty</option>
                         </select>
@@ -416,10 +420,6 @@
                         <label class="ls-checkbox-group">
                             <input type="checkbox" id="ls-app-revive" checked>
                             <span><b>Despertar com Notificação</b><br><small style="color: var(--text-muted);">Reaparece se chegar mensagem.</small></span>
-                        </label>
-                        <label class="ls-checkbox-group">
-                            <input type="checkbox" id="ls-app-integrated">
-                            <span><b>Modo Teatro (Integrado)</b><br><small style="color: var(--text-muted);">Fixa o chat na direita da tela.</small></span>
                         </label>
                     </div>
                     <div class="ls-config-section" style="margin-top:auto;">
@@ -506,7 +506,7 @@
                     </div>
                     <div id="ls-emoji-panel" class="ls-popup-panel">${emojis.map(e => `<span class="ls-emoji-item">${e}</span>`).join('')}</div>
                     <div id="ls-plus-panel" class="ls-popup-panel">
-                        <div class="ls-action-item" id="btn-action-invite">🔗 Convidar para ver programação</div>
+                        <div class="ls-action-item" id="btn-action-invite">🔗 Convidar chat para programação atual</div>
                         <div class="ls-action-item" id="btn-action-countdown">⏱️ Play Sincronizado</div>
                         <div class="ls-action-item" id="btn-action-pause">⏸️ Pausar Sincronizado</div>
                         <div class="ls-action-item" id="btn-action-gif">🎞️ Adicionar GIF</div>
@@ -642,58 +642,62 @@
         });
 
         function toggleIntegratedMode(active) {
+            const pushStyleId = 'ls-integrated-push-style';
+            let pushStyle = document.getElementById(pushStyleId);
+
             if (active && currentRoom) {
-                if (isCurrentlyIntegrated) return;
                 isCurrentlyIntegrated = true;
 
-                document.documentElement.style.paddingRight = '350px';
-                document.documentElement.style.boxSizing = 'border-box';
+                if (!pushStyle) {
+                    pushStyle = document.createElement('style');
+                    pushStyle.id = pushStyleId;
+                    pushStyle.innerHTML = `
+                        html, body {
+                            width: calc(100vw - 350px) !important;
+                            margin-right: 350px !important;
+                            overflow-x: hidden !important;
+                        }
+                        video, .html5-video-player, #ytd-player, .nf-player-container {
+                            max-width: calc(100vw - 350px) !important;
+                        }
+                    `;
+                    document.head.appendChild(pushStyle);
+                }
                 
                 chatWindow.classList.add('integrated');
                 chatWindow.classList.add('open');
                 
-                chatWindow.style.position = '';
-                chatWindow.style.left = '';
-                chatWindow.style.top = '';
-                chatWindow.style.right = '';
-                chatWindow.style.bottom = '';
-                chatWindow.style.margin = '';
-                chatWindow.style.height = '';
-                chatWindow.style.width = '';
+                host.style.cssText = 'position: fixed !important; top: 0 !important; right: 0 !important; bottom: 0 !important; width: 350px !important; height: 100vh !important; z-index: 2147483647 !important; pointer-events: auto !important;';
+                const wrapperEl = shadow.getElementById('ls-wrapper');
+                wrapperEl.style.display = 'block';
+                wrapperEl.style.width = '100%';
+                wrapperEl.style.height = '100%';
                 
                 fab.style.display = 'none';
                 badge.style.display = 'none';
 
-                host.style.cssText = 'position: fixed !important; top: 0 !important; right: 0 !important; bottom: 0 !important; width: 350px !important; height: 100vh !important; z-index: 2147483647 !important; pointer-events: none !important;';
-                const wrapperEl = shadow.getElementById('ls-wrapper');
-                wrapperEl.style.height = '100%';
-                wrapperEl.style.width = '100%';
-                wrapperEl.style.justifyContent = 'flex-start';
+                const tBtn = shadow.getElementById('ls-menu-theater');
+                if(tBtn) tBtn.innerText = '🖥️ Sair do Modo Teatro';
+
             } else {
-                if (!isCurrentlyIntegrated) return;
                 isCurrentlyIntegrated = false;
 
-                document.documentElement.style.paddingRight = '';
+                if (pushStyle) pushStyle.remove();
+
                 chatWindow.classList.remove('integrated');
                 
-                chatWindow.style.position = '';
-                chatWindow.style.left = '';
-                chatWindow.style.top = '';
-                chatWindow.style.right = '';
-                chatWindow.style.bottom = '';
-                chatWindow.style.margin = '';
-                chatWindow.style.height = '';
-                chatWindow.style.width = '';
-
                 host.style.cssText = 'position: fixed !important; bottom: 90px !important; right: 20px !important; z-index: 2147483647 !important; pointer-events: none !important;';
                 const wrapperEl = shadow.getElementById('ls-wrapper');
-                wrapperEl.style.height = 'auto';
+                wrapperEl.style.display = 'flex';
                 wrapperEl.style.width = 'auto';
-                wrapperEl.style.justifyContent = 'flex-end';
+                wrapperEl.style.height = 'auto';
 
                 if (currentRoom && !chatWindow.classList.contains('open')) {
                     if (!myHideApp) fab.style.display = 'flex';
                 }
+
+                const tBtn = shadow.getElementById('ls-menu-theater');
+                if(tBtn) tBtn.innerText = '🖥️ Modo Teatro';
             }
         }
 
@@ -883,6 +887,10 @@
                             let passToShare = btn.dataset.rawpass;
                             if (!passToShare) {
                                 passToShare = prompt("Qual a senha dessa sala para incluir no convite?") || "[Sua Senha]";
+                                if (passToShare !== "[Sua Senha]") {
+                                    room.rawPass = passToShare;
+                                    localStorage.setItem('ls_saved_rooms', JSON.stringify(savedRooms));
+                                }
                             }
                             const link = `Vem assistir comigo no LidySync!\n🍿 Nome da Sala: ${btn.dataset.name}\n🔑 Senha: ${passToShare}\n\nCaso não tenha a extensão clique aqui para aprender a instalar: https://ofaceoff.github.io/LidySync/index.html`;
                             navigator.clipboard.writeText(link);
@@ -931,7 +939,7 @@
                                 else if (data.type === 'invite') msgText = '🔗 Convite';
                                 else if (data.type === 'countdown') msgText = 'Ação do Sistema';
                                 
-                                if (data.text.startsWith('SYSTEM_')) msgText = 'Ação do Sistema';
+                                if (data.text && data.text.startsWith('SYSTEM_')) msgText = 'Ação do Sistema';
 
                                 statusEl.innerText = `${data.sender}: ${msgText}`;
                             } else if (statusEl && data.deleted) {
@@ -1034,7 +1042,6 @@
                 shadow.getElementById('ls-app-sound').checked = localStorage.getItem('ls_sound') !== 'false';
                 shadow.getElementById('ls-app-hide').checked = myHideApp;
                 shadow.getElementById('ls-app-revive').checked = myHideRevive;
-                shadow.getElementById('ls-app-integrated').checked = myIntegratedMode;
             }
         });
 
@@ -1064,7 +1071,6 @@
             const soundEnabled = shadow.getElementById('ls-app-sound').checked;
             myHideApp = shadow.getElementById('ls-app-hide').checked;
             myHideRevive = shadow.getElementById('ls-app-revive').checked;
-            myIntegratedMode = shadow.getElementById('ls-app-integrated').checked;
 
             localStorage.setItem('ls_username', myName);
             localStorage.setItem('ls_usercolor', myColor);
@@ -1072,7 +1078,6 @@
             localStorage.setItem('ls_sound', soundEnabled);
             localStorage.setItem('ls_hide_app', myHideApp);
             localStorage.setItem('ls_hide_revive', myHideRevive);
-            localStorage.setItem('ls_integrated', myIntegratedMode);
             
             wrapper.className = selectedTheme;
             
@@ -1087,7 +1092,7 @@
             myName = null; currentRoom = null; currentRoomKey = null; savedRooms = [];
             myDeviceId = crypto.randomUUID();
             localStorage.setItem('ls_device_id', myDeviceId);
-            wrapper.className = '';
+            wrapper.className = 'theme-glass';
             checkScreenState();
         });
 
@@ -1148,6 +1153,34 @@
         const chatDropdown = shadow.getElementById('ls-chat-dropdown');
 
         chatMenuBtn.addEventListener('click', (e) => { e.stopPropagation(); chatDropdown.classList.toggle('show'); });
+
+        shadow.getElementById('ls-menu-theater').addEventListener('click', () => {
+            chatDropdown.classList.remove('show');
+            myIntegratedMode = !myIntegratedMode;
+            localStorage.setItem('ls_integrated', myIntegratedMode);
+            toggleIntegratedMode(myIntegratedMode);
+        });
+
+        shadow.getElementById('ls-menu-share').addEventListener('click', () => {
+            chatDropdown.classList.remove('show');
+            if(!currentRoom) return;
+
+            let passToShare = "";
+            const roomData = savedRooms.find(r => r.name === currentRoom);
+            if (roomData && roomData.rawPass) {
+                passToShare = roomData.rawPass;
+            } else {
+                passToShare = prompt("Qual a senha dessa sala para incluir no convite?") || "[Sua Senha]";
+                if (roomData && passToShare !== "[Sua Senha]") {
+                    roomData.rawPass = passToShare;
+                    localStorage.setItem('ls_saved_rooms', JSON.stringify(savedRooms));
+                }
+            }
+
+            const link = `Vem assistir comigo no LidySync!\n🍿 Nome da Sala: ${currentRoom}\n🔑 Senha: ${passToShare}\n\nCaso não tenha a extensão clique aqui para aprender a instalar: https://ofaceoff.github.io/LidySync/index.html`;
+            navigator.clipboard.writeText(link);
+            alert("Convite copiado!");
+        });
 
         shadow.getElementById('ls-menu-settings').addEventListener('click', () => {
             chatDropdown.classList.remove('show');
@@ -1311,6 +1344,7 @@
                             container.innerHTML = `<div class="ls-message system-msg" style="background:transparent!important; box-shadow:none; border:none; padding:4px; opacity:0.6;">🚪 <b>${data.sender}</b> saiu <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
                         } else if (data.text === 'SYSTEM_PAUSE') {
                             container.innerHTML = `<div class="ls-message system-msg">⏸️ <b>${data.sender}</b> pausou a programação! <span class="ls-msg-time" style="display:block; margin-top:2px;">${formatTime(data.timestamp)}</span></div>`;
+                            if (myAutoPlay) { document.querySelectorAll('video').forEach(v => v.pause()); }
                         } else {
                             container.innerHTML = `<div class="ls-message system-msg">🎬 ${data.sender} ${data.text} <span class="ls-msg-time" style="display:block; margin-top:2px;">${formatTime(data.timestamp)}</span></div>`;
                         }
@@ -1321,7 +1355,7 @@
                         container.innerHTML = `
                             <div class="ls-message system-msg" style="background: var(--btn-primary-bg) !important; color: var(--btn-primary-color) !important; border:none; padding:0;">
                                 <a href="${data.url}" target="_blank" style="color: inherit; text-decoration: none; display: block; padding: 10px 16px;">
-                                    🍿 ${data.sender} convidou você para ver a programação atual!<br><small style="text-decoration:underline;">Clique para abrir</small>
+                                    🍿 ${data.sender} convidou o chat para a programação atual!<br><small style="text-decoration:underline;">Clique para abrir</small>
                                     <span class="ls-msg-time" style="display:block; margin-top:4px; color:inherit; opacity:0.8;">${formatTime(data.timestamp)}</span>
                                 </a>
                             </div>
@@ -1603,7 +1637,7 @@
 
         closeBtn.addEventListener('click', () => { 
             if (myIntegratedMode) {
-                alert("O Chat está no Modo Teatro. Desative essa opção nas configurações de Perfil para ocultar a janela.");
+                alert("O Chat está no Modo Teatro. Desative essa opção no menu ou nas configurações para minimizar a janela.");
                 return;
             }
             chatWindow.classList.remove('open'); 
@@ -1680,7 +1714,7 @@
             try {
                 await db.collection('rooms').doc(currentRoom).collection('messages').add({
                     type: 'invite', 
-                    text: 'convidou você para ver a programação atual!', 
+                    text: 'convidou o chat para a programação atual!', 
                     url: window.location.href,
                     sender: myName, 
                     color: myColor,
@@ -1729,6 +1763,7 @@
             } catch (e) {}
         });
 
+        shadow.getElementById('ls-camera-overlay').style.display = 'none'; // Initial hide safety
         shadow.getElementById('btn-action-camera').addEventListener('click', async () => {
             plusPanel.style.display = 'none';
             shadow.getElementById('ls-camera-overlay').style.display = 'flex';
