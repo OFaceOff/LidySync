@@ -226,7 +226,7 @@
                                 <button class="ls-dropdown-item" id="ls-menu-share">🔗 Compartilhar Chat</button>
                                 <button class="ls-dropdown-item" id="ls-menu-members">👥 Ver Membros</button>
                                 <button class="ls-dropdown-item" id="ls-menu-settings">🎨 Aparência da Sala</button>
-                                <div style="height:1px; background:var(--border-color); margin:4px 0;"></div>
+                                <div style="height:1px; background:var(--border-color); margin:4px 0;" id="ls-menu-delete-divider"></div>
                                 <button class="ls-dropdown-item danger" id="ls-menu-delete">🗑️ Encerrar Sala</button>
                             </div>
                         </div>
@@ -1048,8 +1048,8 @@
                             <button class="ls-dropdown-item" data-action="mute" data-name="${room.name}">${isMuted ? '🔔 Reativar Som' : '🔕 Silenciar Chat'}</button>
                             <button class="ls-dropdown-item" data-action="share" data-name="${room.name}" data-rawpass="${rawPass}">🔗 Compartilhar</button>
                             <button class="ls-dropdown-item" data-action="appearance" data-name="${room.name}">🎨 Aparência do Chat</button>
-                            <div style="height:1px; background:var(--border-color); margin:4px 0;"></div>
-                            <button class="ls-dropdown-item" data-action="remove" data-index="${index}">Remover da Lista</button>
+                            <div style="height:1px; background:var(--border-color); margin:4px 0;" id="ls-menu-delete-divider"></div>
+                            <button class="ls-dropdown-item danger" id="ls-menu-delete">🗑️ Encerrar Sala</button>
                         </div>
                     </div>
                 `;
@@ -1065,8 +1065,23 @@
                         else if (btn.dataset.action === 'share') { let passToShare = btn.dataset.rawpass; if (!passToShare) { passToShare = prompt("Qual a senha dessa sala para incluir no convite?") || "[Sua Senha]"; if (passToShare !== "[Sua Senha]") { room.rawPass = passToShare; ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); } } const link = `Vem assistir comigo no LidySync!\n🍿 Nome da Sala: ${btn.dataset.name}\n🔑 Senha: ${passToShare}\n\nCaso não tenha a extensão clique aqui para aprender a instalar: https://ofaceoff.github.io/LidySync/index.html`; navigator.clipboard.writeText(link); alert("Convite copiado!"); } 
                         else if (btn.dataset.action === 'appearance') { editingRoomAppearance = btn.dataset.name; settingsOverlay.style.display = 'flex'; db.collection('rooms').doc(btn.dataset.name).collection('settings').doc('shared').get().then(doc => { if(doc.exists) { try { const d = JSON.parse(doc.data().theme); shadow.getElementById('ls-config-bg-type').value = d.bgType || 'color'; shadow.getElementById('ls-config-bg-type').dispatchEvent(new Event('change')); shadow.getElementById('ls-config-bg-color').value = d.bgColor || '#0f172a'; shadow.getElementById('ls-config-bg-image').value = d.bgImage || ''; shadow.getElementById('ls-config-sync').checked = true; } catch(e){} } }); } 
                         else if(btn.dataset.action === 'remove') { savedRooms.splice(btn.dataset.index, 1); ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); await syncUserProfile(); renderSavedRooms(); startLobbyListeners(); }
+                        else if(btn.dataset.action === 'delete') { 
+                            if(!confirm("Encerrar e deletar a sala para todos?")) return; 
+                            try { await db.collection('rooms').doc(btn.dataset.name).delete(); } catch(e){} 
+                        }
                     });
                 });
+                
+                // Block delete button for non-admins visually in the lobby menu too
+                const delBtn = dropMenu.querySelector('#ls-menu-delete');
+                const delDiv = dropMenu.querySelector('#ls-menu-delete-divider');
+                db.collection('rooms').doc(room.name).get().then(doc => {
+                    if (doc.exists && doc.data().createdBy !== myName) {
+                        if (delBtn) delBtn.style.display = 'none';
+                        if (delDiv) delDiv.style.display = 'none';
+                    }
+                }).catch(()=>{});
+
                 list.appendChild(item);
             });
         }
@@ -1198,7 +1213,12 @@
             sendSystemAction('SYSTEM_LEAVE'); stopChatListeners(); currentRoom = null; currentRoomKey = null; currentRoomData = null; ls.removeItem('ls_current_room'); ls.removeItem('ls_room_key'); checkScreenState(); 
         });
         
-        shadow.getElementById('ls-menu-delete').addEventListener('click', async () => { chatDropdown.classList.remove('show'); if(!confirm("Encerrar e deletar a sala para todos?")) return; try { await db.collection('rooms').doc(currentRoom).delete(); } catch(e){} });
+        shadow.getElementById('ls-menu-delete').addEventListener('click', async () => { 
+            chatDropdown.classList.remove('show'); 
+            if (currentRoomData && currentRoomData.createdBy !== myName) return alert("Apenas o Administrador da sala pode encerrá-la.");
+            if(!confirm("Encerrar e deletar a sala para todos?")) return; 
+            try { await db.collection('rooms').doc(currentRoom).delete(); } catch(e){} 
+        });
 
         function startChatListeners() {
             if (!currentRoom) return;
@@ -1211,6 +1231,17 @@
                     alert("A sala foi encerrada pelo criador."); stopChatListeners(); currentRoom = null; currentRoomKey = null; currentRoomData = null; ls.removeItem('ls_current_room'); ls.removeItem('ls_room_key'); savedRooms = savedRooms.filter(r => r.name !== doc.id); ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); checkScreenState();
                 } else {
                     currentRoomData = doc.data();
+                    
+                    const deleteBtn = shadow.getElementById('ls-menu-delete');
+                    const deleteDiv = shadow.getElementById('ls-menu-delete-divider');
+                    if (currentRoomData.createdBy === myName) {
+                        if (deleteBtn) deleteBtn.style.display = 'flex';
+                        if (deleteDiv) deleteDiv.style.display = 'block';
+                    } else {
+                        if (deleteBtn) deleteBtn.style.display = 'none';
+                        if (deleteDiv) deleteDiv.style.display = 'none';
+                    }
+
                     if (currentRoomData.participants) { currentRoomData.participants.forEach(p => { if (!userCache[p]) { db.collection('users').doc(p).get().then(u => { if (u.exists) userCache[p] = u.data(); }); } }); }
                     
                     const typingEl = shadow.getElementById('ls-typing-indicator');
