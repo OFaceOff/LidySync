@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      29.0
+// @version      30.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -344,7 +344,7 @@
         wrapper.id = 'ls-wrapper';
         
         let storedTheme = localStorage.getItem('ls_theme');
-        wrapper.className = storedTheme !== null ? storedTheme : '';
+        wrapper.className = storedTheme !== null ? storedTheme : ''; // Tema Escuro por padrão
         
         wrapper.innerHTML = `
             <div id="ls-chat-window">
@@ -381,8 +381,15 @@
                         <span style="color: var(--text-primary); font-size: 16px; font-weight: 600;">Bem-vindo!</span>
                     </div>
                     <div><span class="ls-label">Nome de Usuário</span><input type="text" class="ls-input-text" id="ls-setup-name" placeholder="Adicione seu apelido" maxlength="100" /></div>
-                    <div><span class="ls-label">Cor da sua Bolha</span><input type="color" class="ls-input-color" id="ls-setup-color" value="#6366f1" /></div>
-                    <button class="ls-btn-primary" id="ls-setup-btn">Começar</button>
+                    <div style="margin-top: 12px;">
+                        <span class="ls-label">PIN de Acesso (Mín. 4 dígitos)</span>
+                        <input type="password" class="ls-input-text" id="ls-setup-pin" placeholder="Ex: 1234" maxlength="8" />
+                        <div style="text-align: right; margin-top: 4px;">
+                            <span id="ls-forgot-pin" style="color: var(--text-muted); font-size: 11px; cursor: pointer; text-decoration: underline;">Esqueci meu PIN</span>
+                        </div>
+                    </div>
+                    <div style="margin-top: 12px;"><span class="ls-label">Cor da sua Bolha</span><input type="color" class="ls-input-color" id="ls-setup-color" value="#6366f1" /></div>
+                    <button class="ls-btn-primary" id="ls-setup-btn" style="margin-top: 16px;">Começar</button>
                 </div>
 
                 <div id="ls-lobby-area" class="ls-screen" style="padding: 16px;">
@@ -576,6 +583,8 @@
 
         let myName = localStorage.getItem('ls_username');
         let myColor = localStorage.getItem('ls_usercolor') || '#6366f1';
+        let myPin = localStorage.getItem('ls_userpin') || null;
+
         let currentRoom = localStorage.getItem('ls_current_room'); 
         let currentRoomKey = localStorage.getItem('ls_room_key'); 
         
@@ -606,6 +615,11 @@
         let lobbyUnsubscribes = [];
         let currentRoomData = null;
         let userCache = {};
+
+        // === FORGOT PIN ALERT ===
+        shadow.getElementById('ls-forgot-pin').addEventListener('click', () => {
+            alert("No momento o serviço de recuperação de PIN está desativado, em breve criaremos nosso discord para tickets de suporte e ajuda, obrigado!");
+        });
 
         // === MENTIONS SYSTEM ===
         const mentionPanel = shadow.getElementById('ls-mention-panel');
@@ -843,6 +857,7 @@
                         username: myName,
                         color: myColor,
                         deviceId: myDeviceId,
+                        pin: myPin,
                         tags: [],
                         isBanned: false,
                         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -851,6 +866,7 @@
                 } else {
                     await userRef.set({
                         color: myColor,
+                        pin: myPin,
                         lastSeen: firebase.firestore.FieldValue.serverTimestamp()
                     }, { merge: true });
                 }
@@ -882,10 +898,10 @@
             editingRoomAppearance = null;
 
             if (myName) {
-                db.collection('users').doc(myName).set({ color: myColor, deviceId: myDeviceId, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
+                db.collection('users').doc(myName).set({ color: myColor, deviceId: myDeviceId, pin: myPin, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
             }
 
-            if (!myName) {
+            if (!myName || !myPin) {
                 if (userProfileUnsubscribe) userProfileUnsubscribe();
                 setupArea.style.display = 'flex';
                 lobbyArea.style.display = 'none';
@@ -1107,20 +1123,40 @@
 
         shadow.getElementById('ls-setup-btn').addEventListener('click', async () => {
             const name = shadow.getElementById('ls-setup-name').value.trim();
+            const pin = shadow.getElementById('ls-setup-pin').value.trim();
+
             if (!name) return alert("Digite um apelido!");
             if (name.length > 100) return alert("O apelido deve ter no máximo 100 caracteres.");
+            if (!pin || pin.length < 4) return alert("Digite um PIN válido (mínimo de 4 dígitos).");
 
             try {
                 const userDoc = await db.collection('users').doc(name).get();
-                if (userDoc.exists && userDoc.data().deviceId !== myDeviceId) {
-                    return alert("Este apelido já está em uso por outra pessoa. Escolha outro.");
+                
+                if (userDoc.exists) {
+                    const data = userDoc.data();
+                    if (data.pin && data.pin !== pin) {
+                        return alert("PIN incorreto! Este usuário já existe e está protegido.");
+                    } else if (!data.pin && data.deviceId !== myDeviceId) {
+                        return alert("Este apelido já está em uso!");
+                    }
+                } else {
+                    const snapshot = await db.collection('users').where('deviceId', '==', myDeviceId).get();
+                    if (snapshot.size >= 3) {
+                        return alert("Você já atingiu o limite de 3 perfis criados neste dispositivo.");
+                    }
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.error("Erro ao verificar usuário:", e);
+                return alert("Erro ao conectar ao banco de dados.");
+            }
 
             myName = name;
+            myPin = pin;
             myColor = shadow.getElementById('ls-setup-color').value;
+            
             localStorage.setItem('ls_username', myName);
             localStorage.setItem('ls_usercolor', myColor);
+            localStorage.setItem('ls_userpin', myPin);
             
             await syncUserProfile();
             checkScreenState();
@@ -1153,8 +1189,16 @@
                 if (name.length > 100) return alert("O apelido deve ter no máximo 100 caracteres.");
                 try {
                     const userDoc = await db.collection('users').doc(name).get();
-                    if (userDoc.exists && userDoc.data().deviceId !== myDeviceId) {
-                        return alert("Este apelido já está em uso por outra pessoa. Escolha outro.");
+                    if (userDoc.exists) {
+                         const data = userDoc.data();
+                         if (data.pin && data.pin !== myPin) {
+                             return alert("PIN incorreto ou usuário já existe.");
+                         }
+                    } else {
+                         const snapshot = await db.collection('users').where('deviceId', '==', myDeviceId).get();
+                         if (snapshot.size >= 3) {
+                             return alert("Você já atingiu o limite de 3 perfis criados neste dispositivo.");
+                         }
                     }
                 } catch(e) {}
                 myName = name;
@@ -1190,7 +1234,7 @@
         shadow.getElementById('ls-wipe-data-btn').addEventListener('click', () => {
             if(!confirm("Deseja apagar todos os seus dados e salas salvas deste navegador?")) return;
             localStorage.clear(); 
-            myName = null; currentRoom = null; currentRoomKey = null; savedRooms = [];
+            myName = null; myPin = null; currentRoom = null; currentRoomKey = null; savedRooms = [];
             myDeviceId = crypto.randomUUID();
             localStorage.setItem('ls_device_id', myDeviceId);
             wrapper.className = '';
@@ -1439,11 +1483,11 @@
                         if (data.deleted) return; 
                         
                         if (data.text === 'SYSTEM_JOIN') {
-                            if (myHideSys) return; // Skipa renderização
+                            if (myHideSys) return; 
                             container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg" style="background:transparent!important; box-shadow:none; border:none; padding:4px;">👋 <b>${data.sender}</b> entrou na sala <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
                         } else if (data.text === 'SYSTEM_LEAVE') {
-                            if (myHideSys) return; // Skipa renderização
+                            if (myHideSys) return; 
                             container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg" style="background:transparent!important; box-shadow:none; border:none; padding:4px; opacity:0.6;">🚪 <b>${data.sender}</b> saiu <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
                         } else if (data.text === 'SYSTEM_PAUSE') {
