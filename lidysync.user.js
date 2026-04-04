@@ -863,7 +863,6 @@
             } catch(e) {}
         }
 
-        shadow.getElementById('ls-setup-btn').addEventListener('click', () => shadow.getElementById('ls-login-btn').click());
         shadow.getElementById('ls-close-add-modal').addEventListener('click', () => { addRoomOverlay.style.display = 'none'; });
 
         const inputRoom = shadow.getElementById('ls-lobby-room');
