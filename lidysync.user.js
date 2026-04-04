@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      18.0
+// @version      19.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -37,9 +37,7 @@
             gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
             osc.start();
             osc.stop(ctx.currentTime + 0.1);
-        } catch (e) {
-            console.warn("LidySync: Som bloqueado pelo navegador. O usuário precisa interagir com a página (clicar) para permitir áudio.");
-        }
+        } catch (e) {}
     }
 
     function escapeHTML(str) {
@@ -335,7 +333,7 @@
                         <span style="font-size: 32px; font-weight: 800; background: linear-gradient(135deg, #6366f1, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: block; margin-bottom: 4px;">LidySync</span>
                         <span style="color: var(--text-primary); font-size: 16px; font-weight: 600;">Bem-vindo!</span>
                     </div>
-                    <div><span class="ls-label">Seu Apelido</span><input type="text" class="ls-input-text" id="ls-setup-name" placeholder="Ex: Amor" /></div>
+                    <div><span class="ls-label">Seu Apelido</span><input type="text" class="ls-input-text" id="ls-setup-name" placeholder="Nome de Usuário" /></div>
                     <div><span class="ls-label">Cor da sua Bolha</span><input type="color" class="ls-input-color" id="ls-setup-color" value="#6366f1" /></div>
                     <button class="ls-btn-primary" id="ls-setup-btn">Começar</button>
                 </div>
@@ -393,7 +391,7 @@
                         <span style="color: var(--text-primary); font-size: 18px; font-weight: 700;">Nova Conexão</span>
                         <button id="ls-close-add-modal" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px;">✕</button>
                     </div>
-                    <div><span class="ls-label">Nome da Sala</span><input type="text" class="ls-input-text" id="ls-lobby-room" placeholder="Ex: cine-pipoca" /></div>
+                    <div><span class="ls-label">Nome da Sala</span><input type="text" class="ls-input-text" id="ls-lobby-room" placeholder="Nome da Sala" /></div>
                     <div style="margin-top: 12px;">
                         <span class="ls-label">Senha de Acesso</span>
                         <div class="ls-input-wrapper">
@@ -500,6 +498,12 @@
         const messagesContainer = shadow.getElementById('ls-messages');
         const input = shadow.getElementById('ls-input');
 
+        let myDeviceId = localStorage.getItem('ls_device_id');
+        if (!myDeviceId) {
+            myDeviceId = crypto.randomUUID();
+            localStorage.setItem('ls_device_id', myDeviceId);
+        }
+
         let myName = localStorage.getItem('ls_username');
         let myColor = localStorage.getItem('ls_usercolor') || '#6366f1';
         let currentRoom = localStorage.getItem('ls_current_room'); 
@@ -561,7 +565,6 @@
             editingRoomAppearance = null;
             
             if (!myName) {
-                db.collection('users').doc(myName).set({ color: myColor, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
                 setupArea.style.display = 'flex';
                 lobbyArea.style.display = 'none';
                 chatArea.style.display = 'none';
@@ -704,8 +707,9 @@
                                     unreadEl.style.display = 'block';
                                     if (myHideApp && myHideRevive && !chatWindow.classList.contains('open')) {
                                         fab.style.display = 'flex';
+                                        unreadCount++;
                                         badge.style.display = 'flex';
-                                        badge.innerText = '!';
+                                        badge.innerText = unreadCount > 5 ? '5+' : unreadCount;
                                     }
                                 } else {
                                     unreadEl.style.display = 'none';
@@ -762,7 +766,7 @@
             myColor = shadow.getElementById('ls-setup-color').value;
             localStorage.setItem('ls_username', myName);
             localStorage.setItem('ls_usercolor', myColor);
-            db.collection('users').doc(myName).set({ color: myColor, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
+            db.collection('users').doc(myName).set({ color: myColor, deviceId: myDeviceId, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
             checkScreenState();
         });
 
@@ -802,7 +806,7 @@
             localStorage.setItem('ls_hide_revive', myHideRevive);
             
             wrapper.className = selectedTheme;
-            db.collection('users').doc(myName).set({ color: myColor, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
+            db.collection('users').doc(myName).set({ color: myColor, deviceId: myDeviceId, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
 
             lobbySettingsOverlay.style.display = 'none';
             checkScreenState();
@@ -935,19 +939,31 @@
             messagesListener = messagesRef.orderBy('timestamp', 'asc').limitToLast(50).onSnapshot((snapshot) => {
                 messagesContainer.innerHTML = '';
                 
-                let currentUnread = 0;
-                const lastRead = lastReadTimes[currentRoom] || 0;
+                snapshot.docChanges().forEach((change) => {
+                    const data = change.doc.data();
+                    if (change.type === 'added' && data.type === 'countdown' && !isFirstSnapshot && !data.deleted) {
+                        runVisualCountdown(data.sender);
+                    }
+                    if (change.type === 'added' && !isFirstSnapshot && data.sender !== myName && !data.deleted) {
+                        playNotificationSound();
+                        
+                        const msgTime = data.timestamp ? data.timestamp.toMillis() : Date.now();
+                        const lastRead = lastReadTimes[currentRoom] || 0;
+                        if (msgTime > lastRead && !chatWindow.classList.contains('open')) {
+                            unreadCount++;
+                            badge.style.display = 'flex';
+                            badge.innerText = unreadCount > 5 ? '5+' : unreadCount;
+                            if (myHideApp && myHideRevive) {
+                                fab.style.display = 'flex';
+                            }
+                        }
+                    }
+                });
 
                 snapshot.forEach((doc) => {
                     const data = doc.data();
                     const docId = doc.id; 
                     const isMe = data.sender === myName;
-                    
-                    if (!isMe && !data.deleted) {
-                        const msgTime = data.timestamp ? data.timestamp.toMillis() : Date.now();
-                        if (msgTime > lastRead) currentUnread++;
-                    }
-
                     const container = document.createElement('div');
                     
                     if (data.type === 'countdown') {
@@ -1046,22 +1062,10 @@
                     messagesContainer.appendChild(container);
                 });
 
-                snapshot.docChanges().forEach((change) => {
-                    const data = change.doc.data();
-                    if (change.type === 'added' && !isFirstSnapshot && data.sender !== myName && !data.deleted) {
-                        playNotificationSound();
-                    }
-                });
-
-                if (!chatWindow.classList.contains('open') && currentUnread > 0) {
-                    badge.style.display = 'flex';
-                    badge.innerText = currentUnread > 5 ? '5+' : currentUnread;
-                    if (myHideApp && myHideRevive) {
-                        fab.style.display = 'flex';
-                    }
-                } else if (chatWindow.classList.contains('open')) {
-                    badge.style.display = 'none';
+                if (chatWindow.classList.contains('open')) {
                     updateLastRead(currentRoom);
+                    unreadCount = 0;
+                    badge.style.display = 'none';
                 }
                 
                 scrollToBottom();
@@ -1133,6 +1137,7 @@
         fab.addEventListener('click', () => { 
             chatWindow.classList.add('open'); 
             fab.style.display = 'none'; 
+            unreadCount = 0;
             badge.style.display = 'none';
             if (currentRoom) updateLastRead(currentRoom);
             checkScreenState(); 
