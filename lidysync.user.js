@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      32.0
+// @version      33.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -145,7 +145,7 @@
             #ls-wrapper.theme-glass {
                 --bg-base: rgba(15, 23, 42, 0.35);
                 --bg-surface: rgba(255, 255, 255, 0.15);
-                --bg-overlay: rgba(15, 23, 42, 0.3);
+                --bg-overlay: rgba(15, 23, 42, 0.65);
                 --bg-modal: rgba(15, 23, 42, 0.95);
                 --text-primary: #ffffff;
                 --text-muted: #cbd5e1;
@@ -220,7 +220,7 @@
             .ls-header-btn:hover { color: var(--text-primary); background: rgba(128,128,128,0.1); }
             
             .ls-dropdown-container { position: relative; }
-            .ls-dropdown-menu { position: absolute; right: 0; top: calc(100% + 5px); background-color: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: none; flex-direction: column; min-width: 200px; z-index: 50; overflow: hidden; }
+            .ls-dropdown-menu { position: absolute; right: 0; top: calc(100% + 5px); background-color: var(--bg-overlay); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: none; flex-direction: column; min-width: 200px; z-index: 50; overflow: hidden; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
             .ls-dropdown-menu.show { display: flex; animation: fadeIn 0.15s ease-out; }
             @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
             .ls-dropdown-item { padding: 12px 16px; color: var(--text-primary); font-size: 13.5px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; background: none; border: none; text-align: left; width: 100%; font-weight: 500; }
@@ -246,7 +246,8 @@
             .ls-tag { font-size: 8px; font-weight: 800; padding: 2px 5px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
             .ls-tag-adm { background-color: #ef4444; color: #ffffff; }
             .ls-tag-dev { background-color: #eab308; color: #000000; }
-            .ls-tag-owner { background-color: #a855f7; color: #ffffff; }
+            .ls-tag-owner { background-color: #2d0778; color: #ffffff; }
+            .ls-tag-mod { background-color: #345beb; color: #ffffff; }
             .ls-tag-dobiel { background-color: #fbcfe8; color: #be185d; }
             .ls-tag-generic { background-color: rgba(128,128,128,0.2); color: inherit; }
 
@@ -285,7 +286,7 @@
             #ls-reply-bar-close { position: absolute; right: 8px; top: 8px; cursor: pointer; font-size: 14px; color: inherit; border: none; background: none; }
             
             /* MENTION PANEL */
-            #ls-mention-panel { position: absolute; bottom: 60px; left: 16px; background-color: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: none; flex-direction: column; min-width: 150px; max-height: 180px; overflow-y: auto; z-index: 50; padding: 4px 0; }
+            #ls-mention-panel { position: absolute; bottom: 60px; left: 16px; background-color: var(--bg-overlay); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: none; flex-direction: column; min-width: 150px; max-height: 180px; overflow-y: auto; z-index: 50; padding: 4px 0; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
             .ls-mention-item { padding: 8px 16px; color: var(--text-primary); font-size: 13px; cursor: pointer; font-weight: 500; }
             .ls-mention-item:hover, .ls-mention-item.active { background-color: rgba(128,128,128,0.15); }
 
@@ -321,7 +322,7 @@
             #ls-send-btn { flex-shrink: 0; background: var(--btn-primary-bg); color: var(--btn-primary-color); border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); transition: transform 0.2s; }
             #ls-send-btn:hover { transform: scale(1.05); }
             
-            .ls-popup-panel { position: absolute; bottom: 70px; background-color: var(--bg-surface); border-radius: 16px; padding: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: none; z-index: 20; border: 1px solid var(--border-color); }
+            .ls-popup-panel { position: absolute; bottom: 70px; background-color: var(--bg-overlay); border-radius: 16px; padding: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: none; z-index: 20; border: 1px solid var(--border-color); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
             #ls-emoji-panel { left: 16px; width: 280px; display: flex; flex-wrap: wrap; gap: 6px; padding: 12px; }
             .ls-emoji-item { font-size: 20px; cursor: pointer; text-align: center; border-radius: 8px; transition: 0.1s; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; }
             .ls-emoji-item:hover { background-color: rgba(128,128,128,0.1); transform: scale(1.1); }
@@ -904,12 +905,6 @@
                 db.collection('users').doc(myName).set({ color: myColor, deviceId: myDeviceId, pin: myPin, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
             }
 
-            if (myIntegratedMode) {
-                toggleIntegratedMode(true);
-            } else {
-                toggleIntegratedMode(false);
-            }
-
             if (!myName || !myPin) {
                 if (userProfileUnsubscribe) userProfileUnsubscribe();
                 setupArea.style.display = 'flex';
@@ -919,6 +914,7 @@
                 lobbySettingsBtn.style.display = 'none';
                 backBtn.style.display = 'none';
                 headerText.innerText = "LidySync";
+                toggleIntegratedMode(false);
                 stopLobbyListeners();
             } else if (!currentRoom || !currentRoomKey) {
                 setupArea.style.display = 'none';
@@ -928,6 +924,8 @@
                 lobbySettingsBtn.style.display = 'flex';
                 backBtn.style.display = 'none';
                 headerText.innerText = `Lobby (${myName})`;
+                if (myIntegratedMode) toggleIntegratedMode(true);
+                else toggleIntegratedMode(false);
                 renderSavedRooms();
                 startLobbyListeners();
             } else {
@@ -939,6 +937,7 @@
                 backBtn.style.display = 'flex';
                 headerText.innerText = `${currentRoom}`;
                 if (!mySyncBg) applyBackground(myBgType, myBgColor, myBgImage);
+                if (myIntegratedMode) toggleIntegratedMode(true);
                 stopLobbyListeners();
                 startChatListeners();
             }
@@ -1309,7 +1308,7 @@
             chatDropdown.classList.remove('show');
             myIntegratedMode = !myIntegratedMode;
             localStorage.setItem('ls_integrated', myIntegratedMode);
-            checkScreenState(); // Re-apply correctly across entire UI
+            checkScreenState(); 
         });
 
         shadow.getElementById('ls-menu-share').addEventListener('click', () => {
@@ -1392,6 +1391,7 @@
                             let c = 'ls-tag-generic';
                             if (t === 'DEV') c = 'ls-tag-dev';
                             if (t === 'OWNER') c = 'ls-tag-owner';
+                            if (t === 'MOD') c = 'ls-tag-mod';
                             if (t === 'Do Biel') c = 'ls-tag-dobiel';
                             tContainer.innerHTML += `<span class="ls-tag ${c}">${t}</span>`;
                         });
@@ -1534,6 +1534,7 @@
                                 let c = 'ls-tag-generic';
                                 if (t === 'DEV') c = 'ls-tag-dev';
                                 if (t === 'OWNER') c = 'ls-tag-owner';
+                                if (t === 'MOD') c = 'ls-tag-mod';
                                 if (t === 'Do Biel') c = 'ls-tag-dobiel';
                                 tagsContainer.innerHTML += `<span class="ls-tag ${c}">${t}</span>`;
                             });
@@ -1611,6 +1612,7 @@
                                 let c = 'ls-tag-generic';
                                 if (t === 'DEV') c = 'ls-tag-dev';
                                 if (t === 'OWNER') c = 'ls-tag-owner';
+                                if (t === 'MOD') c = 'ls-tag-mod';
                                 if (t === 'Do Biel') c = 'ls-tag-dobiel';
                                 tagsContainer.innerHTML += `<span class="ls-tag ${c}">${t}</span>`;
                             });
@@ -1703,7 +1705,7 @@
                                 playNotificationSound();
                                 
                                 if (!chatWindow.classList.contains('open') || myIntegratedMode) {
-                                    // Se está no modo integrado, só mostra badge se o chat não estiver visível (o que não acontece se integrado==true, pois fica sempre aberto)
+                                    // Se está no modo integrado, só mostra badge se o chat não estiver visível
                                     if (!myIntegratedMode) {
                                         unreadCount++;
                                         badge.style.display = 'flex';
