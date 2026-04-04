@@ -6,7 +6,9 @@
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
 // @match        *://*/*
-// @grant        none
+// @grant        GM_setValue
+// @grant        GM_getValue
+// @grant        GM_deleteValue
 // @run-at       document-start
 // @require      https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js
 // @require      https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js
@@ -14,6 +16,27 @@
 
 (function() {
     'use strict';
+
+    const ls = {
+        getItem: function(key) {
+            let val = GM_getValue(key);
+            if (val === undefined) {
+                val = localStorage.getItem(key);
+                if (val !== null) GM_setValue(key, val);
+            }
+            return val === undefined ? null : val;
+        },
+        setItem: function(key, val) {
+            GM_setValue(key, String(val));
+        },
+        removeItem: function(key) {
+            GM_deleteValue(key);
+        },
+        clear: function() {
+            const keys = ['ls_device_id','ls_username','ls_userpin','ls_usercolor','ls_usertextcolor','ls_useravatar','ls_userbanner','ls_userbio','ls_usercountry','ls_hidechats','ls_current_room','ls_room_key','ls_saved_rooms','ls_last_read','ls_muted_rooms','ls_theme','ls_sound','ls_inchat_sounds','ls_hide_sys','ls_hide_app','ls_hide_revive','ls_integrated','ls_bg_type','ls_bg_color','ls_bg_image','ls_sync_bg','ls_autoplay'];
+            keys.forEach(k => GM_deleteValue(k));
+        }
+    };
 
     async function hashPassword(password) {
         const msgBuffer = new TextEncoder().encode(password);
@@ -39,9 +62,9 @@
         } catch (e) {}
     }
 
-    function playNotificationSound() { if (localStorage.getItem('ls_sound') !== 'false') playAudio(600, 1000, 0.1); }
-    function playSendSound() { if (localStorage.getItem('ls_sound') !== 'false' && localStorage.getItem('ls_inchat_sounds') !== 'false') playAudio(300, 600, 0.08); }
-    function playReceiveSound() { if (localStorage.getItem('ls_sound') !== 'false' && localStorage.getItem('ls_inchat_sounds') !== 'false') playAudio(800, 1200, 0.15); }
+    function playNotificationSound() { if (ls.getItem('ls_sound') !== 'false') playAudio(600, 1000, 0.1); }
+    function playSendSound() { if (ls.getItem('ls_sound') !== 'false' && ls.getItem('ls_inchat_sounds') !== 'false') playAudio(300, 600, 0.08); }
+    function playReceiveSound() { if (ls.getItem('ls_sound') !== 'false' && ls.getItem('ls_inchat_sounds') !== 'false') playAudio(800, 1200, 0.15); }
 
     function escapeHTML(str) {
         return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag]));
@@ -179,7 +202,7 @@
 
         const wrapper = document.createElement('div');
         wrapper.id = 'ls-wrapper';
-        wrapper.className = localStorage.getItem('ls_theme') !== null ? localStorage.getItem('ls_theme') : ''; 
+        wrapper.className = ls.getItem('ls_theme') !== null ? ls.getItem('ls_theme') : ''; 
         
         wrapper.innerHTML = `
             <div id="ls-chat-window">
@@ -433,41 +456,41 @@
         const inputSetupName = shadow.getElementById('ls-setup-name');
         const inputSetupPin = shadow.getElementById('ls-setup-pin');
 
-        let myDeviceId = localStorage.getItem('ls_device_id');
+        let myDeviceId = ls.getItem('ls_device_id');
         if (!myDeviceId) {
             myDeviceId = crypto.randomUUID();
-            localStorage.setItem('ls_device_id', myDeviceId);
+            ls.setItem('ls_device_id', myDeviceId);
         }
 
-        let myName = sessionStorage.getItem('ls_username') || localStorage.getItem('ls_username');
-        let myPin = sessionStorage.getItem('ls_userpin') || localStorage.getItem('ls_userpin');
-        let myColor = localStorage.getItem('ls_usercolor') || '#6366f1';
-        let myTextColor = localStorage.getItem('ls_usertextcolor') || '#ffffff';
-        let myAvatar = localStorage.getItem('ls_useravatar') || '';
-        let myBanner = localStorage.getItem('ls_userbanner') || '';
-        let myBio = localStorage.getItem('ls_userbio') || '';
-        let myCountry = localStorage.getItem('ls_usercountry') || '🌍';
-        let myHideChats = localStorage.getItem('ls_hidechats') === 'true';
-        let currentRoom = localStorage.getItem('ls_current_room'); 
-        let currentRoomKey = localStorage.getItem('ls_room_key'); 
+        let myName = sessionStorage.getItem('ls_username') || ls.getItem('ls_username');
+        let myPin = sessionStorage.getItem('ls_userpin') || ls.getItem('ls_userpin');
+        let myColor = ls.getItem('ls_usercolor') || '#6366f1';
+        let myTextColor = ls.getItem('ls_usertextcolor') || '#ffffff';
+        let myAvatar = ls.getItem('ls_useravatar') || '';
+        let myBanner = ls.getItem('ls_userbanner') || '';
+        let myBio = ls.getItem('ls_userbio') || '';
+        let myCountry = ls.getItem('ls_usercountry') || '🌍';
+        let myHideChats = ls.getItem('ls_hidechats') === 'true';
+        let currentRoom = ls.getItem('ls_current_room'); 
+        let currentRoomKey = ls.getItem('ls_room_key'); 
         
         let tempAvatar = '';
         let tempBanner = '';
         
-        let savedRooms = JSON.parse(localStorage.getItem('ls_saved_rooms') || '[]');
-        let lastReadTimes = JSON.parse(localStorage.getItem('ls_last_read') || '{}');
-        let mutedRooms = JSON.parse(localStorage.getItem('ls_muted_rooms') || '[]');
+        let savedRooms = JSON.parse(ls.getItem('ls_saved_rooms') || '[]');
+        let lastReadTimes = JSON.parse(ls.getItem('ls_last_read') || '{}');
+        let mutedRooms = JSON.parse(ls.getItem('ls_muted_rooms') || '[]');
         
-        let myBgType = localStorage.getItem('ls_bg_type') || 'color';
-        let myBgColor = localStorage.getItem('ls_bg_color') || '#0f172a';
-        let myBgImage = localStorage.getItem('ls_bg_image') || '';
-        let mySyncBg = localStorage.getItem('ls_sync_bg') === 'true'; 
-        let myAutoPlay = localStorage.getItem('ls_autoplay') !== 'false'; 
-        let myHideApp = localStorage.getItem('ls_hide_app') === 'true';
-        let myHideRevive = localStorage.getItem('ls_hide_revive') !== 'false';
-        let myIntegratedMode = localStorage.getItem('ls_integrated') === 'true';
-        let myHideSys = localStorage.getItem('ls_hide_sys') === 'true';
-        let myInChatSound = localStorage.getItem('ls_inchat_sounds') !== 'false';
+        let myBgType = ls.getItem('ls_bg_type') || 'color';
+        let myBgColor = ls.getItem('ls_bg_color') || '#0f172a';
+        let myBgImage = ls.getItem('ls_bg_image') || '';
+        let mySyncBg = ls.getItem('ls_sync_bg') === 'true'; 
+        let myAutoPlay = ls.getItem('ls_autoplay') !== 'false'; 
+        let myHideApp = ls.getItem('ls_hide_app') === 'true';
+        let myHideRevive = ls.getItem('ls_hide_revive') !== 'false';
+        let myIntegratedMode = ls.getItem('ls_integrated') === 'true';
+        let myHideSys = ls.getItem('ls_hide_sys') === 'true';
+        let myInChatSound = ls.getItem('ls_inchat_sounds') !== 'false';
         
         let editingRoomAppearance = null;
         let unreadCount = 0;
@@ -510,19 +533,19 @@
                 
                 const keepLogged = shadow.getElementById('ls-setup-keep').checked;
                 if (keepLogged) {
-                    localStorage.setItem('ls_username', myName);
-                    localStorage.setItem('ls_userpin', myPin);
+                    ls.setItem('ls_username', myName);
+                    ls.setItem('ls_userpin', myPin);
                     sessionStorage.removeItem('ls_username');
                     sessionStorage.removeItem('ls_userpin');
                 } else {
                     sessionStorage.setItem('ls_username', myName);
                     sessionStorage.setItem('ls_userpin', myPin);
-                    localStorage.removeItem('ls_username');
-                    localStorage.removeItem('ls_userpin');
+                    ls.removeItem('ls_username');
+                    ls.removeItem('ls_userpin');
                 }
 
-                localStorage.setItem('ls_usercolor', myColor);
-                localStorage.setItem('ls_usertextcolor', myTextColor);
+                ls.setItem('ls_usercolor', myColor);
+                ls.setItem('ls_usertextcolor', myTextColor);
                 await syncUserProfile(); checkScreenState();
             } catch (e) { alert("Erro ao conectar ao banco de dados."); }
         });
@@ -547,22 +570,22 @@
                 
                 const keepLogged = shadow.getElementById('ls-setup-keep').checked;
                 if (keepLogged) {
-                    localStorage.setItem('ls_username', myName);
-                    localStorage.setItem('ls_userpin', myPin);
+                    ls.setItem('ls_username', myName);
+                    ls.setItem('ls_userpin', myPin);
                     sessionStorage.removeItem('ls_username');
                     sessionStorage.removeItem('ls_userpin');
                 } else {
                     sessionStorage.setItem('ls_username', myName);
                     sessionStorage.setItem('ls_userpin', myPin);
-                    localStorage.removeItem('ls_username');
-                    localStorage.removeItem('ls_userpin');
+                    ls.removeItem('ls_username');
+                    ls.removeItem('ls_userpin');
                 }
                 
-                localStorage.setItem('ls_usercolor', myColor);
-                localStorage.setItem('ls_usertextcolor', myTextColor);
-                localStorage.setItem('ls_userbio', myBio); localStorage.setItem('ls_usercountry', myCountry);
-                localStorage.setItem('ls_hidechats', myHideChats);
-                localStorage.setItem('ls_useravatar', myAvatar); localStorage.setItem('ls_userbanner', myBanner);
+                ls.setItem('ls_usercolor', myColor);
+                ls.setItem('ls_usertextcolor', myTextColor);
+                ls.setItem('ls_userbio', myBio); ls.setItem('ls_usercountry', myCountry);
+                ls.setItem('ls_hidechats', myHideChats);
+                ls.setItem('ls_useravatar', myAvatar); ls.setItem('ls_userbanner', myBanner);
                 
                 await syncUserProfile(); checkScreenState();
             } catch (e) { alert("Erro ao conectar ao banco de dados."); }
@@ -686,7 +709,7 @@
 
         function updateLastRead(roomName) {
             lastReadTimes[roomName] = Date.now();
-            localStorage.setItem('ls_last_read', JSON.stringify(lastReadTimes));
+            ls.setItem('ls_last_read', JSON.stringify(lastReadTimes));
         }
 
         async function sendSystemAction(actionText) {
@@ -714,8 +737,8 @@
                 userProfileUnsubscribe = userRef.onSnapshot(snap => {
                     if(snap.exists) {
                         const data = snap.data();
-                        if(data.isBanned) { alert("⚠️ Acesso Negado: Você foi banido. Motivo: " + (data.banReason || "Violação das regras.")); localStorage.clear(); location.reload(); }
-                        if(data.username && data.username !== myName) { alert(`⚠️ Moderação: Seu nome foi alterado pelo administrador para "${data.username}".`); localStorage.setItem('ls_username', data.username); location.reload(); }
+                        if(data.isBanned) { alert("⚠️ Acesso Negado: Você foi banido. Motivo: " + (data.banReason || "Violação das regras.")); ls.clear(); location.reload(); }
+                        if(data.username && data.username !== myName) { alert(`⚠️ Moderação: Seu nome foi alterado pelo administrador para "${data.username}".`); ls.setItem('ls_username', data.username); location.reload(); }
                     }
                 });
             } catch(e) { }
@@ -901,8 +924,8 @@
             myColor = shadow.getElementById('ls-profile-e-color').value; myTextColor = shadow.getElementById('ls-profile-e-textcolor').value; myBio = shadow.getElementById('ls-profile-e-bio').value.trim(); myHideChats = shadow.getElementById('ls-profile-e-hiderooms').checked;
             myAvatar = tempAvatar; myBanner = tempBanner;
             
-            localStorage.setItem('ls_usercolor', myColor); localStorage.setItem('ls_usertextcolor', myTextColor); localStorage.setItem('ls_userbio', myBio); localStorage.setItem('ls_hidechats', myHideChats);
-            localStorage.setItem('ls_useravatar', myAvatar); localStorage.setItem('ls_userbanner', myBanner);
+            ls.setItem('ls_usercolor', myColor); ls.setItem('ls_usertextcolor', myTextColor); ls.setItem('ls_userbio', myBio); ls.setItem('ls_hidechats', myHideChats);
+            ls.setItem('ls_useravatar', myAvatar); ls.setItem('ls_userbanner', myBanner);
             
             await syncUserProfile(); openProfile(myName);
         });
@@ -967,10 +990,10 @@
                     btn.addEventListener('click', async (e) => {
                         e.stopPropagation(); dropMenu.classList.remove('show');
                         if (btn.dataset.action === 'members') { membersOverlay.style.display = 'flex'; fetchAndRenderMembers(btn.dataset.name, shadow.getElementById('ls-members-list')); } 
-                        else if (btn.dataset.action === 'mute') { const rName = btn.dataset.name; if(mutedRooms.includes(rName)) { mutedRooms = mutedRooms.filter(r => r !== rName); } else { mutedRooms.push(rName); } localStorage.setItem('ls_muted_rooms', JSON.stringify(mutedRooms)); renderSavedRooms(); } 
-                        else if (btn.dataset.action === 'share') { let passToShare = btn.dataset.rawpass; if (!passToShare) { passToShare = prompt("Qual a senha dessa sala para incluir no convite?") || "[Sua Senha]"; if (passToShare !== "[Sua Senha]") { room.rawPass = passToShare; localStorage.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); } } const link = `Vem assistir comigo no LidySync!\n🍿 Nome da Sala: ${btn.dataset.name}\n🔑 Senha: ${passToShare}\n\nCaso não tenha a extensão clique aqui para aprender a instalar: https://ofaceoff.github.io/LidySync/index.html`; navigator.clipboard.writeText(link); alert("Convite copiado!"); } 
+                        else if (btn.dataset.action === 'mute') { const rName = btn.dataset.name; if(mutedRooms.includes(rName)) { mutedRooms = mutedRooms.filter(r => r !== rName); } else { mutedRooms.push(rName); } ls.setItem('ls_muted_rooms', JSON.stringify(mutedRooms)); renderSavedRooms(); } 
+                        else if (btn.dataset.action === 'share') { let passToShare = btn.dataset.rawpass; if (!passToShare) { passToShare = prompt("Qual a senha dessa sala para incluir no convite?") || "[Sua Senha]"; if (passToShare !== "[Sua Senha]") { room.rawPass = passToShare; ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); } } const link = `Vem assistir comigo no LidySync!\n🍿 Nome da Sala: ${btn.dataset.name}\n🔑 Senha: ${passToShare}\n\nCaso não tenha a extensão clique aqui para aprender a instalar: https://ofaceoff.github.io/LidySync/index.html`; navigator.clipboard.writeText(link); alert("Convite copiado!"); } 
                         else if (btn.dataset.action === 'appearance') { editingRoomAppearance = btn.dataset.name; settingsOverlay.style.display = 'flex'; db.collection('rooms').doc(btn.dataset.name).collection('settings').doc('shared').get().then(doc => { if(doc.exists) { try { const d = JSON.parse(doc.data().theme); shadow.getElementById('ls-config-bg-type').value = d.bgType || 'color'; shadow.getElementById('ls-config-bg-type').dispatchEvent(new Event('change')); shadow.getElementById('ls-config-bg-color').value = d.bgColor || '#0f172a'; shadow.getElementById('ls-config-bg-image').value = d.bgImage || ''; shadow.getElementById('ls-config-sync').checked = true; } catch(e){} } }); } 
-                        else if(btn.dataset.action === 'remove') { savedRooms.splice(btn.dataset.index, 1); localStorage.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); await syncUserProfile(); renderSavedRooms(); startLobbyListeners(); }
+                        else if(btn.dataset.action === 'remove') { savedRooms.splice(btn.dataset.index, 1); ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); await syncUserProfile(); renderSavedRooms(); startLobbyListeners(); }
                     });
                 });
                 list.appendChild(item);
@@ -1012,16 +1035,16 @@
 
         function saveRoomToLocalList(name, hash, rawPass) {
             const exists = savedRooms.find(r => r.name === name);
-            if(!exists) { savedRooms.push({name, hash, rawPass}); localStorage.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); } 
-            else if (rawPass && !exists.rawPass) { exists.rawPass = rawPass; localStorage.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); }
+            if(!exists) { savedRooms.push({name, hash, rawPass}); ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); } 
+            else if (rawPass && !exists.rawPass) { exists.rawPass = rawPass; ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); }
         }
 
         async function autoJoinRoom(roomName, savedHash) {
             try {
                 const doc = await db.collection('rooms').doc(roomName).get();
-                if(!doc.exists) { alert("Esta sala foi encerrada pelo dono."); savedRooms = savedRooms.filter(r => r.name !== roomName); localStorage.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); await syncUserProfile(); renderSavedRooms(); startLobbyListeners(); return; }
+                if(!doc.exists) { alert("Esta sala foi encerrada pelo dono."); savedRooms = savedRooms.filter(r => r.name !== roomName); ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); await syncUserProfile(); renderSavedRooms(); startLobbyListeners(); return; }
                 if(doc.data().password !== savedHash) { alert("A senha desta sala foi alterada. Por favor, adicione-a novamente pelo botão +"); return; }
-                currentRoom = roomName; currentRoomKey = roomName; localStorage.setItem('ls_current_room', currentRoom); localStorage.setItem('ls_room_key', currentRoomKey);
+                currentRoom = roomName; currentRoomKey = roomName; ls.setItem('ls_current_room', currentRoom); ls.setItem('ls_room_key', currentRoomKey);
                 db.collection('rooms').doc(currentRoom).set({ participants: firebase.firestore.FieldValue.arrayUnion(myName) }, { merge: true }).catch(()=>{});
                 sendSystemAction('SYSTEM_JOIN'); updateLastRead(currentRoom); checkScreenState();
             } catch(e) {}
@@ -1049,7 +1072,7 @@
                 
                 saveRoomToLocalList(roomName, hashedPass, roomPass);
                 currentRoom = roomName; currentRoomKey = roomName;
-                localStorage.setItem('ls_current_room', currentRoom); localStorage.setItem('ls_room_key', currentRoomKey);
+                ls.setItem('ls_current_room', currentRoom); ls.setItem('ls_room_key', currentRoomKey);
                 
                 sendSystemAction('SYSTEM_JOIN'); updateLastRead(currentRoom); inputRoom.value = ''; inputPass.value = ''; checkScreenState();
             } catch (e) {}
@@ -1067,7 +1090,7 @@
                 if(doc.data().password !== hashedPass) return alert("Senha incorreta!");
                 saveRoomToLocalList(roomName, hashedPass, roomPass);
                 currentRoom = roomName; currentRoomKey = roomName;
-                localStorage.setItem('ls_current_room', currentRoom); localStorage.setItem('ls_room_key', currentRoomKey);
+                ls.setItem('ls_current_room', currentRoom); ls.setItem('ls_room_key', currentRoomKey);
                 
                 db.collection('rooms').doc(currentRoom).set({ participants: firebase.firestore.FieldValue.arrayUnion(myName) }, { merge: true }).catch(()=>{});
                 
@@ -1079,12 +1102,12 @@
         const chatDropdown = shadow.getElementById('ls-chat-dropdown');
 
         chatMenuBtn.addEventListener('click', (e) => { e.stopPropagation(); chatDropdown.classList.toggle('show'); });
-        shadow.getElementById('ls-menu-theater').addEventListener('click', () => { chatDropdown.classList.remove('show'); myIntegratedMode = !myIntegratedMode; localStorage.setItem('ls_integrated', myIntegratedMode); checkScreenState(); });
+        shadow.getElementById('ls-menu-theater').addEventListener('click', () => { chatDropdown.classList.remove('show'); myIntegratedMode = !myIntegratedMode; ls.setItem('ls_integrated', myIntegratedMode); checkScreenState(); });
         shadow.getElementById('ls-menu-share').addEventListener('click', () => {
             chatDropdown.classList.remove('show'); if(!currentRoom) return;
             let passToShare = ""; const roomData = savedRooms.find(r => r.name === currentRoom);
             if (roomData && roomData.rawPass) { passToShare = roomData.rawPass; } 
-            else { passToShare = prompt("Qual a senha dessa sala para incluir no convite?") || "[Sua Senha]"; if (roomData && passToShare !== "[Sua Senha]") { roomData.rawPass = passToShare; localStorage.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); } }
+            else { passToShare = prompt("Qual a senha dessa sala para incluir no convite?") || "[Sua Senha]"; if (roomData && passToShare !== "[Sua Senha]") { roomData.rawPass = passToShare; ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); } }
             const link = `Vem assistir comigo no LidySync!\n🍿 Nome da Sala: ${currentRoom}\n🔑 Senha: ${passToShare}\n\nCaso não tenha a extensão clique aqui para aprender a instalar: https://ofaceoff.github.io/LidySync/index.html`;
             navigator.clipboard.writeText(link); alert("Convite copiado!");
         });
@@ -1099,7 +1122,7 @@
         shadow.getElementById('ls-menu-members').addEventListener('click', () => { chatDropdown.classList.remove('show'); membersOverlay.style.display = 'flex'; fetchAndRenderMembers(currentRoom, shadow.getElementById('ls-members-list')); });
         shadow.getElementById('ls-close-members-modal').addEventListener('click', () => { membersOverlay.style.display = 'none'; });
 
-        backBtn.addEventListener('click', () => { sendSystemAction('SYSTEM_LEAVE'); stopChatListeners(); currentRoom = null; currentRoomKey = null; currentRoomData = null; localStorage.removeItem('ls_current_room'); localStorage.removeItem('ls_room_key'); checkScreenState(); });
+        backBtn.addEventListener('click', () => { sendSystemAction('SYSTEM_LEAVE'); stopChatListeners(); currentRoom = null; currentRoomKey = null; currentRoomData = null; ls.removeItem('ls_current_room'); ls.removeItem('ls_room_key'); checkScreenState(); });
         shadow.getElementById('ls-menu-delete').addEventListener('click', async () => { chatDropdown.classList.remove('show'); if(!confirm("Encerrar e deletar a sala para todos?")) return; try { await db.collection('rooms').doc(currentRoom).delete(); } catch(e){} });
 
         function startChatListeners() {
@@ -1110,7 +1133,7 @@
 
             roomListener = roomRef.onSnapshot(doc => {
                 if (!doc.exists) {
-                    alert("A sala foi encerrada pelo criador."); stopChatListeners(); currentRoom = null; currentRoomKey = null; currentRoomData = null; localStorage.removeItem('ls_current_room'); localStorage.removeItem('ls_room_key'); savedRooms = savedRooms.filter(r => r.name !== doc.id); localStorage.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); checkScreenState();
+                    alert("A sala foi encerrada pelo criador."); stopChatListeners(); currentRoom = null; currentRoomKey = null; currentRoomData = null; ls.removeItem('ls_current_room'); ls.removeItem('ls_room_key'); savedRooms = savedRooms.filter(r => r.name !== doc.id); ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); checkScreenState();
                 } else {
                     currentRoomData = doc.data();
                     if (currentRoomData.participants) { currentRoomData.participants.forEach(p => { if (!userCache[p]) { db.collection('users').doc(p).get().then(u => { if (u.exists) userCache[p] = u.data(); }); } }); }
@@ -1283,7 +1306,7 @@
             if (editingRoomAppearance) { try { await db.collection('rooms').doc(editingRoomAppearance).collection('settings').doc('shared').set({ theme: JSON.stringify({ bgType: bType, bgColor: bColor, bgImage: bImage }) }, {merge: true}); } catch(e){} } 
             else {
                 myBgType = bType; myBgColor = bColor; myBgImage = bImage; mySyncBg = bSync; myAutoPlay = aPlay;
-                localStorage.setItem('ls_bg_type', myBgType); localStorage.setItem('ls_bg_color', myBgColor); localStorage.setItem('ls_bg_image', myBgImage); localStorage.setItem('ls_sync_bg', mySyncBg); localStorage.setItem('ls_autoplay', myAutoPlay);
+                ls.setItem('ls_bg_type', myBgType); ls.setItem('ls_bg_color', myBgColor); ls.setItem('ls_bg_image', myBgImage); ls.setItem('ls_sync_bg', mySyncBg); ls.setItem('ls_autoplay', myAutoPlay);
                 if (mySyncBg && currentRoom) { try { await db.collection('rooms').doc(currentRoom).collection('settings').doc('shared').set({ theme: JSON.stringify({ bgType: myBgType, bgColor: myBgColor, bgImage: myBgImage }) }, {merge: true}); } catch (e) {} } 
                 else applyBackground(myBgType, myBgColor, myBgImage);
             }
@@ -1411,8 +1434,8 @@
         if (lobbySettingsBtn) {
             lobbySettingsBtn.addEventListener('click', () => {
                 lobbySettingsOverlay.style.display = 'flex';
-                shadow.getElementById('ls-app-theme').value = localStorage.getItem('ls_theme') || '';
-                shadow.getElementById('ls-app-sound').checked = localStorage.getItem('ls_sound') !== 'false';
+                shadow.getElementById('ls-app-theme').value = ls.getItem('ls_theme') || '';
+                shadow.getElementById('ls-app-sound').checked = ls.getItem('ls_sound') !== 'false';
                 shadow.getElementById('ls-app-inchatsound').checked = myInChatSound;
                 shadow.getElementById('ls-app-hidesys').checked = myHideSys;
                 shadow.getElementById('ls-app-hide').checked = myHideApp;
@@ -1439,13 +1462,13 @@
                 myHideRevive = shadow.getElementById('ls-app-revive').checked;
                 myIntegratedMode = shadow.getElementById('ls-app-integrated').checked;
 
-                localStorage.setItem('ls_theme', theme);
-                localStorage.setItem('ls_sound', sound);
-                localStorage.setItem('ls_inchat_sounds', myInChatSound);
-                localStorage.setItem('ls_hide_sys', myHideSys);
-                localStorage.setItem('ls_hide_app', myHideApp);
-                localStorage.setItem('ls_hide_revive', myHideRevive);
-                localStorage.setItem('ls_integrated', myIntegratedMode);
+                ls.setItem('ls_theme', theme);
+                ls.setItem('ls_sound', sound);
+                ls.setItem('ls_inchat_sounds', myInChatSound);
+                ls.setItem('ls_hide_sys', myHideSys);
+                ls.setItem('ls_hide_app', myHideApp);
+                ls.setItem('ls_hide_revive', myHideRevive);
+                ls.setItem('ls_integrated', myIntegratedMode);
 
                 shadow.getElementById('ls-wrapper').className = theme;
                 lobbySettingsOverlay.style.display = 'none';
@@ -1457,7 +1480,7 @@
         if (wipeDataBtn) {
             wipeDataBtn.addEventListener('click', () => {
                 if(confirm("Tem certeza que deseja desconectar e apagar todos os dados locais do LidySync?")) {
-                    localStorage.clear();
+                    ls.clear();
                     sessionStorage.clear();
                     location.reload();
                 }
