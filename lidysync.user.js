@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      47.0
+// @version      48.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -17,24 +17,28 @@
 (function() {
     'use strict';
 
+    const hasGM = typeof GM_getValue !== 'undefined';
     const ls = {
         getItem: function(key) {
-            let val = GM_getValue(key);
-            if (val === undefined) {
+            let val = hasGM ? GM_getValue(key) : undefined;
+            if (val === undefined || val === null) {
                 val = localStorage.getItem(key);
-                if (val !== null) GM_setValue(key, val);
+                if (val !== null && hasGM) GM_setValue(key, val);
             }
-            return val === undefined ? null : val;
+            return (val === undefined || val === null) ? null : val;
         },
         setItem: function(key, val) {
-            GM_setValue(key, String(val));
+            if (hasGM) GM_setValue(key, String(val));
+            localStorage.setItem(key, val);
         },
         removeItem: function(key) {
-            GM_deleteValue(key);
+            if (hasGM) GM_deleteValue(key);
+            localStorage.removeItem(key);
         },
         clear: function() {
             const keys = ['ls_device_id','ls_username','ls_userpin','ls_usercolor','ls_usertextcolor','ls_useravatar','ls_userbanner','ls_userbio','ls_usercountry','ls_hidechats','ls_current_room','ls_room_key','ls_saved_rooms','ls_last_read','ls_muted_rooms','ls_theme','ls_sound','ls_inchat_sounds','ls_hide_sys','ls_hide_app','ls_hide_revive','ls_integrated','ls_bg_type','ls_bg_color','ls_bg_image','ls_sync_bg','ls_autoplay'];
-            keys.forEach(k => GM_deleteValue(k));
+            if (hasGM) keys.forEach(k => GM_deleteValue(k));
+            keys.forEach(k => localStorage.removeItem(k));
         }
     };
 
