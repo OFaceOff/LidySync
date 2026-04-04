@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      36.0
+// @version      37.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -241,6 +241,7 @@
                 box-shadow: -5px 0 25px rgba(0,0,0,0.5) !important;
             }
             #ls-chat-window.integrated #ls-close-btn { display: none !important; }
+            #ls-chat-window.integrated #ls-minimize-btn { display: none !important; }
             #ls-chat-window.integrated #ls-header { cursor: default !important; }
 
             @keyframes slideUp { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
@@ -412,7 +413,10 @@
                                 <button class="ls-dropdown-item danger" id="ls-menu-delete">🗑️ Encerrar Sala</button>
                             </div>
                         </div>
-                        <button class="ls-header-btn" id="ls-close-btn" title="Ocultar Chat">
+                        <button class="ls-header-btn" id="ls-minimize-btn" title="Ocultar App">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        </button>
+                        <button class="ls-header-btn" id="ls-close-btn" title="Fechar Chat">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                         </button>
                     </div>
@@ -662,6 +666,7 @@
         const badge = shadow.getElementById('ls-unread-badge');
         const chatWindow = shadow.getElementById('ls-chat-window');
         const closeBtn = shadow.getElementById('ls-close-btn');
+        const minimizeBtn = shadow.getElementById('ls-minimize-btn');
         const lobbySettingsBtn = shadow.getElementById('ls-lobby-settings-btn');
         const backBtn = shadow.getElementById('ls-back-btn');
         const headerText = shadow.getElementById('ls-header-text');
@@ -1113,6 +1118,10 @@
             profileOverlay.style.display = 'none';
             editingRoomAppearance = null;
 
+            if (myName) {
+                db.collection('users').doc(myName).set({ color: myColor, deviceId: myDeviceId, pin: myPin, roomCount: savedRooms.length, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
+            }
+
             if (myIntegratedMode) {
                 toggleIntegratedMode(true);
             } else {
@@ -1558,60 +1567,30 @@
             } catch(e) {}
         }
 
-        shadow.getElementById('ls-setup-btn').addEventListener('click', () => shadow.getElementById('ls-login-btn').click());
-
-        shadow.getElementById('ls-close-add-modal').addEventListener('click', () => { addRoomOverlay.style.display = 'none'; });
-
-        const inputRoom = shadow.getElementById('ls-lobby-room');
-        const inputPass = shadow.getElementById('ls-lobby-pass');
-
-        shadow.getElementById('ls-create-room-btn').addEventListener('click', async () => {
-            const roomName = inputRoom.value.trim().toLowerCase();
-            const roomPass = inputPass.value.trim();
-            if(!roomName || !roomPass) return alert("Preencha o nome e a senha!");
-            if(roomName.length > 80) return alert("O nome da sala deve ter no máximo 80 caracteres.");
-            if(roomPass.length < 4 || roomPass.length > 16) return alert("A senha deve ter entre 4 e 16 caracteres.");
-
-            try {
-                const docRef = db.collection('rooms').doc(roomName);
-                const doc = await docRef.get();
-                if(doc.exists) return alert("Esta sala já existe! Clique em 'Entrar na Sala'.");
-                const hashedPass = await hashPassword(roomPass);
-                
-                await docRef.set({ password: hashedPass, createdBy: myName, deviceId: myDeviceId, createdAt: firebase.firestore.FieldValue.serverTimestamp(), participants: [myName] });
-                
-                saveRoomToLocalList(roomName, hashedPass, roomPass);
-                await syncUserProfile();
-                currentRoom = roomName; currentRoomKey = roomName;
-                localStorage.setItem('ls_current_room', currentRoom); localStorage.setItem('ls_room_key', currentRoomKey);
-                
-                sendSystemAction('SYSTEM_JOIN');
-                updateLastRead(currentRoom);
-                inputRoom.value = ''; inputPass.value = ''; checkScreenState();
-            } catch (e) {}
+        const minimizeBtn = shadow.getElementById('ls-minimize-btn');
+        minimizeBtn.addEventListener('click', () => {
+            if (myIntegratedMode) {
+                alert("O Chat está no Modo Teatro. Desative essa opção no menu ou nas configurações para ocultar a janela.");
+                return;
+            }
+            chatWindow.classList.remove('open');
+            fab.style.display = 'none'; // Esconde a bolinha forçadamente
+            if (currentRoom) updateLastRead(currentRoom);
         });
 
-        shadow.getElementById('ls-join-room-btn').addEventListener('click', async () => {
-            const roomName = inputRoom.value.trim().toLowerCase();
-            const roomPass = inputPass.value.trim();
-            if(!roomName || !roomPass) return alert("Preencha o nome e a senha!");
-            try {
-                const docRef = db.collection('rooms').doc(roomName);
-                const doc = await docRef.get();
-                if(!doc.exists) return alert("Sala não encontrada.");
-                const hashedPass = await hashPassword(roomPass);
-                if(doc.data().password !== hashedPass) return alert("Senha incorreta!");
-                saveRoomToLocalList(roomName, hashedPass, roomPass);
-                await syncUserProfile();
-                currentRoom = roomName; currentRoomKey = roomName;
-                localStorage.setItem('ls_current_room', currentRoom); localStorage.setItem('ls_room_key', currentRoomKey);
-                
-                db.collection('rooms').doc(currentRoom).set({ participants: firebase.firestore.FieldValue.arrayUnion(myName) }, { merge: true }).catch(()=>{});
-                
-                sendSystemAction('SYSTEM_JOIN');
-                updateLastRead(currentRoom);
-                inputRoom.value = ''; inputPass.value = ''; checkScreenState();
-            } catch (e) {}
+        const closeBtnObj = shadow.getElementById('ls-close-btn');
+        closeBtnObj.addEventListener('click', () => { 
+            if (myIntegratedMode) {
+                alert("O Chat está no Modo Teatro. Desative essa opção no menu ou nas configurações para minimizar a janela.");
+                return;
+            }
+            chatWindow.classList.remove('open'); 
+            if (myHideApp) {
+                fab.style.display = 'none';
+            } else {
+                fab.style.display = 'flex';
+            }
+            if (currentRoom) updateLastRead(currentRoom);
         });
 
         const chatMenuBtn = shadow.getElementById('ls-chat-menu-btn');
@@ -1988,13 +1967,16 @@
                             }
     
                             if (data.sender !== myName) {
-                                if (!chatWindow.classList.contains('open') && !myIntegratedMode) {
-                                    if(!mutedRooms.includes(currentRoom)) playNotificationSound();
-                                    unreadCount++;
-                                    badge.style.display = 'flex';
-                                    badge.innerText = unreadCount > 5 ? '5+' : unreadCount;
-                                    if (myHideApp && myHideRevive) {
-                                        fab.style.display = 'flex';
+                                if (!chatWindow.classList.contains('open') || myIntegratedMode) {
+                                    // Se está no modo integrado, só mostra badge se o chat não estiver visível
+                                    if (!myIntegratedMode) {
+                                        unreadCount++;
+                                        badge.style.display = 'flex';
+                                        badge.innerText = unreadCount > 5 ? '5+' : unreadCount;
+                                        if (myHideApp && myHideRevive) {
+                                            fab.style.display = 'flex';
+                                        }
+                                        if(!mutedRooms.includes(currentRoom)) playNotificationSound();
                                     }
                                 } else {
                                     if(!mutedRooms.includes(currentRoom)) playReceiveSound();
@@ -2091,7 +2073,22 @@
             checkScreenState(); 
         });
 
-        closeBtn.addEventListener('click', () => { 
+        // ==================================
+        // BOTÕES DE FECHAR E OCULTAR (NOVO)
+        // ==================================
+        const minimizeBtn = shadow.getElementById('ls-minimize-btn');
+        minimizeBtn.addEventListener('click', () => {
+            if (myIntegratedMode) {
+                alert("O Chat está no Modo Teatro. Desative essa opção no menu ou nas configurações para ocultar a janela.");
+                return;
+            }
+            chatWindow.classList.remove('open');
+            fab.style.display = 'none'; // Esconde a bolinha forçadamente
+            if (currentRoom) updateLastRead(currentRoom);
+        });
+
+        const closeBtnObj = shadow.getElementById('ls-close-btn');
+        closeBtnObj.addEventListener('click', () => { 
             if (myIntegratedMode) {
                 alert("O Chat está no Modo Teatro. Desative essa opção no menu ou nas configurações para minimizar a janela.");
                 return;
