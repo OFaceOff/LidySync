@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      46.0
+// @version      47.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -523,6 +523,37 @@
         
         let isTyping = false;
         let typingTimeout = null;
+
+        let floodCount = 0;
+        let isFlooding = false;
+        let floodResetTimer = null;
+
+        function checkFlood() {
+            if (isFlooding) return true;
+            floodCount++;
+            clearTimeout(floodResetTimer);
+            if (floodCount > 20) {
+                isFlooding = true;
+                input.disabled = true;
+                input.placeholder = "Aguarde 5s (Anti-flood)...";
+                shadow.getElementById('ls-send-btn').style.pointerEvents = 'none';
+                shadow.getElementById('ls-send-btn').style.opacity = '0.5';
+                setTimeout(() => {
+                    isFlooding = false;
+                    floodCount = 0;
+                    input.disabled = false;
+                    input.placeholder = "Mensagem...";
+                    shadow.getElementById('ls-send-btn').style.pointerEvents = 'auto';
+                    shadow.getElementById('ls-send-btn').style.opacity = '1';
+                    input.focus();
+                }, 5000);
+                return true;
+            }
+            floodResetTimer = setTimeout(() => {
+                floodCount = 0;
+            }, 8000);
+            return false;
+        }
 
         shadow.getElementById('ls-forgot-pin').addEventListener('click', () => {
             alert("No momento o serviço de recuperação de PIN está desativado, em breve criaremos nosso discord para tickets de suporte e ajuda, obrigado!");
@@ -1443,14 +1474,25 @@
 
         shadow.getElementById('btn-action-invite').addEventListener('click', async () => {
             plusPanel.style.display = 'none'; if(!currentRoom || !currentRoomKey) return;
+            if (checkFlood()) return;
             try { await db.collection('rooms').doc(currentRoom).collection('messages').add({ type: 'invite', text: 'convidou o chat para a programação atual!', url: window.location.href, sender: myName, deviceId: myDeviceId, color: myColor, roomKey: currentRoomKey, timestamp: firebase.firestore.FieldValue.serverTimestamp(), deleted: false }); updateLastRead(currentRoom); playSendSound(); } catch (e) {}
         });
 
-        shadow.getElementById('btn-action-countdown').addEventListener('click', async () => { plusPanel.style.display = 'none'; sendSystemAction('iniciou a programação!'); });
-        shadow.getElementById('btn-action-pause').addEventListener('click', async () => { plusPanel.style.display = 'none'; sendSystemAction('SYSTEM_PAUSE'); });
+        shadow.getElementById('btn-action-countdown').addEventListener('click', async () => { 
+            plusPanel.style.display = 'none'; 
+            if (checkFlood()) return;
+            sendSystemAction('iniciou a programação!'); 
+        });
+        
+        shadow.getElementById('btn-action-pause').addEventListener('click', async () => { 
+            plusPanel.style.display = 'none'; 
+            if (checkFlood()) return;
+            sendSystemAction('SYSTEM_PAUSE'); 
+        });
 
         shadow.getElementById('btn-action-gif').addEventListener('click', async () => {
             plusPanel.style.display = 'none'; const gifUrl = prompt("Cole o link do GIF:"); if(!gifUrl || !currentRoom) return; if(!currentRoomKey) return alert("Sessão inválida.");
+            if (checkFlood()) return;
             let finalUrl = gifUrl;
             if (replyTarget) { finalUrl = `${replyTarget.sender}|-REPLY-|${replyTarget.text}|-REPLY-|${gifUrl}`; replyTarget = null; shadow.getElementById('ls-reply-bar').style.display = 'none'; }
             try { await db.collection('rooms').doc(currentRoom).collection('messages').add({ type: 'gif', url: finalUrl, sender: myName, deviceId: myDeviceId, color: myColor, roomKey: currentRoomKey, timestamp: firebase.firestore.FieldValue.serverTimestamp(), deleted: false }); updateLastRead(currentRoom); playSendSound(); } catch (e) {}
@@ -1471,6 +1513,7 @@
 
         async function sendImageMsg(dataUrl) {
             if (!myName || !currentRoom || !currentRoomKey) return;
+            if (checkFlood()) return;
             let finalUrl = dataUrl;
             if (replyTarget) { finalUrl = `${replyTarget.sender}|-REPLY-|${replyTarget.text}|-REPLY-|${dataUrl}`; replyTarget = null; shadow.getElementById('ls-reply-bar').style.display = 'none'; }
             try { await db.collection('rooms').doc(currentRoom).collection('messages').add({ type: 'image', url: finalUrl, sender: myName, deviceId: myDeviceId, color: myColor, roomKey: currentRoomKey, timestamp: firebase.firestore.FieldValue.serverTimestamp(), deleted: false }); updateLastRead(currentRoom); playSendSound(); } catch (e) {}
@@ -1481,6 +1524,7 @@
             if (!rawText || !myName || !currentRoom) return;
             if (rawText.length > 150) return alert("Mensagem muito longa (máximo 150 caracteres).");
             if (!currentRoomKey) return alert("Sessão inválida.");
+            if (checkFlood()) return;
             let finalText = rawText;
             if (replyTarget) { finalText = `[REPLY:${replyTarget.sender}|${replyTarget.text}] ${rawText}`; replyTarget = null; shadow.getElementById('ls-reply-bar').style.display = 'none'; }
             input.value = '';
