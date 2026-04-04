@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      20.1
+// @version      21.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -337,7 +337,7 @@
                         <span style="font-size: 32px; font-weight: 800; background: linear-gradient(135deg, #6366f1, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: block; margin-bottom: 4px;">LidySync</span>
                         <span style="color: var(--text-primary); font-size: 16px; font-weight: 600;">Bem-vindo!</span>
                     </div>
-                    <div><span class="ls-label">Nome de Usuário</span><input type="text" class="ls-input-text" id="ls-setup-name" placeholder="Nome de Usuário" /></div>
+                    <div><span class="ls-label">Nome de Usuário</span><input type="text" class="ls-input-text" id="ls-setup-name" placeholder="Ex: Master" maxlength="100" /></div>
                     <div><span class="ls-label">Cor da sua Bolha</span><input type="color" class="ls-input-color" id="ls-setup-color" value="#6366f1" /></div>
                     <button class="ls-btn-primary" id="ls-setup-btn">Começar</button>
                 </div>
@@ -357,7 +357,7 @@
                     </div>
                     <div class="ls-config-section">
                         <span class="ls-label">Perfil</span>
-                        <div style="margin-bottom: 12px;"><input type="text" class="ls-input-text" id="ls-edit-name" placeholder="Apelido" /></div>
+                        <div style="margin-bottom: 12px;"><input type="text" class="ls-input-text" id="ls-edit-name" placeholder="Apelido" maxlength="100" /></div>
                         <div><span class="ls-label">Cor da Bolha</span><input type="color" class="ls-input-color" id="ls-edit-color" /></div>
                     </div>
                     <div class="ls-config-section">
@@ -395,11 +395,11 @@
                         <span style="color: var(--text-primary); font-size: 18px; font-weight: 700;">Nova Conexão</span>
                         <button id="ls-close-add-modal" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px;">✕</button>
                     </div>
-                    <div><span class="ls-label">Nome da Sala</span><input type="text" class="ls-input-text" id="ls-lobby-room" placeholder="Nome da Sala" /></div>
+                    <div><span class="ls-label">Nome da Sala</span><input type="text" class="ls-input-text" id="ls-lobby-room" placeholder="Max 80 caracteres" maxlength="80" /></div>
                     <div style="margin-top: 12px;">
-                        <span class="ls-label">Senha de Acesso</span>
+                        <span class="ls-label">Senha de Acesso (4 a 16 carac.)</span>
                         <div class="ls-input-wrapper">
-                            <input type="password" class="ls-input-text" id="ls-lobby-pass" placeholder="***" style="padding-right: 40px;" />
+                            <input type="password" class="ls-input-text" id="ls-lobby-pass" placeholder="***" style="padding-right: 40px;" maxlength="16" />
                             <button class="ls-pass-toggle" id="ls-toggle-pass-1">${svgEyeOff}</button>
                         </div>
                     </div>
@@ -464,7 +464,7 @@
                     <div id="ls-input-area">
                         <button class="ls-icon-btn" id="ls-btn-plus">➕</button>
                         <button class="ls-icon-btn" id="ls-btn-emoji">😀</button>
-                        <input type="text" id="ls-input" placeholder="Mensagem ou Cole Imagem..." autocomplete="off" />
+                        <input type="text" id="ls-input" placeholder="Mensagem ou Cole Imagem..." autocomplete="off" maxlength="350" />
                         <button id="ls-send-btn">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:-2px;"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
                         </button>
@@ -569,7 +569,6 @@
             editingRoomAppearance = null;
             
             if (!myName) {
-                db.collection('users').doc(myName).set({ color: myColor, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
                 setupArea.style.display = 'flex';
                 lobbyArea.style.display = 'none';
                 chatArea.style.display = 'none';
@@ -765,9 +764,18 @@
             } catch(e) {}
         }
 
-        shadow.getElementById('ls-setup-btn').addEventListener('click', () => {
+        shadow.getElementById('ls-setup-btn').addEventListener('click', async () => {
             const name = shadow.getElementById('ls-setup-name').value.trim();
             if (!name) return alert("Digite um apelido!");
+            if (name.length > 100) return alert("O apelido deve ter no máximo 100 caracteres.");
+
+            try {
+                const userDoc = await db.collection('users').doc(name).get();
+                if (userDoc.exists && userDoc.data().deviceId !== myDeviceId) {
+                    return alert("Este apelido já está em uso por outra pessoa. Escolha outro.");
+                }
+            } catch (e) {}
+
             myName = name;
             myColor = shadow.getElementById('ls-setup-color').value;
             localStorage.setItem('ls_username', myName);
@@ -794,9 +802,22 @@
             lobbySettingsOverlay.style.display = 'none';
         });
 
-        shadow.getElementById('ls-save-lobby-config-btn').addEventListener('click', () => {
+        shadow.getElementById('ls-save-lobby-config-btn').addEventListener('click', async () => {
             const name = shadow.getElementById('ls-edit-name').value.trim();
-            if (name) myName = name;
+            
+            if (name && name !== myName) {
+                if (name.length > 100) return alert("O apelido deve ter no máximo 100 caracteres.");
+                try {
+                    const userDoc = await db.collection('users').doc(name).get();
+                    if (userDoc.exists && userDoc.data().deviceId !== myDeviceId) {
+                        return alert("Este apelido já está em uso por outra pessoa. Escolha outro.");
+                    }
+                } catch(e) {}
+                myName = name;
+            } else if (name) {
+                myName = name;
+            }
+
             myColor = shadow.getElementById('ls-edit-color').value;
             
             const selectedTheme = shadow.getElementById('ls-app-theme').value;
@@ -838,6 +859,9 @@
             const roomName = inputRoom.value.trim().toLowerCase();
             const roomPass = inputPass.value.trim();
             if(!roomName || !roomPass) return alert("Preencha o nome e a senha!");
+            if(roomName.length > 80) return alert("O nome da sala deve ter no máximo 80 caracteres.");
+            if(roomPass.length < 4 || roomPass.length > 16) return alert("A senha deve ter entre 4 e 16 caracteres.");
+
             try {
                 const docRef = db.collection('rooms').doc(roomName);
                 const doc = await docRef.get();
@@ -1335,7 +1359,7 @@
         async function sendMessage() {
             const text = input.value.trim();
             if (!text || !myName || !currentRoom) return;
-            if (text.length > 390) return alert("Mensagem muito longa.");
+            if (text.length > 350) return alert("Mensagem muito longa (máximo 350 caracteres).");
             if (!currentRoomKey) return alert("Sessão inválida.");
             
             input.value = '';
