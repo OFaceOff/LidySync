@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      53.0
+// @version      54.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -1018,40 +1018,6 @@
         });
         shadow.getElementById('ls-profile-e-textcolor').addEventListener('input', (e) => { shadow.getElementById('ls-profile-e-avatar').style.color = e.target.value; });
 
-        shadow.getElementById('ls-btn-get-country').addEventListener('click', async (e) => {
-            e.preventDefault();
-            const btn = e.target;
-            const originalText = btn.innerText;
-            btn.innerText = "Buscando...";
-            
-            try {
-                let cCode = null;
-                
-                try {
-                    const res = await fetch('https://api.country.is/'); 
-                    const data = await res.json();
-                    cCode = data.country;
-                } catch(err) {
-                    const res2 = await fetch('https://ipapi.co/json/'); 
-                    const data2 = await res2.json();
-                    cCode = data2.country_code || data2.country;
-                }
-                
-                if (cCode) {
-                    const codePoints = cCode.toUpperCase().split('').map(char => 127397 + char.charCodeAt(0));
-                    const flag = String.fromCodePoint(...codePoints);
-                    shadow.getElementById('ls-profile-e-country-disp').innerText = flag; 
-                    myCountry = flag;
-                } else { 
-                    alert("Não foi possível detectar o país."); 
-                }
-            } catch(error) { 
-                alert("Erro ao buscar localização. Verifique sua conexão ou extensões de bloqueio."); 
-            }
-            
-            btn.innerText = originalText;
-        });
-
         shadow.getElementById('ls-btn-save-profile').addEventListener('click', async () => {
             myColor = shadow.getElementById('ls-profile-e-color').value; myTextColor = shadow.getElementById('ls-profile-e-textcolor').value; myBio = shadow.getElementById('ls-profile-e-bio').value.trim(); myHideChats = shadow.getElementById('ls-profile-e-hiderooms').checked;
             myCountry = shadow.getElementById('ls-profile-e-country').value; myFav = shadow.getElementById('ls-profile-e-fav').value.trim();
@@ -1615,15 +1581,17 @@
 
         const minimizeBtnObj = shadow.getElementById('ls-minimize-btn');
         minimizeBtnObj.addEventListener('click', () => {
-            if (myIntegratedMode) { alert("O Chat está no Modo Teatro. Desative essa opção no menu ou nas configurações para ocultar a janela."); return; }
-            chatWindow.classList.remove('open'); fab.style.display = 'none'; if (currentRoom) updateLastRead(currentRoom);
+            if (myIntegratedMode) { alert("O Chat está no Modo Teatro. Desative essa opção no menu ou nas configurações para minimizar a janela."); return; }
+            chatWindow.classList.remove('open');
+            if (myHideApp) fab.style.display = 'none'; else fab.style.display = 'flex';
+            if (currentRoom) updateLastRead(currentRoom);
         });
 
         const closeBtnObj = shadow.getElementById('ls-close-btn');
         closeBtnObj.addEventListener('click', () => { 
-            if (myIntegratedMode) { alert("O Chat está no Modo Teatro. Desative essa opção no menu ou nas configurações para minimizar a janela."); return; }
+            if (myIntegratedMode) { alert("O Chat está no Modo Teatro. Desative essa opção no menu ou nas configurações para fechar o app."); return; }
             chatWindow.classList.remove('open'); 
-            if (myHideApp) fab.style.display = 'none'; else fab.style.display = 'flex';
+            fab.style.display = 'none';
             if (currentRoom) updateLastRead(currentRoom);
         });
 
