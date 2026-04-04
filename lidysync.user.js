@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      57.0
+// @version      58.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -578,8 +578,6 @@
         let floodCount = 0;
         let isFlooding = false;
         let floodResetTimer = null;
-        
-        let lastDocumentTitle = document.title;
 
         window.addEventListener('beforeunload', () => {
             if (currentRoom && currentRoomKey) {
@@ -1071,12 +1069,34 @@
                         
                         const bgStyle = uData.avatar ? `url(${uData.avatar})` : (uData.color || '#6366f1');
                         const avText = uData.avatar ? '' : p.charAt(0).toUpperCase();
+                        
+                        const watchingTooltip = isOnline && uData.watching ? `\nAssistindo: ${uData.watching.replace(/"/g, '&quot;')}` : '';
 
                         const item = document.createElement('div'); item.className = 'ls-room-item'; item.style.cursor = 'pointer';
+                        item.title = `${p}${watchingTooltip}`;
                         item.innerHTML = `
                             <div class="ls-room-avatar" style="width:36px; height:36px; font-size:14px; position:relative; background:${bgStyle}; color:${uData.textColor || '#fff'}">${avText}<div class="ls-online-dot" style="display: ${isOnline ? 'block' : 'none'};"></div></div>
                             <div class="ls-room-info" style="display:flex; align-items:center;"><span class="ls-room-name">${p}</span><div class="ls-tags-container" id="ls-member-tags-lobby-${p.replace(/\s/g, '')}"></div></div>
                         `;
+                        
+                        if (isAdmMode && p !== myName) {
+                            const kickBtn = document.createElement('button');
+                            kickBtn.innerHTML = '❌';
+                            kickBtn.title = "Expulsar da sala";
+                            kickBtn.style.cssText = 'background:none; border:none; cursor:pointer; padding:4px 8px; font-size:12px; margin-left:auto; z-index:10;';
+                            kickBtn.addEventListener('click', async (e) => {
+                                e.stopPropagation();
+                                if(confirm(`Deseja realmente expulsar ${p} desta sala?`)) {
+                                    try {
+                                        await db.collection('rooms').doc(roomName).update({ participants: firebase.firestore.FieldValue.arrayRemove(p) });
+                                        sendSystemAction(`SYSTEM_KICKED:${p}`);
+                                        fetchAndRenderMembers(roomName, listEl);
+                                    } catch(err) {}
+                                }
+                            });
+                            item.appendChild(kickBtn);
+                        }
+
                         item.addEventListener('click', () => { openProfile(p); });
                         listEl.appendChild(item);
                         item.querySelector(`#ls-member-tags-lobby-${p.replace(/\s/g, '')}`).innerHTML = buildTagsHTML(isAdm, uData);
@@ -1867,7 +1887,6 @@
         if (myHideApp) fab.style.display = 'none';
         checkScreenState();
         
-        let lastDocumentTitle = document.title;
         setInterval(() => {
             if (myName && document.title !== lastDocumentTitle) {
                 lastDocumentTitle = document.title;
