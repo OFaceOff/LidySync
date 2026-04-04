@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      55.0
+// @version      57.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -201,6 +201,15 @@
             #ls-plus-panel { left: 16px; width: 280px; flex-direction: column; gap: 4px; } .ls-action-item { color: var(--text-primary); padding: 12px; cursor: pointer; font-size: 14px; border-radius: 10px; display: flex; align-items: center; gap: 10px; font-weight: 500; transition: 0.2s; } .ls-action-item:hover { background-color: rgba(128,128,128,0.1); color: var(--text-primary); }
             #ls-countdown-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 100; display: none; flex-direction: column; justify-content: center; align-items: center; } #ls-countdown-number { font-size: 110px; font-weight: 700; color: #a5b4fc; text-shadow: 0 0 40px rgba(99, 102, 241, 0.5); animation: pop 1s infinite; letter-spacing: -2px; } #ls-countdown-text { color: #cbd5e1; font-size: 16px; margin-top: 15px; font-weight: 500; letter-spacing: 0.5px;} @keyframes pop { 0% { transform: scale(0.8); opacity: 0.5; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 0.8; } }
             #ls-image-viewer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 200; display: none; align-items: center; justify-content: center; flex-direction: column; opacity: 0; transition: opacity 0.2s; } #ls-image-viewer.show { opacity: 1; } #ls-viewer-img { max-width: 90%; max-height: 85%; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); object-fit: contain; transform: scale(0.95); transition: transform 0.2s; cursor: default; } #ls-image-viewer.show #ls-viewer-img { transform: scale(1); } #ls-close-viewer { position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.5); border: none; color: white; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: 0.2s; } #ls-close-viewer:hover { background: rgba(0,0,0,0.8); transform: scale(1.1); }
+            
+            #ls-party-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 300; display: none; align-items: center; justify-content: center; overflow: hidden; pointer-events: none; }
+            .party-active { animation: discoBg 1s infinite alternate; }
+            @keyframes discoBg { 0% { background: rgba(255, 0, 0, 0.4); } 25% { background: rgba(0, 255, 0, 0.4); } 50% { background: rgba(0, 0, 255, 0.4); } 75% { background: rgba(255, 255, 0, 0.4); } 100% { background: rgba(255, 0, 255, 0.4); } }
+            .party-dancer { position: absolute; font-size: 50px; animation: dance 0.5s infinite alternate; }
+            @keyframes dance { 0% { transform: translateY(0) scale(1) rotate(-10deg); } 100% { transform: translateY(-20px) scale(1.2) rotate(10deg); } }
+            #ls-disco-ball { font-size: 80px; position: absolute; top: -100px; transition: top 1s ease-out; animation: spin 2s linear infinite; }
+            #ls-disco-ball.drop { top: 20px; }
+            @keyframes spin { 100% { transform: rotate(360deg); } }
         `;
 
         const emojis = ['😀','😂','😍','🥰','😎','😭','😡','😱','🍿','🎬','🍕','🥂','👍','👎','❤️','🔥'];
@@ -439,6 +448,14 @@
                     <button id="ls-close-viewer">✕</button>
                     <img id="ls-viewer-img" src="">
                 </div>
+                
+                <div id="ls-party-overlay">
+                    <div id="ls-disco-ball">🪩</div>
+                    <div class="party-dancer" style="left: 10%; bottom: 20%;">🕺</div>
+                    <div class="party-dancer" style="right: 20%; top: 30%; animation-delay: 0.2s;">💃</div>
+                    <div class="party-dancer" style="left: 30%; top: 20%; animation-delay: 0.1s;">👯‍♀️</div>
+                    <div class="party-dancer" style="right: 10%; bottom: 10%; animation-delay: 0.3s;">👯‍♂️</div>
+                </div>
 
                 <div id="ls-chat-area">
                     <div id="ls-messages"></div>
@@ -556,6 +573,7 @@
         
         let isTyping = false;
         let typingTimeout = null;
+        window.lsPartyTimeout = null;
 
         let floodCount = 0;
         let isFlooding = false;
@@ -1053,34 +1071,12 @@
                         
                         const bgStyle = uData.avatar ? `url(${uData.avatar})` : (uData.color || '#6366f1');
                         const avText = uData.avatar ? '' : p.charAt(0).toUpperCase();
-                        
-                        const watchingTooltip = isOnline && uData.watching ? `\nAssistindo: ${uData.watching.replace(/"/g, '&quot;')}` : '';
 
                         const item = document.createElement('div'); item.className = 'ls-room-item'; item.style.cursor = 'pointer';
-                        item.title = `${p}${watchingTooltip}`;
                         item.innerHTML = `
                             <div class="ls-room-avatar" style="width:36px; height:36px; font-size:14px; position:relative; background:${bgStyle}; color:${uData.textColor || '#fff'}">${avText}<div class="ls-online-dot" style="display: ${isOnline ? 'block' : 'none'};"></div></div>
                             <div class="ls-room-info" style="display:flex; align-items:center;"><span class="ls-room-name">${p}</span><div class="ls-tags-container" id="ls-member-tags-lobby-${p.replace(/\s/g, '')}"></div></div>
                         `;
-                        
-                        if (isAdmMode && p !== myName) {
-                            const kickBtn = document.createElement('button');
-                            kickBtn.innerHTML = '❌';
-                            kickBtn.title = "Expulsar da sala";
-                            kickBtn.style.cssText = 'background:none; border:none; cursor:pointer; padding:4px 8px; font-size:12px; margin-left:auto; z-index:10;';
-                            kickBtn.addEventListener('click', async (e) => {
-                                e.stopPropagation();
-                                if(confirm(`Deseja realmente expulsar ${p} desta sala?`)) {
-                                    try {
-                                        await db.collection('rooms').doc(roomName).update({ participants: firebase.firestore.FieldValue.arrayRemove(p) });
-                                        sendSystemAction(`SYSTEM_KICKED:${p}`);
-                                        fetchAndRenderMembers(roomName, listEl);
-                                    } catch(err) {}
-                                }
-                            });
-                            item.appendChild(kickBtn);
-                        }
-
                         item.addEventListener('click', () => { openProfile(p); });
                         listEl.appendChild(item);
                         item.querySelector(`#ls-member-tags-lobby-${p.replace(/\s/g, '')}`).innerHTML = buildTagsHTML(isAdm, uData);
@@ -1366,7 +1362,7 @@
                     
                     const typingEl = shadow.getElementById('ls-typing-indicator');
                     if (currentRoomData.typing && Array.isArray(currentRoomData.typing) && typingEl) {
-                        const typers = currentRoomData.typing.filter(u => u !== myName);
+                        const typers = currentRoomData.typing;
                         if (typers.length === 1) {
                             typingEl.innerText = `${typers[0]} está digitando...`;
                             typingEl.style.display = 'block';
@@ -1529,7 +1525,39 @@
                         lastMsgType = 'user';
                         lastTimestamp = msgTimeMs;
                     }
-                    if (container.innerHTML !== "") messagesContainer.appendChild(container);
+                    
+                    if (data.type === 'party') {
+                        lastSender = null; lastMsgType = 'system'; lastTimestamp = msgTimeMs;
+                        if (msgTimeMs > roomJoinTime) {
+                            const partyOverlay = shadow.getElementById('ls-party-overlay');
+                            const ball = shadow.getElementById('ls-disco-ball');
+                            if (partyOverlay) {
+                                clearTimeout(window.lsPartyTimeout);
+                                partyOverlay.style.display = 'flex';
+                                partyOverlay.classList.add('party-active');
+                                setTimeout(() => ball.classList.add('drop'), 100);
+                                window.lsPartyTimeout = setTimeout(() => {
+                                    partyOverlay.style.display = 'none';
+                                    partyOverlay.classList.remove('party-active');
+                                    ball.classList.remove('drop');
+                                }, 10000);
+                            }
+                        }
+                    } else if (data.type === 'stopparty') {
+                        lastSender = null; lastMsgType = 'system'; lastTimestamp = msgTimeMs;
+                        if (msgTimeMs > roomJoinTime) {
+                            const partyOverlay = shadow.getElementById('ls-party-overlay');
+                            const ball = shadow.getElementById('ls-disco-ball');
+                            if (partyOverlay) {
+                                clearTimeout(window.lsPartyTimeout);
+                                partyOverlay.style.display = 'none';
+                                partyOverlay.classList.remove('party-active');
+                                ball.classList.remove('drop');
+                            }
+                        }
+                    } else if (container.innerHTML !== "") {
+                        messagesContainer.appendChild(container);
+                    }
                 });
 
                 snapshot.docChanges().forEach((change) => {
@@ -1541,7 +1569,7 @@
                                 if (data.text === 'iniciou a programação!') runVisualCountdown(data.sender);
                                 else if (data.text === 'SYSTEM_PAUSE' && myAutoPlay) document.querySelectorAll('video').forEach(v => v.pause());
                             }
-                            if (data.sender !== myName) {
+                            if (data.sender !== myName && data.type !== 'party' && data.type !== 'stopparty') {
                                 if (!chatWindow.classList.contains('open') && !myIntegratedMode) {
                                     if(!mutedRooms.includes(currentRoom)) playNotificationSound();
                                     unreadCount++; badge.style.display = 'flex'; badge.innerText = unreadCount > 5 ? '5+' : unreadCount;
@@ -1703,9 +1731,64 @@
             if (rawText.length > 150) return alert("Mensagem muito longa (máximo 150 caracteres).");
             if (!currentRoomKey) return alert("Sessão inválida.");
             if (checkFlood()) return;
+
+            // SISTEMA DE COMANDOS OCULTOS
+            if (rawText.startsWith('/')) {
+                input.value = '';
+                const parts = rawText.split(' ');
+                const cmd = parts[0].toLowerCase();
+
+                const myUserDoc = await db.collection('users').doc(myName).get();
+                const myTags = myUserDoc.exists ? (myUserDoc.data().tags || []) : [];
+                const isOwner = myTags.includes('OWNER');
+                const isMod = myTags.includes('MOD') || isOwner;
+                const isRoomAdm = currentRoomData && currentRoomData.createdBy === myName;
+                const canModerateRoom = isMod || isRoomAdm;
+
+                if (cmd === '/timestamp') {
+                    const roomInfo = await db.collection('rooms').doc(currentRoom).get();
+                    if (roomInfo.exists) {
+                        const created = roomInfo.data().createdAt ? roomInfo.data().createdAt.toDate().toLocaleString() : 'Desconhecida';
+                        const creator = roomInfo.data().createdBy || 'Desconhecido';
+                        const container = document.createElement('div');
+                        container.className = 'ls-message-container system-msg-container';
+                        container.innerHTML = `<div class="ls-message system-msg">⏱️ <b>Sala Criada por:</b> ${creator}<br><b>Data:</b> ${created}</div>`;
+                        messagesContainer.appendChild(container);
+                        scrollToBottom();
+                    }
+                    return;
+                }
+
+                if (cmd === '/cleanchat' && canModerateRoom) {
+                    if(!confirm("Deseja realmente apagar TODAS as mensagens deste chat?")) return;
+                    const msgs = await db.collection('rooms').doc(currentRoom).collection('messages').get();
+                    msgs.forEach(doc => {
+                        db.collection('rooms').doc(currentRoom).collection('messages').doc(doc.id).update({ deleted: true }).catch(()=>{});
+                    });
+                    return;
+                }
+
+                if (cmd === '/party1' && isOwner) {
+                    try { await db.collection('rooms').doc(currentRoom).collection('messages').add({ type: 'party', text: 'iniciou uma festa!', sender: myName, deviceId: myDeviceId, color: myColor, roomKey: currentRoomKey, timestamp: firebase.firestore.FieldValue.serverTimestamp(), deleted: false }); updateLastRead(currentRoom); } catch (e) {}
+                    return;
+                }
+                
+                if (cmd === '/stopparty1' && isOwner) {
+                    try { await db.collection('rooms').doc(currentRoom).collection('messages').add({ type: 'stopparty', text: 'parou a festa!', sender: myName, deviceId: myDeviceId, color: myColor, roomKey: currentRoomKey, timestamp: firebase.firestore.FieldValue.serverTimestamp(), deleted: false }); updateLastRead(currentRoom); } catch (e) {}
+                    return;
+                }
+
+                const container = document.createElement('div');
+                container.className = 'ls-message-container system-msg-container';
+                container.innerHTML = `<div class="ls-message system-msg" style="color:#ef4444;">⚠️ Comando não reconhecido ou você não tem permissão.</div>`;
+                messagesContainer.appendChild(container);
+                scrollToBottom();
+                return;
+            }
+            // FIM DO SISTEMA DE COMANDOS
+
             let finalText = rawText;
             if (replyTarget) { finalText = `[REPLY:${replyTarget.sender}|${replyTarget.text}] ${rawText}`; replyTarget = null; shadow.getElementById('ls-reply-bar').style.display = 'none'; }
-            input.value = '';
             
             if (isTyping) {
                 clearTimeout(typingTimeout);
