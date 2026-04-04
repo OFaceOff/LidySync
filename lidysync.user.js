@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      28.0
+// @version      29.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -191,7 +191,7 @@
             #ls-chat-window { width: 350px; height: 580px; background-color: var(--bg-base); border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.6); display: none; flex-direction: column; margin-bottom: 15px; overflow: hidden; border: 1px solid var(--border-color); position: relative; backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); transition: background-color 0.3s, backdrop-filter 0.3s; resize: both; min-width: 300px; min-height: 400px; max-width: 90vw; max-height: 90vh; }
             #ls-chat-window.open { display: flex; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
             
-            /* CSS MODO TEATRO / INTEGRADO */
+            /* INTEGRATED MODE CSS */
             #ls-chat-window.integrated {
                 position: absolute !important;
                 top: 0 !important;
@@ -284,6 +284,11 @@
             #ls-reply-bar { display: none; background: rgba(0,0,0,0.2); padding: 8px 12px; border-left: 3px solid #6366f1; margin: 0 16px 10px; border-radius: 4px; font-size: 12px; color: var(--text-muted); position: relative; }
             #ls-reply-bar-close { position: absolute; right: 8px; top: 8px; cursor: pointer; font-size: 14px; color: inherit; border: none; background: none; }
             
+            /* MENTION PANEL */
+            #ls-mention-panel { position: absolute; bottom: 60px; left: 16px; background-color: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: none; flex-direction: column; min-width: 150px; max-height: 180px; overflow-y: auto; z-index: 50; padding: 4px 0; }
+            .ls-mention-item { padding: 8px 16px; color: var(--text-primary); font-size: 13px; cursor: pointer; font-weight: 500; }
+            .ls-mention-item:hover, .ls-mention-item.active { background-color: rgba(128,128,128,0.15); }
+
             .ls-message-container { display: flex; flex-direction: column; max-width: 85%; position: relative; }
             .ls-message-container.sent { align-self: flex-end; align-items: flex-end; }
             .ls-message-container.received { align-self: flex-start; align-items: flex-start; }
@@ -321,7 +326,7 @@
             .ls-emoji-item { font-size: 20px; cursor: pointer; text-align: center; border-radius: 8px; transition: 0.1s; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; }
             .ls-emoji-item:hover { background-color: rgba(128,128,128,0.1); transform: scale(1.1); }
             
-            #ls-plus-panel { left: 16px; width: 260px; flex-direction: column; gap: 4px; }
+            #ls-plus-panel { left: 16px; width: 280px; flex-direction: column; gap: 4px; }
             .ls-action-item { color: var(--text-primary); padding: 12px; cursor: pointer; font-size: 14px; border-radius: 10px; display: flex; align-items: center; gap: 10px; font-weight: 500; transition: 0.2s; }
             .ls-action-item:hover { background-color: rgba(128,128,128,0.1); color: var(--text-primary); }
 
@@ -339,7 +344,7 @@
         wrapper.id = 'ls-wrapper';
         
         let storedTheme = localStorage.getItem('ls_theme');
-        wrapper.className = storedTheme !== null ? storedTheme : 'theme-glass';
+        wrapper.className = storedTheme !== null ? storedTheme : '';
         
         wrapper.innerHTML = `
             <div id="ls-chat-window">
@@ -401,14 +406,18 @@
                     <div class="ls-config-section">
                         <span class="ls-label">Preferências Globais</span>
                         <select class="ls-select" id="ls-app-theme" style="margin-bottom: 12px;">
-                            <option value="theme-glass">Tema Glassmorfismo (Padrão)</option>
-                            <option value="">Tema Escuro</option>
+                            <option value="">Tema Escuro (Padrão)</option>
+                            <option value="theme-glass">Tema Glassmorfismo</option>
                             <option value="theme-light">Tema Claro</option>
                             <option value="theme-hellokitty">Tema Hello Kitty</option>
                         </select>
                         <label class="ls-checkbox-group">
                             <input type="checkbox" id="ls-app-sound" checked>
-                            <span><b>Sons de Notificação</b></span>
+                            <span><b>Mudo (Sem Sons)</b><br><small style="color: var(--text-muted);">Desmarque para mutar todos os sons.</small></span>
+                        </label>
+                        <label class="ls-checkbox-group">
+                            <input type="checkbox" id="ls-app-hidesys">
+                            <span><b>Ocultar Entrada/Saída</b><br><small style="color: var(--text-muted);">Não mostra no chat quem entrou ou saiu.</small></span>
                         </label>
                     </div>
                     <div class="ls-config-section">
@@ -420,6 +429,10 @@
                         <label class="ls-checkbox-group">
                             <input type="checkbox" id="ls-app-revive" checked>
                             <span><b>Despertar com Notificação</b><br><small style="color: var(--text-muted);">Reaparece se chegar mensagem.</small></span>
+                        </label>
+                        <label class="ls-checkbox-group">
+                            <input type="checkbox" id="ls-app-integrated">
+                            <span><b>Modo Teatro (Integrado)</b><br><small style="color: var(--text-muted);">Fixa o chat na direita da tela.</small></span>
                         </label>
                     </div>
                     <div class="ls-config-section" style="margin-top:auto;">
@@ -504,6 +517,7 @@
                         <div id="ls-countdown-number">3</div>
                         <div id="ls-countdown-text">Preparando...</div>
                     </div>
+                    <div id="ls-mention-panel"></div>
                     <div id="ls-emoji-panel" class="ls-popup-panel">${emojis.map(e => `<span class="ls-emoji-item">${e}</span>`).join('')}</div>
                     <div id="ls-plus-panel" class="ls-popup-panel">
                         <div class="ls-action-item" id="btn-action-invite">🔗 Convidar chat para programação atual</div>
@@ -576,6 +590,7 @@
         let myHideApp = localStorage.getItem('ls_hide_app') === 'true';
         let myHideRevive = localStorage.getItem('ls_hide_revive') !== 'false';
         let myIntegratedMode = localStorage.getItem('ls_integrated') === 'true';
+        let myHideSys = localStorage.getItem('ls_hide_sys') === 'true';
         
         let editingRoomAppearance = null;
         let unreadCount = 0;
@@ -591,6 +606,80 @@
         let lobbyUnsubscribes = [];
         let currentRoomData = null;
         let userCache = {};
+
+        // === MENTIONS SYSTEM ===
+        const mentionPanel = shadow.getElementById('ls-mention-panel');
+        let isMentioning = false;
+        let activeMentionIndex = 0;
+        let mentionMatches = [];
+
+        input.addEventListener('input', (e) => {
+            const val = input.value;
+            const cursorPos = input.selectionStart;
+            const textBeforeCursor = val.substring(0, cursorPos);
+            const match = textBeforeCursor.match(/(?:^|\s)@([^@\n]*)$/);
+
+            if (match && currentRoomData && currentRoomData.participants) {
+                const searchStr = match[1].toLowerCase();
+                
+                if (searchStr.length > 20) {
+                    mentionPanel.style.display = 'none';
+                    isMentioning = false;
+                    return;
+                }
+                
+                mentionMatches = currentRoomData.participants.filter(p => p.toLowerCase().includes(searchStr));
+
+                if (mentionMatches.length > 0) {
+                    isMentioning = true;
+                    mentionPanel.innerHTML = '';
+                    activeMentionIndex = 0;
+                    mentionMatches.forEach((p, index) => {
+                        const div = document.createElement('div');
+                        div.className = 'ls-mention-item' + (index === 0 ? ' active' : '');
+                        div.innerText = `@${p.replace(/\s/g, '')}`;
+                        div.onmousedown = (ev) => {
+                            ev.preventDefault(); 
+                            insertMention(p);
+                        };
+                        mentionPanel.appendChild(div);
+                    });
+                    mentionPanel.style.display = 'flex';
+                } else {
+                    mentionPanel.style.display = 'none';
+                    isMentioning = false;
+                }
+            } else {
+                mentionPanel.style.display = 'none';
+                isMentioning = false;
+            }
+        });
+
+        function insertMention(name) {
+            const cleanName = name.replace(/\s/g, '');
+            const val = input.value;
+            const cursorPos = input.selectionStart;
+            const textBeforeCursor = val.substring(0, cursorPos);
+            const textAfterCursor = val.substring(cursorPos);
+            
+            const lastAtPos = textBeforeCursor.lastIndexOf('@');
+            const newTextBefore = textBeforeCursor.substring(0, lastAtPos) + `@${cleanName} `;
+            
+            input.value = newTextBefore + textAfterCursor;
+            input.focus();
+            
+            input.selectionStart = input.selectionEnd = newTextBefore.length;
+            
+            mentionPanel.style.display = 'none';
+            isMentioning = false;
+        }
+
+        input.addEventListener('blur', () => {
+            setTimeout(() => {
+                mentionPanel.style.display = 'none';
+                isMentioning = false;
+            }, 150);
+        });
 
         // === DRAG & RESIZE LOGIC ===
         const header = shadow.getElementById('ls-header');
@@ -939,7 +1028,13 @@
                                 else if (data.type === 'invite') msgText = '🔗 Convite';
                                 else if (data.type === 'countdown') msgText = 'Ação do Sistema';
                                 
-                                if (data.text && data.text.startsWith('SYSTEM_')) msgText = 'Ação do Sistema';
+                                if (data.text && data.text.startsWith('SYSTEM_')) {
+                                    if (myHideSys && (data.text === 'SYSTEM_JOIN' || data.text === 'SYSTEM_LEAVE')) {
+                                        msgText = 'Mensagem de Sistema'; 
+                                    } else {
+                                        msgText = 'Ação do Sistema';
+                                    }
+                                }
 
                                 statusEl.innerText = `${data.sender}: ${msgText}`;
                             } else if (statusEl && data.deleted) {
@@ -1042,6 +1137,8 @@
                 shadow.getElementById('ls-app-sound').checked = localStorage.getItem('ls_sound') !== 'false';
                 shadow.getElementById('ls-app-hide').checked = myHideApp;
                 shadow.getElementById('ls-app-revive').checked = myHideRevive;
+                shadow.getElementById('ls-app-integrated').checked = myIntegratedMode;
+                shadow.getElementById('ls-app-hidesys').checked = myHideSys;
             }
         });
 
@@ -1071,6 +1168,8 @@
             const soundEnabled = shadow.getElementById('ls-app-sound').checked;
             myHideApp = shadow.getElementById('ls-app-hide').checked;
             myHideRevive = shadow.getElementById('ls-app-revive').checked;
+            myIntegratedMode = shadow.getElementById('ls-app-integrated').checked;
+            myHideSys = shadow.getElementById('ls-app-hidesys').checked;
 
             localStorage.setItem('ls_username', myName);
             localStorage.setItem('ls_usercolor', myColor);
@@ -1078,6 +1177,8 @@
             localStorage.setItem('ls_sound', soundEnabled);
             localStorage.setItem('ls_hide_app', myHideApp);
             localStorage.setItem('ls_hide_revive', myHideRevive);
+            localStorage.setItem('ls_integrated', myIntegratedMode);
+            localStorage.setItem('ls_hide_sys', myHideSys);
             
             wrapper.className = selectedTheme;
             
@@ -1092,7 +1193,7 @@
             myName = null; currentRoom = null; currentRoomKey = null; savedRooms = [];
             myDeviceId = crypto.randomUUID();
             localStorage.setItem('ls_device_id', myDeviceId);
-            wrapper.className = 'theme-glass';
+            wrapper.className = '';
             checkScreenState();
         });
 
@@ -1319,6 +1420,7 @@
                 
                 let currentUnread = 0;
                 const lastRead = lastReadTimes[currentRoom] || 0;
+                const myCleanName = myName.replace(/\s/g, '').toLowerCase();
 
                 snapshot.forEach((doc) => {
                     const data = doc.data();
@@ -1336,16 +1438,19 @@
                     if (data.type === 'countdown') {
                         if (data.deleted) return; 
                         
-                        container.className = 'ls-message-container system-msg-container';
-                        
                         if (data.text === 'SYSTEM_JOIN') {
+                            if (myHideSys) return; // Skipa renderização
+                            container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg" style="background:transparent!important; box-shadow:none; border:none; padding:4px;">👋 <b>${data.sender}</b> entrou na sala <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
                         } else if (data.text === 'SYSTEM_LEAVE') {
+                            if (myHideSys) return; // Skipa renderização
+                            container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg" style="background:transparent!important; box-shadow:none; border:none; padding:4px; opacity:0.6;">🚪 <b>${data.sender}</b> saiu <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
                         } else if (data.text === 'SYSTEM_PAUSE') {
+                            container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg">⏸️ <b>${data.sender}</b> pausou a programação! <span class="ls-msg-time" style="display:block; margin-top:2px;">${formatTime(data.timestamp)}</span></div>`;
-                            if (myAutoPlay) { document.querySelectorAll('video').forEach(v => v.pause()); }
                         } else {
+                            container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg">🎬 ${data.sender} ${data.text} <span class="ls-msg-time" style="display:block; margin-top:2px;">${formatTime(data.timestamp)}</span></div>`;
                         }
 
@@ -1498,6 +1603,8 @@
                             msgBubble.innerText = "🚫 Mensagem apagada";
                         } else {
                             let formattedText = linkify(data.text);
+                            
+                            // Replace blockquote replies
                             const replyMatch = formattedText.match(/^\[REPLY:(.*?)\|(.*?)\] /);
                             if (replyMatch) {
                                 const rSender = replyMatch[1];
@@ -1505,6 +1612,16 @@
                                 const blockquote = `<div style="background: rgba(0,0,0,0.2); border-left: 3px solid currentColor; padding: 4px 8px; margin-bottom: 6px; border-radius: 4px; font-size: 11px; opacity: 0.8;"><b>${rSender}</b><br>${rText}</div>`;
                                 formattedText = formattedText.replace(replyMatch[0], blockquote);
                             }
+
+                            // Highlight Mentions
+                            formattedText = formattedText.replace(/(^|\s)@([a-zA-Z0-9_]+)/g, (match, space, nameMatch) => {
+                                if (nameMatch.toLowerCase() === myCleanName) {
+                                    return `${space}<span style="background: var(--fab-bg); color: var(--fab-color); padding: 2px 6px; border-radius: 8px; font-weight: bold; box-shadow: 0 0 10px rgba(99,102,241,0.5);">@${nameMatch}</span>`;
+                                } else {
+                                    return `${space}<span style="color: #8b5cf6; font-weight: bold;">@${nameMatch}</span>`;
+                                }
+                            });
+
                             msgBubble.innerHTML = formattedText;
                             if(isMe) { msgBubble.style.background = data.color || '#6366f1'; }
                         }
@@ -1512,7 +1629,9 @@
                         container.appendChild(senderRow);
                         container.appendChild(msgBubble);
                     }
-                    messagesContainer.appendChild(container);
+                    if (container.innerHTML !== "") {
+                        messagesContainer.appendChild(container);
+                    }
                 });
 
                 snapshot.docChanges().forEach((change) => {
@@ -1534,6 +1653,7 @@
                                 playNotificationSound();
                                 
                                 if (!chatWindow.classList.contains('open') || myIntegratedMode) {
+                                    // If integrated mode is on, we don't show the fab, so no badge needed there.
                                     if (!myIntegratedMode) {
                                         unreadCount++;
                                         badge.style.display = 'flex';
@@ -1666,6 +1786,34 @@
             item.addEventListener('click', (e) => { input.value += e.target.innerText; emojiPanel.style.display = 'none'; input.focus(); });
         });
 
+        // MENTION NAVIGATION LOGIC
+        input.addEventListener('keydown', (e) => {
+            if (isMentioning && mentionPanel.style.display === 'flex') {
+                const items = mentionPanel.querySelectorAll('.ls-mention-item');
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    items[activeMentionIndex].classList.remove('active');
+                    activeMentionIndex = (activeMentionIndex + 1) % items.length;
+                    items[activeMentionIndex].classList.add('active');
+                    items[activeMentionIndex].scrollIntoView({block: 'nearest'});
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    items[activeMentionIndex].classList.remove('active');
+                    activeMentionIndex = (activeMentionIndex - 1 + items.length) % items.length;
+                    items[activeMentionIndex].classList.add('active');
+                    items[activeMentionIndex].scrollIntoView({block: 'nearest'});
+                } else if (e.key === 'Enter' || e.key === 'Tab') {
+                    e.preventDefault();
+                    insertMention(mentionMatches[activeMentionIndex]);
+                } else if (e.key === 'Escape') {
+                    mentionPanel.style.display = 'none';
+                    isMentioning = false;
+                }
+            } else if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
         input.addEventListener('focus', () => { emojiPanel.style.display = 'none'; plusPanel.style.display = 'none'; });
 
         input.addEventListener('paste', (e) => {
@@ -1763,7 +1911,6 @@
             } catch (e) {}
         });
 
-        shadow.getElementById('ls-camera-overlay').style.display = 'none'; // Initial hide safety
         shadow.getElementById('btn-action-camera').addEventListener('click', async () => {
             plusPanel.style.display = 'none';
             shadow.getElementById('ls-camera-overlay').style.display = 'flex';
@@ -1848,7 +1995,6 @@
         }
 
         shadow.getElementById('ls-send-btn').addEventListener('click', sendMessage);
-        input.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
         
         if (myHideApp) fab.style.display = 'none';
         checkScreenState();
