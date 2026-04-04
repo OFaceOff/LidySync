@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      30.0
+// @version      31.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -839,6 +839,7 @@
                     type: 'countdown', 
                     text: actionText, 
                     sender: myName, 
+                    deviceId: myDeviceId,
                     color: myColor,
                     roomKey: currentRoomKey,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp(), 
@@ -1260,7 +1261,7 @@
                 if(doc.exists) return alert("Esta sala já existe! Clique em 'Entrar na Sala'.");
                 const hashedPass = await hashPassword(roomPass);
                 
-                await docRef.set({ password: hashedPass, createdBy: myName, createdAt: firebase.firestore.FieldValue.serverTimestamp(), participants: [myName] });
+                await docRef.set({ password: hashedPass, createdBy: myName, deviceId: myDeviceId, createdAt: firebase.firestore.FieldValue.serverTimestamp(), participants: [myName] });
                 
                 saveRoomToLocalList(roomName, hashedPass, roomPass);
                 currentRoom = roomName; currentRoomKey = roomName;
@@ -1697,7 +1698,6 @@
                                 playNotificationSound();
                                 
                                 if (!chatWindow.classList.contains('open') || myIntegratedMode) {
-                                    // If integrated mode is on, we don't show the fab, so no badge needed there.
                                     if (!myIntegratedMode) {
                                         unreadCount++;
                                         badge.style.display = 'flex';
@@ -1909,6 +1909,7 @@
                     text: 'convidou o chat para a programação atual!', 
                     url: window.location.href,
                     sender: myName, 
+                    deviceId: myDeviceId,
                     color: myColor,
                     roomKey: currentRoomKey,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp(), 
@@ -1946,6 +1947,7 @@
                     type: 'gif', 
                     url: finalUrl,
                     sender: myName, 
+                    deviceId: myDeviceId,
                     color: myColor,
                     roomKey: currentRoomKey,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp(), 
@@ -2001,6 +2003,7 @@
                     type: 'image', 
                     url: finalUrl, 
                     sender: myName, 
+                    deviceId: myDeviceId,
                     color: myColor, 
                     roomKey: currentRoomKey,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp(), 
@@ -2029,6 +2032,7 @@
                     type: 'text', 
                     text: finalText, 
                     sender: myName, 
+                    deviceId: myDeviceId,
                     color: myColor, 
                     roomKey: currentRoomKey,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp(), 
@@ -2039,6 +2043,7 @@
         }
 
         shadow.getElementById('ls-send-btn').addEventListener('click', sendMessage);
+        input.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
         
         if (myHideApp) fab.style.display = 'none';
         checkScreenState();
