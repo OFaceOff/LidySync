@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      19.0
+// @version      19.1
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -333,7 +333,7 @@
                         <span style="font-size: 32px; font-weight: 800; background: linear-gradient(135deg, #6366f1, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: block; margin-bottom: 4px;">LidySync</span>
                         <span style="color: var(--text-primary); font-size: 16px; font-weight: 600;">Bem-vindo!</span>
                     </div>
-                    <div><span class="ls-label">Seu Apelido</span><input type="text" class="ls-input-text" id="ls-setup-name" placeholder="Nome de Usuário" /></div>
+                    <div><span class="ls-label">Nome de Usuário</span><input type="text" class="ls-input-text" id="ls-setup-name" placeholder="Nome de Usuário" /></div>
                     <div><span class="ls-label">Cor da sua Bolha</span><input type="color" class="ls-input-color" id="ls-setup-color" value="#6366f1" /></div>
                     <button class="ls-btn-primary" id="ls-setup-btn">Começar</button>
                 </div>
@@ -707,9 +707,8 @@
                                     unreadEl.style.display = 'block';
                                     if (myHideApp && myHideRevive && !chatWindow.classList.contains('open')) {
                                         fab.style.display = 'flex';
-                                        unreadCount++;
                                         badge.style.display = 'flex';
-                                        badge.innerText = unreadCount > 5 ? '5+' : unreadCount;
+                                        badge.innerText = '!';
                                     }
                                 } else {
                                     unreadEl.style.display = 'none';
@@ -814,7 +813,10 @@
 
         shadow.getElementById('ls-wipe-data-btn').addEventListener('click', () => {
             if(!confirm("Deseja apagar todos os seus dados e salas salvas deste navegador?")) return;
-            localStorage.clear(); myName = null; currentRoom = null; currentRoomKey = null; savedRooms = [];
+            localStorage.clear(); 
+            myName = null; currentRoom = null; currentRoomKey = null; savedRooms = [];
+            myDeviceId = crypto.randomUUID();
+            localStorage.setItem('ls_device_id', myDeviceId);
             wrapper.className = '';
             checkScreenState();
         });
@@ -939,31 +941,19 @@
             messagesListener = messagesRef.orderBy('timestamp', 'asc').limitToLast(50).onSnapshot((snapshot) => {
                 messagesContainer.innerHTML = '';
                 
-                snapshot.docChanges().forEach((change) => {
-                    const data = change.doc.data();
-                    if (change.type === 'added' && data.type === 'countdown' && !isFirstSnapshot && !data.deleted) {
-                        runVisualCountdown(data.sender);
-                    }
-                    if (change.type === 'added' && !isFirstSnapshot && data.sender !== myName && !data.deleted) {
-                        playNotificationSound();
-                        
-                        const msgTime = data.timestamp ? data.timestamp.toMillis() : Date.now();
-                        const lastRead = lastReadTimes[currentRoom] || 0;
-                        if (msgTime > lastRead && !chatWindow.classList.contains('open')) {
-                            unreadCount++;
-                            badge.style.display = 'flex';
-                            badge.innerText = unreadCount > 5 ? '5+' : unreadCount;
-                            if (myHideApp && myHideRevive) {
-                                fab.style.display = 'flex';
-                            }
-                        }
-                    }
-                });
+                let currentUnread = 0;
+                const lastRead = lastReadTimes[currentRoom] || 0;
 
                 snapshot.forEach((doc) => {
                     const data = doc.data();
                     const docId = doc.id; 
                     const isMe = data.sender === myName;
+                    
+                    if (!isMe && !data.deleted) {
+                        const msgTime = data.timestamp ? data.timestamp.toMillis() : Date.now();
+                        if (msgTime > lastRead) currentUnread++;
+                    }
+
                     const container = document.createElement('div');
                     
                     if (data.type === 'countdown') {
@@ -1062,10 +1052,22 @@
                     messagesContainer.appendChild(container);
                 });
 
-                if (chatWindow.classList.contains('open')) {
-                    updateLastRead(currentRoom);
-                    unreadCount = 0;
+                snapshot.docChanges().forEach((change) => {
+                    const data = change.doc.data();
+                    if (change.type === 'added' && !isFirstSnapshot && data.sender !== myName && !data.deleted) {
+                        playNotificationSound();
+                    }
+                });
+
+                if (!chatWindow.classList.contains('open') && currentUnread > 0) {
+                    badge.style.display = 'flex';
+                    badge.innerText = currentUnread > 5 ? '5+' : currentUnread;
+                    if (myHideApp && myHideRevive) {
+                        fab.style.display = 'flex';
+                    }
+                } else if (chatWindow.classList.contains('open')) {
                     badge.style.display = 'none';
+                    updateLastRead(currentRoom);
                 }
                 
                 scrollToBottom();
