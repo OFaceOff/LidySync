@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      54.0
+// @version      55.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -560,6 +560,8 @@
         let floodCount = 0;
         let isFlooding = false;
         let floodResetTimer = null;
+        
+        let lastDocumentTitle = document.title;
 
         window.addEventListener('beforeunload', () => {
             if (currentRoom && currentRoomKey) {
@@ -838,9 +840,9 @@
             try {
                 const doc = await userRef.get();
                 if (!doc.exists) {
-                    await userRef.set({ username: myName, color: myColor, textColor: myTextColor, deviceId: myDeviceId, pin: myPin, bio: myBio, country: myCountry, fav: myFav, hideChats: myHideChats, roomCount: savedRooms.length, avatar: myAvatar, banner: myBanner, tags: [], isBanned: false, banReason: "", createdAt: firebase.firestore.FieldValue.serverTimestamp(), lastSeen: firebase.firestore.FieldValue.serverTimestamp() });
+                    await userRef.set({ username: myName, color: myColor, textColor: myTextColor, deviceId: myDeviceId, pin: myPin, bio: myBio, country: myCountry, fav: myFav, hideChats: myHideChats, roomCount: savedRooms.length, avatar: myAvatar, banner: myBanner, tags: [], isBanned: false, banReason: "", watching: document.title, createdAt: firebase.firestore.FieldValue.serverTimestamp(), lastSeen: firebase.firestore.FieldValue.serverTimestamp() });
                 } else {
-                    await userRef.set({ color: myColor, textColor: myTextColor, pin: myPin, bio: myBio, country: myCountry, fav: myFav, hideChats: myHideChats, avatar: myAvatar, banner: myBanner, roomCount: savedRooms.length, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+                    await userRef.set({ color: myColor, textColor: myTextColor, pin: myPin, bio: myBio, country: myCountry, fav: myFav, hideChats: myHideChats, avatar: myAvatar, banner: myBanner, roomCount: savedRooms.length, watching: document.title, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
                 }
 
                 if (userProfileUnsubscribe) userProfileUnsubscribe();
@@ -856,7 +858,7 @@
 
         function checkScreenState() {
             settingsOverlay.style.display = 'none'; addRoomOverlay.style.display = 'none'; lobbySettingsOverlay.style.display = 'none'; membersOverlay.style.display = 'none'; profileOverlay.style.display = 'none'; editingRoomAppearance = null;
-            if (myName) db.collection('users').doc(myName).set({ color: myColor, deviceId: myDeviceId, pin: myPin, roomCount: savedRooms.length, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
+            if (myName) db.collection('users').doc(myName).set({ color: myColor, deviceId: myDeviceId, pin: myPin, roomCount: savedRooms.length, watching: document.title, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
             
             if (myIntegratedMode) toggleIntegratedMode(true); else toggleIntegratedMode(false);
 
@@ -929,8 +931,13 @@
 
                     const statusInd = shadow.getElementById('ls-profile-v-status');
                     const statusText = shadow.getElementById('ls-profile-v-statustext');
-                    if (data.lastSeen && (Date.now() - data.lastSeen.toMillis() < 300000)) { statusInd.style.background = '#22c55e'; statusText.innerText = '🟢 Online'; } 
-                    else { statusInd.style.background = '#94a3b8'; statusText.innerText = '🔴 Offline'; }
+                    if (data.lastSeen && (Date.now() - data.lastSeen.toMillis() < 300000)) { 
+                        statusInd.style.background = '#22c55e'; 
+                        statusText.innerText = data.watching ? `🟢 Online | Assistindo: ${data.watching}` : '🟢 Online'; 
+                    } else { 
+                        statusInd.style.background = '#94a3b8'; 
+                        statusText.innerText = '🔴 Offline'; 
+                    }
                 } else { shadow.getElementById('ls-profile-v-name').innerText = "Usuário não encontrado."; }
             } catch(e) {}
         }
@@ -1046,8 +1053,11 @@
                         
                         const bgStyle = uData.avatar ? `url(${uData.avatar})` : (uData.color || '#6366f1');
                         const avText = uData.avatar ? '' : p.charAt(0).toUpperCase();
+                        
+                        const watchingTooltip = isOnline && uData.watching ? `\nAssistindo: ${uData.watching.replace(/"/g, '&quot;')}` : '';
 
                         const item = document.createElement('div'); item.className = 'ls-room-item'; item.style.cursor = 'pointer';
+                        item.title = `${p}${watchingTooltip}`;
                         item.innerHTML = `
                             <div class="ls-room-avatar" style="width:36px; height:36px; font-size:14px; position:relative; background:${bgStyle}; color:${uData.textColor || '#fff'}">${avText}<div class="ls-online-dot" style="display: ${isOnline ? 'block' : 'none'};"></div></div>
                             <div class="ls-room-info" style="display:flex; align-items:center;"><span class="ls-room-name">${p}</span><div class="ls-tags-container" id="ls-member-tags-lobby-${p.replace(/\s/g, '')}"></div></div>
@@ -1356,7 +1366,7 @@
                     
                     const typingEl = shadow.getElementById('ls-typing-indicator');
                     if (currentRoomData.typing && Array.isArray(currentRoomData.typing) && typingEl) {
-                        const typers = currentRoomData.typing;
+                        const typers = currentRoomData.typing.filter(u => u !== myName);
                         if (typers.length === 1) {
                             typingEl.innerText = `${typers[0]} está digitando...`;
                             typingEl.style.display = 'block';
@@ -1773,6 +1783,14 @@
         
         if (myHideApp) fab.style.display = 'none';
         checkScreenState();
+        
+        let lastDocumentTitle = document.title;
+        setInterval(() => {
+            if (myName && document.title !== lastDocumentTitle) {
+                lastDocumentTitle = document.title;
+                db.collection('users').doc(myName).update({ watching: lastDocumentTitle, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }).catch(()=>{});
+            }
+        }, 2000);
     }
 
     const interval = setInterval(() => { if (document.body) injectUI(); }, 1000);
