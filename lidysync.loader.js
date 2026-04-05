@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         LidySync Loader
-// @version      3.0
+// @version      3.1
 // @description  LidySync Loader
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/refs/heads/main/docs/assets/img/favicon.ico
@@ -38,9 +38,9 @@
     'use strict';
 
     const SCRIPT_URL = "https://raw.githubusercontent.com/OFaceOff/LidySync/main/lidysync.user.js";
-    const CURRENT_VERSION = "3.0";
+    const CURRENT_VERSION = "3.1";
 
-    function showUpdateNotification(oldV, newV) {
+    function createNotification(html) {
         if (localStorage.getItem("lidysync_disable_notifications") === "true") return;
 
         const div = document.createElement("div");
@@ -61,11 +61,8 @@
                 max-width: 260px;
                 font-family: sans-serif;
             ">
-                <div style="margin-bottom:6px;">
-                    LidySync atualizado 🚀<br>
-                    <span style="color:#94a3b8">${oldV} → ${newV}</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; align-items:center;">
+                ${html}
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
                     <button id="ls-close" style="background:none;border:none;color:#94a3b8;cursor:pointer;">✕</button>
                     <button id="ls-disable" style="background:none;border:none;color:#06b6d4;cursor:pointer;font-size:11px;">
                         Não mostrar novamente
@@ -86,6 +83,26 @@
         };
 
         setTimeout(remove, 8000);
+    }
+
+    function showUpdateNotification(oldV, newV) {
+        createNotification(`
+            <div>
+                LidySync atualizado 🚀<br>
+                <span style="color:#94a3b8">${oldV} → ${newV}</span>
+            </div>
+        `);
+    }
+
+    function showErrorNotification() {
+        createNotification(`
+            <div style="color:#f87171;">
+                Erro ao instalar nova versão do LidySync Loader ⚠️<br>
+                <span style="color:#94a3b8">
+                    Contate o suporte para ajuda
+                </span>
+            </div>
+        `);
     }
 
     function checkVersion() {
@@ -153,6 +170,7 @@
 
     } catch (err) {
         console.error("[LidySync] Erro no loader:", err);
+        showErrorNotification();
     }
 
 })();
