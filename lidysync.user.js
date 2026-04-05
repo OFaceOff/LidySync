@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      69.0
+// @version      72.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -108,7 +108,7 @@
                 else if (t === 'OWNER') { c = 'ls-tag-owner'; title = 'Este usuário detém a posse do aplicativo, ele que manda e desmanda, quer coisas novas ? pede pra ele que é ele que adiciona :3'; }
                 else if (t === 'MOD') { c = 'ls-tag-mod'; title = 'Este usuário faz parte da equipe de moderação e está aqui para te ajudar'; }
                 else if (t === 'LINDA DE MORRER' || t === 'Do Biel') { c = 'ls-tag-linda'; text = 'LINDA DE MORRER'; title = 'Essa pessoa é considerada muito linda por quem deu a tag a ela.'; }
-                else if (t === 'VERIFICADO') { c = 'ls-tag-verified'; text = '✓'; title = 'Usuário Verificado e Oficial'; }
+                else if (t === 'VERIFICADO') { c = 'ls-tag-verified'; text = '✓'; title = 'Este usuário é verificado e com certeza não é um bot'; }
                 else if (t === 'VIP') { c = 'ls-tag-vip'; title = 'Membro VIP - Apoiador da Comunidade'; }
                 
                 html += `<span class="ls-tag ${c}" title="${title}">${text}</span>`;
@@ -269,7 +269,7 @@
             .ls-tag-mod { background-color: #3b82f6; color: #ffffff; } 
             .ls-tag-linda { background-color: #fbcfe8; color: #be185d; } 
             .ls-tag-generic { background-color: rgba(128,128,128,0.2); color: inherit; }
-            .ls-tag-vip { background: linear-gradient(135deg, #facc15, #eab308); color: #000000; border: 1px solid #ca8a04; font-weight: 900; }
+            .ls-tag-vip { background: linear-gradient(135deg, #facc15, #eab308) !important; color: #000000 !important; border: 1px solid #ca8a04 !important; font-weight: 900 !important; text-shadow: none !important; }
             .ls-tag-verified { background-color: #0ea5e9 !important; color: #ffffff !important; border-radius: 50% !important; width: 14px !important; height: 14px !important; display: inline-flex !important; justify-content: center; align-items: center; padding: 0 !important; font-size: 9px !important; border: 1px solid #ffffff; box-shadow: 0 0 4px rgba(14, 165, 233, 0.6); }
             
             #ls-fab-add { position: absolute; bottom: 20px; right: 20px; width: 50px; height: 50px; background: var(--fab-bg); color: var(--fab-color); border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: var(--fab-shadow); font-size: 24px; transition: 0.2s; z-index: 20; border: none; backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); } 
@@ -278,7 +278,7 @@
             .ls-modal-overlay { position: absolute; top: 54px; left: 0; width: 100%; height: calc(100% - 54px); background-color: var(--bg-modal); z-index: 30; display: none; flex-direction: column; overflow-y: auto; overflow-x: hidden; }
             
             .ls-modal-overlay-card { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(2, 6, 23, 0.75); z-index: 70; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
-            .ls-profile-card { background: var(--bg-surface); width: 90%; max-width: 360px; border-radius: 20px; border: 1px solid var(--border-color); display: flex; flex-direction: column; position: relative; box-shadow: 0 25px 50px rgba(0,0,0,0.6); max-height: 85vh; overflow: hidden; }
+            .ls-profile-card { background: var(--bg-surface); width: 90%; max-width: 360px; border-radius: 20px; border: 1px solid var(--border-color); display: flex; flex-direction: column; position: relative; box-shadow: 0 25px 50px rgba(0,0,0,0.6); max-height: 90%; overflow: hidden; }
             #ls-close-profile-modal { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 20; font-size: 16px; transition: 0.2s; backdrop-filter: blur(4px); }
             #ls-close-profile-modal:hover { background: rgba(0,0,0,0.9); transform: scale(1.1); color: var(--highlight); }
             .ls-profile-scrollable { flex: 1; overflow-y: auto; min-height: 0; display: flex; flex-direction: column; padding-bottom: 20px; }
@@ -506,9 +506,8 @@
                                 <div style="color: var(--text-primary); font-size: 15px; font-weight: 600; margin-top: 6px; background: rgba(128,128,128,0.05); padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border-color);" id="ls-profile-v-fav">-</div>
                             </div>
                             <div class="ls-profile-grid" style="padding: 20px;">
-                                <div class="ls-profile-stat-box"><span class="ls-profile-stat-label">País</span><span class="ls-profile-stat-value" id="ls-profile-v-country">-</span></div>
-                                <div class="ls-profile-stat-box"><span class="ls-profile-stat-label">Chats</span><span class="ls-profile-stat-value" id="ls-profile-v-rooms">-</span></div>
-                                <div class="ls-profile-stat-box" style="grid-column: span 2;"><span class="ls-profile-stat-label">Membro desde</span><span class="ls-profile-stat-value" style="font-size:15px;" id="ls-profile-v-created">-</span></div>
+                                <div class="ls-profile-stat-box"><span class="ls-profile-stat-label">Chats Activos</span><span class="ls-profile-stat-value" id="ls-profile-v-rooms">-</span></div>
+                                <div class="ls-profile-stat-box"><span class="ls-profile-stat-label">Membro desde</span><span class="ls-profile-stat-value" style="font-size:15px;" id="ls-profile-v-created">-</span></div>
                             </div>
                         </div>
 
@@ -534,23 +533,6 @@
                             <div style="display: flex; gap: 10px;">
                                 <div style="flex:1;"><span class="ls-label">Cor Principal</span><input type="color" class="ls-input-color" id="ls-profile-e-color" /></div>
                                 <div style="flex:1;"><span class="ls-label">Cor do Texto</span><input type="color" class="ls-input-color" id="ls-profile-e-textcolor" /></div>
-                            </div>
-                            <div>
-                                <span class="ls-label">País</span>
-                                <select class="ls-select" id="ls-profile-e-country">
-                                    <option value="🌍">🌍 Global</option>
-                                    <option value="🇧🇷">🇧🇷 Brasil</option>
-                                    <option value="🇵🇹">🇵🇹 Portugal</option>
-                                    <option value="🇺🇸">🇺🇸 Estados Unidos</option>
-                                    <option value="🇪🇸">🇪🇸 Espanha</option>
-                                    <option value="🇦🇷">🇦🇷 Argentina</option>
-                                    <option value="🇲🇽">🇲🇽 México</option>
-                                    <option value="🇯🇵">🇯🇵 Japão</option>
-                                    <option value="🇫🇷">🇫🇷 França</option>
-                                    <option value="🇮🇹">🇮🇹 Itália</option>
-                                    <option value="🇩🇪">🇩🇪 Alemanha</option>
-                                    <option value="🇬🇧">🇬🇧 Reino Unido</option>
-                                </select>
                             </div>
                             <div><span class="ls-label">Filme/Série Favorita</span><input type="text" class="ls-input-text" id="ls-profile-e-fav" placeholder="O que você mais gosta?" maxlength="50" /></div>
                             <div><span class="ls-label">Bio</span><textarea class="ls-textarea" id="ls-profile-e-bio" placeholder="Fale um pouco sobre você..." maxlength="200"></textarea></div>
@@ -708,7 +690,6 @@
         let myAvatar = ls.getItem('ls_useravatar') || '';
         let myBanner = ls.getItem('ls_userbanner') || '';
         let myBio = ls.getItem('ls_userbio') || '';
-        let myCountry = ls.getItem('ls_usercountry') || '🌍';
         let myFav = ls.getItem('ls_userfav') || '';
         let myHideChats = ls.getItem('ls_hidechats') === 'true';
         let currentRoom = ls.getItem('ls_current_room'); 
@@ -754,6 +735,9 @@
         let floodCount = 0;
         let isFlooding = false;
         let floodResetTimer = null;
+        
+        let lastDocumentTitle = document.title;
+        let lastPingTime = 0;
 
         window.addEventListener('beforeunload', () => {
             if (currentRoom && currentRoomKey) {
@@ -856,7 +840,7 @@
                 myName = name; myPin = pin;
                 myColor = data.color || shadow.getElementById('ls-setup-color').value;
                 myTextColor = data.textColor || shadow.getElementById('ls-setup-textcolor').value;
-                myBio = data.bio || ''; myCountry = data.country || '🌍'; myHideChats = data.hideChats || false;
+                myBio = data.bio || ''; myHideChats = data.hideChats || false;
                 myAvatar = data.avatar || ''; myBanner = data.banner || ''; myFav = data.fav || '';
                 
                 const keepLogged = shadow.getElementById('ls-setup-keep').checked;
@@ -874,7 +858,7 @@
                 
                 ls.setItem('ls_usercolor', myColor);
                 ls.setItem('ls_usertextcolor', myTextColor);
-                ls.setItem('ls_userbio', myBio); ls.setItem('ls_usercountry', myCountry);
+                ls.setItem('ls_userbio', myBio);
                 ls.setItem('ls_hidechats', myHideChats);
                 ls.setItem('ls_useravatar', myAvatar); ls.setItem('ls_userbanner', myBanner);
                 ls.setItem('ls_userfav', myFav);
@@ -1038,9 +1022,9 @@
             try {
                 const doc = await userRef.get();
                 if (!doc.exists) {
-                    await userRef.set({ username: myName, color: myColor, textColor: myTextColor, deviceId: myDeviceId, pin: myPin, bio: myBio, country: myCountry, fav: myFav, hideChats: myHideChats, roomCount: savedRooms.length, avatar: myAvatar, banner: myBanner, tags: [], isBanned: false, banReason: "", watching: document.title, createdAt: firebase.firestore.FieldValue.serverTimestamp(), lastSeen: firebase.firestore.FieldValue.serverTimestamp() });
+                    await userRef.set({ username: myName, color: myColor, textColor: myTextColor, deviceId: myDeviceId, pin: myPin, bio: myBio, fav: myFav, hideChats: myHideChats, roomCount: savedRooms.length, avatar: myAvatar, banner: myBanner, tags: [], isBanned: false, banReason: "", watching: document.title, createdAt: firebase.firestore.FieldValue.serverTimestamp(), lastSeen: firebase.firestore.FieldValue.serverTimestamp() });
                 } else {
-                    await userRef.set({ color: myColor, textColor: myTextColor, pin: myPin, bio: myBio, country: myCountry, fav: myFav, hideChats: myHideChats, avatar: myAvatar, banner: myBanner, roomCount: savedRooms.length, watching: document.title, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+                    await userRef.set({ color: myColor, textColor: myTextColor, pin: myPin, bio: myBio, fav: myFav, hideChats: myHideChats, avatar: myAvatar, banner: myBanner, roomCount: savedRooms.length, watching: document.title, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
                 }
 
                 if (userProfileUnsubscribe) userProfileUnsubscribe();
@@ -1081,7 +1065,7 @@
             const btnEdit = shadow.getElementById('ls-btn-edit-profile');
             btnEdit.style.display = targetUsername === myName ? 'block' : 'none';
 
-            shadow.getElementById('ls-profile-v-name').innerText = "Carregando..."; shadow.getElementById('ls-profile-v-country').innerText = "-"; shadow.getElementById('ls-profile-v-bio').innerText = "-"; shadow.getElementById('ls-profile-v-tags').innerHTML = ""; shadow.getElementById('ls-profile-v-created').innerText = "-"; shadow.getElementById('ls-profile-v-rooms').innerText = "-"; shadow.getElementById('ls-profile-v-statustext').innerText = "-";
+            shadow.getElementById('ls-profile-v-name').innerText = "Carregando..."; shadow.getElementById('ls-profile-v-bio').innerText = "-"; shadow.getElementById('ls-profile-v-tags').innerHTML = ""; shadow.getElementById('ls-profile-v-created').innerText = "-"; shadow.getElementById('ls-profile-v-rooms').innerText = "-"; shadow.getElementById('ls-profile-v-statustext').innerText = "-";
             shadow.getElementById('ls-profile-v-banner').style.background = 'linear-gradient(135deg, #5b5cf6, #7c3aed)';
             shadow.getElementById('ls-profile-v-fav-container').style.display = 'none';
             
@@ -1109,7 +1093,6 @@
                         shadow.getElementById('ls-profile-v-banner').style.background = `linear-gradient(135deg, ${data.color || '#5b5cf6'}, #1e293b)`;
                     }
 
-                    shadow.getElementById('ls-profile-v-country').innerText = data.country || '🌍';
                     shadow.getElementById('ls-profile-v-bio').innerText = data.bio || 'Olá! Estou usando o LidySync.';
                     
                     const favContainer = shadow.getElementById('ls-profile-v-fav-container');
@@ -1150,7 +1133,7 @@
         
         shadow.getElementById('ls-btn-edit-profile').addEventListener('click', () => {
             shadow.getElementById('ls-profile-view').style.display = 'none'; shadow.getElementById('ls-profile-edit').style.display = 'flex'; shadow.getElementById('ls-btn-edit-profile').style.display = 'none';
-            shadow.getElementById('ls-profile-e-color').value = myColor; shadow.getElementById('ls-profile-e-textcolor').value = myTextColor; shadow.getElementById('ls-profile-e-bio').value = myBio; shadow.getElementById('ls-profile-e-country').value = myCountry; shadow.getElementById('ls-profile-e-fav').value = myFav; shadow.getElementById('ls-profile-e-hiderooms').checked = myHideChats;
+            shadow.getElementById('ls-profile-e-color').value = myColor; shadow.getElementById('ls-profile-e-textcolor').value = myTextColor; shadow.getElementById('ls-profile-e-bio').value = myBio; shadow.getElementById('ls-profile-e-fav').value = myFav; shadow.getElementById('ls-profile-e-hiderooms').checked = myHideChats;
             
             tempAvatar = myAvatar;
             tempBanner = myBanner;
@@ -1225,11 +1208,11 @@
 
         shadow.getElementById('ls-btn-save-profile').addEventListener('click', async () => {
             myColor = shadow.getElementById('ls-profile-e-color').value; myTextColor = shadow.getElementById('ls-profile-e-textcolor').value; myBio = shadow.getElementById('ls-profile-e-bio').value.trim(); myHideChats = shadow.getElementById('ls-profile-e-hiderooms').checked;
-            myCountry = shadow.getElementById('ls-profile-e-country').value; myFav = shadow.getElementById('ls-profile-e-fav').value.trim();
+            myFav = shadow.getElementById('ls-profile-e-fav').value.trim();
             myAvatar = tempAvatar; myBanner = tempBanner;
             
             ls.setItem('ls_usercolor', myColor); ls.setItem('ls_usertextcolor', myTextColor); ls.setItem('ls_userbio', myBio); ls.setItem('ls_hidechats', myHideChats);
-            ls.setItem('ls_usercountry', myCountry); ls.setItem('ls_userfav', myFav);
+            ls.setItem('ls_userfav', myFav);
             ls.setItem('ls_useravatar', myAvatar); ls.setItem('ls_userbanner', myBanner);
             
             await syncUserProfile(); openProfile(myName);
@@ -2071,6 +2054,24 @@
         
         if (myHideApp) fab.style.display = 'none';
         checkScreenState();
+        
+        let lastDocumentTitle = document.title;
+        let lastPingTime = 0;
+        setInterval(() => {
+            if (!myName) return;
+            const now = Date.now();
+            const titleChanged = document.title !== lastDocumentTitle;
+            const needsPing = now - lastPingTime > 120000; 
+
+            if ((titleChanged || needsPing) && document.visibilityState === 'visible') {
+                lastDocumentTitle = document.title;
+                lastPingTime = now;
+                db.collection('users').doc(myName).update({ 
+                    watching: lastDocumentTitle, 
+                    lastSeen: firebase.firestore.FieldValue.serverTimestamp() 
+                }).catch(()=>{});
+            }
+        }, 5000);
     }
 
     function tryInject() {
