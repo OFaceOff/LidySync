@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      64.0
+// @version      66.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -130,10 +130,6 @@
     const db = firebase.firestore();
 
     function injectUI() {
-        if (document.getElementById('lidysync-host')) return;
-        const target = document.body || document.documentElement;
-        if (!target) { setTimeout(injectUI, 100); return; }
-
         const host = document.createElement('div');
         host.id = 'lidysync-host';
         host.style.cssText = 'position: fixed !important; bottom: 90px !important; right: 20px !important; z-index: 2147483647 !important; pointer-events: none !important;';
@@ -141,11 +137,9 @@
         const shadow = host.attachShadow({ mode: 'open' });
         const style = document.createElement('style');
         
-        // --- NOVO DESIGN SYSTEM (SaaS Premium) ---
         style.textContent = `
             * { box-sizing: border-box; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
             #ls-wrapper { 
-                /* Cores Core Dark Theme */
                 --bg-base: #020617; 
                 --bg-surface: #0f172a; 
                 --bg-elevated: #1e293b;
@@ -263,7 +257,6 @@
             .ls-room-options { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: 0.2s; margin-left: 4px; } 
             .ls-room-options:hover { background: rgba(128,128,128,0.1); color: var(--highlight); }
             
-            /* Tags Redesenhadas */
             .ls-tags-container { display: inline-flex; gap: 4px; align-items: center; vertical-align: middle; flex-wrap: wrap; } 
             .ls-tag { font-size: 8px; font-weight: 800; padding: 2px 5px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; cursor: help; } 
             .ls-tag-adm { background-color: #ef4444; color: #ffffff; } 
@@ -280,7 +273,6 @@
             
             .ls-modal-overlay { position: absolute; top: 54px; left: 0; width: 100%; height: calc(100% - 54px); background-color: var(--bg-modal); z-index: 30; display: none; flex-direction: column; overflow-y: auto; overflow-x: hidden; }
             
-            /* Profile Card System */
             .ls-modal-overlay-card { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(2, 6, 23, 0.75); z-index: 70; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
             .ls-profile-card { background: var(--bg-surface); width: 90%; max-width: 360px; border-radius: 20px; border: 1px solid var(--border-color); display: flex; flex-direction: column; position: relative; box-shadow: 0 25px 50px rgba(0,0,0,0.6); max-height: 85vh; overflow: hidden; }
             #ls-close-profile-modal { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 20; font-size: 16px; transition: 0.2s; backdrop-filter: blur(4px); }
@@ -308,7 +300,6 @@
             .ls-input-color::-webkit-color-swatch { border: 1px solid var(--border-color); border-radius: 10px; }
             .ls-checkbox-group { display: flex; align-items: flex-start; gap: 10px; color: var(--text-primary); font-size: 13.5px; margin-top: 5px; cursor: pointer; line-height: 1.5; }
             
-            /* Botões Gerais */
             .ls-btn-primary { background: var(--btn-primary-bg); color: var(--btn-primary-color); border: none; border-radius: 10px; padding: 14px; font-weight: 600; cursor: pointer; margin-top: 10px; transition: all 0.2s; width: 100%; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); } 
             .ls-btn-primary:hover { transform: translateY(-1px); filter: brightness(1.08); box-shadow: 0 6px 16px rgba(91, 92, 246, 0.4); } 
             .ls-btn-secondary { background-color: var(--btn-secondary-bg); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; width: 100%; font-size: 14px; } 
@@ -633,9 +624,9 @@
                 <div id="ls-party-overlay">
                     <div id="ls-disco-ball">🪩</div>
                     <div class="party-dancer" style="left: 10%; bottom: 20%;">🕺</div>
-                    <div class="party-dancer" style="right: 20%; top: 30%; animation-delay: 0.2s;">💃</div>
-                    <div class="party-dancer" style="left: 30%; top: 20%; animation-delay: 0.1s;">👯‍♀️</div>
-                    <div class="party-dancer" style="right: 10%; bottom: 10%; animation-delay: 0.3s;">👯‍♂️</div>
+                    <div class="party-dancer" style="right: 20%; top: 30%;">💃</div>
+                    <div class="party-dancer" style="left: 30%; top: 20%;">👯‍♀️</div>
+                    <div class="party-dancer" style="right: 10%; bottom: 10%;">👯‍♂️</div>
                 </div>
 
                 <div id="ls-chat-area">
@@ -754,7 +745,6 @@
         
         let isTyping = false;
         let typingTimeout = null;
-        window.lsPartyTimeout = null;
 
         let floodCount = 0;
         let isFlooding = false;
@@ -1021,8 +1011,7 @@
         });
 
         function formatTime(timestamp) {
-            if (!timestamp) return "";
-            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+            const date = timestamp ? (timestamp.toDate ? timestamp.toDate() : new Date(timestamp)) : new Date();
             return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
 
@@ -1588,7 +1577,7 @@
                     
                     const typingEl = shadow.getElementById('ls-typing-indicator');
                     if (currentRoomData.typing && Array.isArray(currentRoomData.typing) && typingEl) {
-                        const typers = currentRoomData.typing;
+                        const typers = currentRoomData.typing.filter(u => u !== myName);
                         if (typers.length === 1) {
                             typingEl.innerText = `${typers[0]} está digitando...`;
                             typingEl.style.display = 'block';
@@ -1631,15 +1620,12 @@
                         lastSender = null; lastMsgType = 'system'; lastTimestamp = msgTimeMs;
                         
                         if (data.text === 'SYSTEM_CREATED') {
-                            if (myHideSys) return;
                             container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg" style="background:transparent!important; box-shadow:none; border:none; padding:4px;">✨ <b>${data.sender}</b> criou a sala <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
                         } else if (data.text === 'SYSTEM_FIRST_JOIN') {
-                            if (myHideSys) return;
                             container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg" style="background:transparent!important; box-shadow:none; border:none; padding:4px;">👋 <b>${data.sender}</b> agora faz parte dessa sala <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
                         } else if (data.text === 'SYSTEM_LEFT_PERMANENTLY') {
-                            if (myHideSys) return;
                             container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg" style="background:transparent!important; box-shadow:none; border:none; padding:4px; opacity:0.6;">🚪 <b>${data.sender}</b> não faz mais parte dessa sala <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
                         } else if (data.text.startsWith('SYSTEM_KICKED:')) {
@@ -1647,7 +1633,6 @@
                             container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg" style="background:rgba(239,68,68,0.1)!important; color:#ef4444; border:1px solid rgba(239,68,68,0.2); padding:6px 12px;">🚫 <b>${targetUser}</b> foi expulso da sala e não faz mais parte dela <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
                         } else if (data.text === 'SYSTEM_WENT_AWAY') {
-                            if (myHideSys) return;
                             container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg" style="background:transparent!important; box-shadow:none; border:none; padding:4px; opacity:0.6;">🚶 <b>${data.sender}</b> foi embora <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
                         } else if (data.text === 'SYSTEM_JOIN') {
@@ -1958,7 +1943,6 @@
             if (!currentRoomKey) return alert("Sessão inválida.");
             if (checkFlood()) return;
 
-            // SISTEMA DE COMANDOS OCULTOS
             if (rawText.startsWith('/')) {
                 input.value = '';
                 const parts = rawText.split(' ');
@@ -1999,7 +1983,6 @@
                 scrollToBottom();
                 return;
             }
-            // FIM DO SISTEMA DE COMANDOS
 
             let finalText = rawText;
             if (replyTarget) { finalText = `[REPLY:${replyTarget.sender}|${replyTarget.text}] ${rawText}`; replyTarget = null; shadow.getElementById('ls-reply-bar').style.display = 'none'; }
@@ -2102,6 +2085,14 @@
         }, 5000);
     }
 
-    const interval = setInterval(() => { if (document.body) injectUI(); }, 1000);
+    function tryInject() {
+        if (document.getElementById('lidysync-host')) return;
+        if (document.body || document.documentElement) {
+            injectUI();
+        } else {
+            setTimeout(tryInject, 100);
+        }
+    }
+    tryInject();
 
 })();
