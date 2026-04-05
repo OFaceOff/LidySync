@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      66.0
+// @version      67.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -745,6 +745,7 @@
         
         let isTyping = false;
         let typingTimeout = null;
+        let lsPartyTimeout = null;
 
         let floodCount = 0;
         let isFlooding = false;
@@ -1620,12 +1621,15 @@
                         lastSender = null; lastMsgType = 'system'; lastTimestamp = msgTimeMs;
                         
                         if (data.text === 'SYSTEM_CREATED') {
+                            if (myHideSys) return;
                             container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg" style="background:transparent!important; box-shadow:none; border:none; padding:4px;">✨ <b>${data.sender}</b> criou a sala <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
                         } else if (data.text === 'SYSTEM_FIRST_JOIN') {
+                            if (myHideSys) return;
                             container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg" style="background:transparent!important; box-shadow:none; border:none; padding:4px;">👋 <b>${data.sender}</b> agora faz parte dessa sala <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
                         } else if (data.text === 'SYSTEM_LEFT_PERMANENTLY') {
+                            if (myHideSys) return;
                             container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg" style="background:transparent!important; box-shadow:none; border:none; padding:4px; opacity:0.6;">🚪 <b>${data.sender}</b> não faz mais parte dessa sala <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
                         } else if (data.text.startsWith('SYSTEM_KICKED:')) {
@@ -1633,6 +1637,7 @@
                             container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg" style="background:rgba(239,68,68,0.1)!important; color:#ef4444; border:1px solid rgba(239,68,68,0.2); padding:6px 12px;">🚫 <b>${targetUser}</b> foi expulso da sala e não faz mais parte dela <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
                         } else if (data.text === 'SYSTEM_WENT_AWAY') {
+                            if (myHideSys) return;
                             container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg" style="background:transparent!important; box-shadow:none; border:none; padding:4px; opacity:0.6;">🚶 <b>${data.sender}</b> foi embora <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
                         } else if (data.text === 'SYSTEM_JOIN') {
@@ -2066,8 +2071,6 @@
         if (myHideApp) fab.style.display = 'none';
         checkScreenState();
         
-        let lastDocumentTitle = document.title;
-        let lastPingTime = 0;
         setInterval(() => {
             if (!myName) return;
             const now = Date.now();
