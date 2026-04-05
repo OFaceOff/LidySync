@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      62.0
+// @version      64.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -141,66 +141,247 @@
         const shadow = host.attachShadow({ mode: 'open' });
         const style = document.createElement('style');
         
+        // --- NOVO DESIGN SYSTEM (SaaS Premium) ---
         style.textContent = `
             * { box-sizing: border-box; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
-            #ls-wrapper { --bg-base: #0f172a; --bg-surface: #1e293b; --bg-overlay: rgba(15, 23, 42, 0.85); --bg-modal: #0f172a; --text-primary: #f8fafc; --text-muted: #94a3b8; --border-color: rgba(255,255,255,0.08); --glass-blur: blur(0px); --received-msg: #1e293b; --fab-bg: linear-gradient(135deg, #6366f1, #8b5cf6); --fab-color: #ffffff; --fab-shadow: 0 4px 20px rgba(99, 102, 241, 0.4); --btn-primary-bg: linear-gradient(135deg, #6366f1, #8b5cf6); --btn-primary-color: #ffffff; --btn-secondary-bg: #1e293b; pointer-events: auto; display: flex; flex-direction: column; align-items: flex-end; position: relative; }
-            #ls-wrapper.theme-light { --bg-base: #f1f5f9; --bg-surface: #ffffff; --bg-overlay: rgba(241, 245, 249, 0.85); --bg-modal: #f1f5f9; --text-primary: #0f172a; --text-muted: #64748b; --border-color: rgba(0,0,0,0.1); --received-msg: #ffffff; --fab-bg: #ffffff; --fab-color: #6366f1; --fab-shadow: 0 4px 15px rgba(0,0,0,0.15); --btn-primary-bg: #6366f1; --btn-secondary-bg: #e2e8f0; }
-            #ls-wrapper.theme-glass { --bg-base: rgba(15, 23, 42, 0.35); --bg-surface: rgba(255, 255, 255, 0.15); --bg-overlay: rgba(15, 23, 42, 0.65); --bg-modal: rgba(15, 23, 42, 0.95); --border-color: rgba(255,255,255,0.25); --glass-blur: blur(20px); --received-msg: rgba(255, 255, 255, 0.2); --fab-bg: rgba(255, 255, 255, 0.2); --fab-shadow: 0 4px 15px rgba(0,0,0,0.3); --btn-primary-bg: rgba(255, 255, 255, 0.3); --btn-secondary-bg: rgba(0, 0, 0, 0.3); }
-            #ls-wrapper.theme-hellokitty { --bg-base: #fff0f5; --bg-surface: #ffffff; --bg-overlay: rgba(255, 240, 245, 0.9); --bg-modal: #fff0f5; --text-primary: #be185d; --text-muted: #f472b6; --border-color: rgba(244, 114, 182, 0.3); --received-msg: #fce7f3; --fab-bg: linear-gradient(135deg, #f472b6, #db2777); --fab-shadow: 0 4px 15px rgba(219, 39, 119, 0.3); --btn-primary-bg: linear-gradient(135deg, #f472b6, #db2777); --btn-secondary-bg: #fbcfe8; }
-            ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 6px; opacity: 0.5; }
-            #ls-fab { width: 60px; height: 60px; background: var(--fab-bg); color: var(--fab-color); border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: var(--fab-shadow); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); transition: transform 0.2s, box-shadow 0.2s; position: relative; }
-            #ls-fab:hover { transform: scale(1.08); } #ls-fab svg { stroke: currentColor; } #ls-fab svg polygon { fill: currentColor; stroke: currentColor; }
-            #ls-unread-badge { position: absolute; top: -4px; right: -4px; background: #ef4444; color: white; font-size: 12px; font-weight: 800; border-radius: 50%; min-width: 22px; height: 22px; display: none; align-items: center; justify-content: center; border: 2px solid var(--bg-base); z-index: 10; padding: 0 4px; }
-            #ls-chat-window { width: 350px; height: 580px; background-color: var(--bg-base); border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.6); display: none; flex-direction: column; margin-bottom: 15px; overflow: hidden; border: 1px solid var(--border-color); position: relative; backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); transition: background-color 0.3s, backdrop-filter 0.3s; resize: both; min-width: 300px; min-height: 400px; max-width: 90vw; max-height: 90vh; }
-            #ls-chat-window.open { display: flex; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-            #ls-chat-window.integrated { position: absolute !important; top: 0 !important; right: 0 !important; bottom: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; max-height: 100vh !important; border-radius: 0 !important; margin: 0 !important; border: none !important; border-left: 1px solid var(--border-color) !important; resize: none !important; box-shadow: -5px 0 25px rgba(0,0,0,0.5) !important; }
-            #ls-chat-window.integrated #ls-close-btn, #ls-chat-window.integrated #ls-minimize-btn { display: none !important; } #ls-chat-window.integrated #ls-header { cursor: default !important; }
-            @keyframes slideUp { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
-            #ls-header { background-color: var(--bg-overlay); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); color: var(--text-primary); padding: 16px; display: flex; justify-content: space-between; align-items: center; font-size: 15px; font-weight: 600; z-index: 10; border-bottom: 1px solid var(--border-color); cursor: grab; }
-            #ls-header:active { cursor: grabbing; } .ls-header-btns { display: flex; gap: 8px; align-items: center; cursor: default; } .ls-header-btn { cursor: pointer; color: var(--text-muted); font-size: 18px; background: none; border: none; transition: color 0.2s; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px;} .ls-header-btn:hover { color: var(--text-primary); background: rgba(128,128,128,0.1); }
-            .ls-dropdown-container { position: relative; } .ls-dropdown-menu { position: absolute; right: 0; top: calc(100% + 5px); background-color: var(--bg-overlay); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: none; flex-direction: column; min-width: 200px; z-index: 50; overflow: hidden; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); } .ls-dropdown-menu.show { display: flex; animation: fadeIn 0.15s ease-out; } @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } } .ls-dropdown-item { padding: 12px 16px; color: var(--text-primary); font-size: 13.5px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; background: none; border: none; text-align: left; width: 100%; font-weight: 500; } .ls-dropdown-item:hover { background-color: rgba(128,128,128,0.1); } .ls-dropdown-item.danger { color: #ef4444; }
-            .ls-screen { flex: 1; display: none; flex-direction: column; padding: 20px; background-color: transparent; gap: 16px; position: relative; overflow-y: auto;}
-            #ls-room-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; padding-bottom: 70px; } .ls-room-item { display: flex; align-items: center; padding: 12px; background: rgba(128,128,128,0.05); border: 1px solid var(--border-color); border-radius: 12px; cursor: pointer; transition: 0.2s; position: relative; } .ls-room-item:hover { background: rgba(128,128,128,0.1); } .ls-room-avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #8b5cf6); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; color: white; margin-right: 12px; flex-shrink: 0; position: relative; background-size: cover !important; background-position: center !important; } .ls-online-dot { position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; background: #22c55e; border-radius: 50%; border: 2px solid var(--bg-surface); display: none; } .ls-room-info { flex: 1; overflow: hidden; } .ls-room-name { color: var(--text-primary); font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px; } .ls-room-status { color: var(--text-muted); font-size: 12px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ls-room-unread { width: 10px; height: 10px; background: #ef4444; border-radius: 50%; display: none; margin-left: 8px; flex-shrink: 0; } .ls-room-options { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: 0.2s; margin-left: 4px; } .ls-room-options:hover { background: rgba(128,128,128,0.1); color: var(--text-primary); }
-            .ls-tags-container { display: inline-flex; gap: 4px; align-items: center; vertical-align: middle; flex-wrap: wrap; } .ls-tag { font-size: 8px; font-weight: 800; padding: 2px 5px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; cursor: help; } .ls-tag-adm { background-color: #ef4444; color: #ffffff; } .ls-tag-dev { background-color: #eab308; color: #000000; } .ls-tag-owner { background-color: #2d0778; color: #ffffff; } .ls-tag-mod { background-color: #345beb; color: #ffffff; } .ls-tag-linda { background-color: #fbcfe8; color: #be185d; } .ls-tag-generic { background-color: rgba(128,128,128,0.2); color: inherit; }
-            .ls-tag-vip { background: linear-gradient(135deg, #fde047, #eab308); color: #000000; border: 1px solid #ca8a04; font-weight: 900; }
-            .ls-tag-verified { background-color: #1da1f2 !important; color: #ffffff !important; border-radius: 50% !important; width: 14px !important; height: 14px !important; display: inline-flex !important; justify-content: center; align-items: center; padding: 0 !important; font-size: 9px !important; border: 1px solid #ffffff; box-shadow: 0 0 4px rgba(29, 161, 242, 0.6); }
-            #ls-fab-add { position: absolute; bottom: 20px; right: 20px; width: 50px; height: 50px; background: var(--fab-bg); color: var(--fab-color); border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: var(--fab-shadow); font-size: 24px; transition: 0.2s; z-index: 20; border: none; backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); } #ls-fab-add:hover { transform: scale(1.1); }
-            .ls-modal-overlay { position: absolute; top: 54px; left: 0; width: 100%; height: calc(100% - 54px); background-color: var(--bg-modal); z-index: 30; display: none; flex-direction: column; overflow-y: auto; }
-            .ls-modal-overlay-card { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 70; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
-            .ls-profile-card { background: var(--bg-surface); width: 90%; max-width: 360px; border-radius: 16px; border: 1px solid var(--border-color); overflow: hidden; display: flex; flex-direction: column; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.5); max-height: 90vh; }
-            .ls-modal-content { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
-            .ls-label { color: var(--text-muted); font-size: 12px; font-weight: 600; margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
-            .ls-input-wrapper { position: relative; width: 100%; display: flex; align-items: center; } .ls-input-text, .ls-select, .ls-textarea, .ls-input-file { background-color: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; color: var(--text-primary); outline: none; font-size: 14px; width: 100%; transition: all 0.2s; } .ls-input-text:focus, .ls-select:focus, .ls-textarea:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15); } .ls-textarea { resize: vertical; min-height: 80px; } .ls-pass-toggle { position: absolute; right: 12px; background: none; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; padding: 4px; border-radius: 4px; } .ls-pass-toggle:hover { color: var(--text-primary); background: rgba(128,128,128,0.1); }
-            .ls-input-color { width: 100%; height: 42px; border: none; border-radius: 10px; cursor: pointer; background: none; padding: 0; } .ls-input-color::-webkit-color-swatch-wrapper { padding: 0; } .ls-input-color::-webkit-color-swatch { border: 1px solid var(--border-color); border-radius: 10px; }
-            .ls-checkbox-group { display: flex; align-items: flex-start; gap: 10px; color: var(--text-primary); font-size: 13.5px; margin-top: 5px; cursor: pointer; line-height: 1.5; }
-            .ls-btn-primary { background: var(--btn-primary-bg); color: var(--btn-primary-color); border: none; border-radius: 10px; padding: 14px; font-weight: 600; cursor: pointer; margin-top: 10px; transition: all 0.2s; width: 100%; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); } .ls-btn-primary:hover { transform: translateY(-1px); filter: brightness(1.1); } .ls-btn-secondary { background-color: var(--btn-secondary-bg); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; width: 100%; font-size: 14px; } .ls-btn-secondary:hover { filter: brightness(1.2); } .ls-btn-danger { background-color: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 10px; padding: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; width: 100%; font-size: 14px; } .ls-btn-danger:hover { background-color: #ef4444; color: white; }
-            .ls-config-section { background: rgba(128,128,128,0.05); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 8px;}
+            #ls-wrapper { 
+                /* Cores Core Dark Theme */
+                --bg-base: #020617; 
+                --bg-surface: #0f172a; 
+                --bg-elevated: #1e293b;
+                --bg-overlay: rgba(2, 6, 23, 0.85); 
+                --bg-modal: #0f172a; 
+                --text-primary: #f9fafb; 
+                --text-secondary: #94a3b8;
+                --text-muted: #64748b; 
+                --border-color: rgba(255,255,255,0.06); 
+                --glass-blur: blur(16px); 
+                --received-msg: #1e293b; 
+                --highlight: #06b6d4;
+                --fab-bg: linear-gradient(135deg, #5b5cf6, #7c3aed); 
+                --fab-color: #ffffff; 
+                --fab-shadow: 0 8px 25px rgba(91, 92, 246, 0.4); 
+                --btn-primary-bg: linear-gradient(135deg, #5b5cf6, #7c3aed); 
+                --btn-primary-color: #ffffff; 
+                --btn-secondary-bg: #1e293b; 
+                pointer-events: auto; display: flex; flex-direction: column; align-items: flex-end; position: relative; 
+            }
             
-            .ls-profile-banner { height: 120px; background: #6366f1; position: relative; background-size: cover !important; background-position: center !important; border-bottom: 1px solid var(--border-color); width: 100%; flex-shrink: 0; }
-            .ls-profile-avatar-large { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.3); flex-shrink: 0; position: relative; border: 4px solid var(--bg-modal); background: var(--bg-surface); background-size: cover !important; background-position: center !important; }
+            #ls-wrapper.theme-light { 
+                --bg-base: #f8fafc; 
+                --bg-surface: #ffffff; 
+                --bg-elevated: #f1f5f9;
+                --bg-overlay: rgba(248, 250, 252, 0.85); 
+                --bg-modal: #ffffff; 
+                --text-primary: #020617; 
+                --text-secondary: #475569;
+                --text-muted: #64748b; 
+                --border-color: #e2e8f0; 
+                --received-msg: #f1f5f9; 
+                --fab-bg: linear-gradient(135deg, #5b5cf6, #7c3aed); 
+                --fab-color: #ffffff; 
+                --fab-shadow: 0 8px 25px rgba(91, 92, 246, 0.3); 
+                --btn-primary-bg: linear-gradient(135deg, #5b5cf6, #7c3aed); 
+                --btn-secondary-bg: #f1f5f9; 
+            }
+            
+            #ls-wrapper.theme-glass { 
+                --bg-base: rgba(2, 6, 23, 0.35); 
+                --bg-surface: rgba(15, 23, 42, 0.55); 
+                --bg-elevated: rgba(30, 41, 59, 0.65);
+                --bg-overlay: rgba(2, 6, 23, 0.85); 
+                --bg-modal: rgba(15, 23, 42, 0.95); 
+                --border-color: rgba(255,255,255,0.1); 
+                --glass-blur: blur(16px); 
+                --received-msg: rgba(255, 255, 255, 0.1); 
+                --fab-bg: linear-gradient(135deg, #5b5cf6, #7c3aed); 
+                --fab-shadow: 0 8px 25px rgba(91, 92, 246, 0.4); 
+                --btn-primary-bg: linear-gradient(135deg, #5b5cf6, #7c3aed); 
+                --btn-secondary-bg: rgba(0, 0, 0, 0.3); 
+            }
+            
+            #ls-wrapper.theme-hellokitty { 
+                --bg-base: #fff1f2; 
+                --bg-surface: #ffffff; 
+                --bg-elevated: #ffe4e6;
+                --bg-overlay: rgba(255, 241, 242, 0.85); 
+                --bg-modal: #ffffff; 
+                --text-primary: #be123c; 
+                --text-secondary: #fb7185;
+                --text-muted: #fda4af; 
+                --border-color: rgba(225, 29, 72, 0.15); 
+                --received-msg: #ffe4e6; 
+                --highlight: #e11d48;
+                --fab-bg: linear-gradient(135deg, #fb7185, #e11d48); 
+                --fab-shadow: 0 8px 25px rgba(225, 29, 72, 0.3); 
+                --btn-primary-bg: linear-gradient(135deg, #fb7185, #e11d48); 
+                --btn-secondary-bg: #ffe4e6; 
+            }
+
+            ::-webkit-scrollbar { width: 6px; } 
+            ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 6px; opacity: 0.5; transition: 0.2s; }
+            ::-webkit-scrollbar-thumb:hover { background: var(--highlight); }
+
+            #ls-fab { width: 60px; height: 60px; background: var(--fab-bg); color: var(--fab-color); border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: var(--fab-shadow); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s; position: relative; }
+            #ls-fab:hover { transform: scale(1.08); box-shadow: 0 12px 30px rgba(0,0,0,0.4); } 
+            #ls-fab svg { stroke: currentColor; } #ls-fab svg polygon { fill: currentColor; stroke: currentColor; }
+            
+            #ls-unread-badge { position: absolute; top: -4px; right: -4px; background: #ef4444; color: white; font-size: 12px; font-weight: 800; border-radius: 50%; min-width: 22px; height: 22px; display: none; align-items: center; justify-content: center; border: 2px solid var(--bg-base); z-index: 10; padding: 0 4px; }
+            
+            #ls-chat-window { width: 350px; height: 580px; background-color: var(--bg-base); border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.4); display: none; flex-direction: column; margin-bottom: 15px; overflow: hidden; border: 1px solid var(--border-color); position: relative; backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); transition: background-color 0.3s, backdrop-filter 0.3s; resize: both; min-width: 300px; min-height: 400px; max-width: 90vw; max-height: 90vh; }
+            #ls-chat-window.open { display: flex; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+            #ls-chat-window.integrated { position: absolute !important; top: 0 !important; right: 0 !important; bottom: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; max-height: 100vh !important; border-radius: 0 !important; margin: 0 !important; border: none !important; border-left: 1px solid var(--border-color) !important; resize: none !important; box-shadow: -5px 0 25px rgba(0,0,0,0.4) !important; }
+            #ls-chat-window.integrated #ls-close-btn, #ls-chat-window.integrated #ls-minimize-btn { display: none !important; } #ls-chat-window.integrated #ls-header { cursor: default !important; }
+            
+            @keyframes slideUp { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+            
+            #ls-header { background-color: var(--bg-overlay); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); color: var(--text-primary); padding: 16px; display: flex; justify-content: space-between; align-items: center; font-size: 15px; font-weight: 600; z-index: 10; border-bottom: 1px solid var(--border-color); cursor: grab; }
+            #ls-header:active { cursor: grabbing; } 
+            .ls-header-btns { display: flex; gap: 8px; align-items: center; cursor: default; } 
+            .ls-header-btn { cursor: pointer; color: var(--text-muted); font-size: 18px; background: none; border: none; transition: all 0.2s; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px;} 
+            .ls-header-btn:hover { color: var(--highlight); background: rgba(128,128,128,0.1); }
+            
+            .ls-dropdown-container { position: relative; } 
+            .ls-dropdown-menu { position: absolute; right: 0; top: calc(100% + 5px); background-color: var(--bg-overlay); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); display: none; flex-direction: column; min-width: 200px; z-index: 50; overflow: hidden; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); } 
+            .ls-dropdown-menu.show { display: flex; animation: fadeIn 0.15s ease-out; } 
+            @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } } 
+            .ls-dropdown-item { padding: 12px 16px; color: var(--text-primary); font-size: 13.5px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; background: none; border: none; text-align: left; width: 100%; font-weight: 500; } 
+            .ls-dropdown-item:hover { background-color: rgba(128,128,128,0.1); color: var(--highlight); } 
+            .ls-dropdown-item.danger:hover { color: #ef4444; background-color: rgba(239, 68, 68, 0.1); }
+            
+            .ls-screen { flex: 1; display: none; flex-direction: column; padding: 20px; background-color: transparent; gap: 16px; position: relative; overflow-y: auto;}
+            
+            #ls-room-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; padding-bottom: 70px; } 
+            .ls-room-item { display: flex; align-items: center; padding: 12px; background: rgba(128,128,128,0.05); border: 1px solid var(--border-color); border-radius: 12px; cursor: pointer; transition: 0.2s; position: relative; } 
+            .ls-room-item:hover { background: rgba(128,128,128,0.1); border-color: var(--highlight); } 
+            .ls-room-avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #5b5cf6, #7c3aed); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; color: white; margin-right: 12px; flex-shrink: 0; position: relative; background-size: cover !important; background-position: center !important; } 
+            .ls-online-dot { position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; background: #22c55e; border-radius: 50%; border: 2px solid var(--bg-surface); display: none; } 
+            .ls-room-info { flex: 1; overflow: hidden; } 
+            .ls-room-name { color: var(--text-primary); font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px; } 
+            .ls-room-status { color: var(--text-muted); font-size: 12px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } 
+            .ls-room-unread { width: 10px; height: 10px; background: #ef4444; border-radius: 50%; display: none; margin-left: 8px; flex-shrink: 0; } 
+            .ls-room-options { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: 0.2s; margin-left: 4px; } 
+            .ls-room-options:hover { background: rgba(128,128,128,0.1); color: var(--highlight); }
+            
+            /* Tags Redesenhadas */
+            .ls-tags-container { display: inline-flex; gap: 4px; align-items: center; vertical-align: middle; flex-wrap: wrap; } 
+            .ls-tag { font-size: 8px; font-weight: 800; padding: 2px 5px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; cursor: help; } 
+            .ls-tag-adm { background-color: #ef4444; color: #ffffff; } 
+            .ls-tag-dev { background-color: #facc15; color: #000000; } 
+            .ls-tag-owner { background-color: #5b21b6; color: #ffffff; } 
+            .ls-tag-mod { background-color: #3b82f6; color: #ffffff; } 
+            .ls-tag-linda { background-color: #fbcfe8; color: #be185d; } 
+            .ls-tag-generic { background-color: rgba(128,128,128,0.2); color: inherit; }
+            .ls-tag-vip { background: linear-gradient(135deg, #facc15, #eab308); color: #000000; border: 1px solid #ca8a04; font-weight: 900; }
+            .ls-tag-verified { background-color: #0ea5e9 !important; color: #ffffff !important; border-radius: 50% !important; width: 14px !important; height: 14px !important; display: inline-flex !important; justify-content: center; align-items: center; padding: 0 !important; font-size: 9px !important; border: 1px solid #ffffff; box-shadow: 0 0 4px rgba(14, 165, 233, 0.6); }
+            
+            #ls-fab-add { position: absolute; bottom: 20px; right: 20px; width: 50px; height: 50px; background: var(--fab-bg); color: var(--fab-color); border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: var(--fab-shadow); font-size: 24px; transition: 0.2s; z-index: 20; border: none; backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); } 
+            #ls-fab-add:hover { transform: scale(1.1); box-shadow: 0 12px 30px rgba(0,0,0,0.4); }
+            
+            .ls-modal-overlay { position: absolute; top: 54px; left: 0; width: 100%; height: calc(100% - 54px); background-color: var(--bg-modal); z-index: 30; display: none; flex-direction: column; overflow-y: auto; overflow-x: hidden; }
+            
+            /* Profile Card System */
+            .ls-modal-overlay-card { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(2, 6, 23, 0.75); z-index: 70; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
+            .ls-profile-card { background: var(--bg-surface); width: 90%; max-width: 360px; border-radius: 20px; border: 1px solid var(--border-color); display: flex; flex-direction: column; position: relative; box-shadow: 0 25px 50px rgba(0,0,0,0.6); max-height: 85vh; overflow: hidden; }
+            #ls-close-profile-modal { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 20; font-size: 16px; transition: 0.2s; backdrop-filter: blur(4px); }
+            #ls-close-profile-modal:hover { background: rgba(0,0,0,0.9); transform: scale(1.1); color: var(--highlight); }
+            .ls-profile-scrollable { flex: 1; overflow-y: auto; min-height: 0; display: flex; flex-direction: column; padding-bottom: 20px; }
+            .ls-profile-banner { height: 130px; background: linear-gradient(135deg, #5b5cf6, #7c3aed); position: relative; background-size: cover !important; background-position: center !important; width: 100%; flex-shrink: 0; }
+            .ls-profile-avatar-large { width: 85px; height: 85px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 36px; font-weight: bold; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.4); flex-shrink: 0; position: relative; border: 5px solid var(--bg-surface); background: var(--bg-surface); background-size: cover !important; background-position: center !important; z-index: 2; margin-top: -42px; }
             .ls-profile-status-indicator { position: absolute; bottom: 2px; right: 2px; width: 16px; height: 16px; border-radius: 50%; border: 3px solid var(--bg-surface); }
-            .ls-profile-bio-box { background: rgba(128,128,128,0.05); padding: 12px 16px; border-radius: 10px; border-left: 3px solid var(--border-color); margin-top: 12px; font-size: 13.5px; line-height: 1.5; color: var(--text-primary); }
+            .ls-profile-bio-box { background: rgba(128,128,128,0.05); padding: 12px 16px; border-radius: 10px; border-left: 3px solid var(--highlight); margin-top: 12px; font-size: 13.5px; line-height: 1.5; color: var(--text-primary); }
             .ls-profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
-            .ls-profile-stat-box { background: rgba(128,128,128,0.05); border: 1px solid var(--border-color); padding: 12px; border-radius: 10px; text-align: center; }
+            .ls-profile-stat-box { background: var(--bg-elevated); border: 1px solid var(--border-color); padding: 12px; border-radius: 10px; text-align: center; }
             .ls-profile-stat-value { font-size: 18px; font-weight: 700; color: var(--text-primary); display: block; margin-top: 4px; }
             .ls-profile-stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
 
-            #ls-chat-area { flex: 1; display: none; flex-direction: column; overflow: hidden; position: relative; } #ls-messages { flex: 1; padding: 20px 16px 8px; overflow-y: auto; background-color: transparent; display: flex; flex-direction: column; gap: 14px; }
-            #ls-reply-bar { display: none; background: rgba(0,0,0,0.2); padding: 8px 12px; border-left: 3px solid #6366f1; margin: 0 16px 10px; border-radius: 4px; font-size: 12px; color: var(--text-muted); position: relative; } #ls-reply-bar-close { position: absolute; right: 8px; top: 8px; cursor: pointer; font-size: 14px; color: inherit; border: none; background: none; }
-            #ls-mention-panel { position: absolute; bottom: 60px; left: 16px; background-color: var(--bg-overlay); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: none; flex-direction: column; min-width: 150px; max-height: 180px; overflow-y: auto; z-index: 50; padding: 4px 0; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); } .ls-mention-item { padding: 8px 16px; color: var(--text-primary); font-size: 13px; cursor: pointer; font-weight: 500; } .ls-mention-item:hover, .ls-mention-item.active { background-color: rgba(128,128,128,0.15); }
-            .ls-message-container { display: flex; flex-direction: column; max-width: 85%; position: relative; } .ls-message-container.sent { align-self: flex-end; align-items: flex-end; } .ls-message-container.received { align-self: flex-start; align-items: flex-start; }
-            .ls-sender-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; padding: 0 4px; } .ls-sender-name { font-size: 11px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.3px; cursor: pointer; transition: 0.2s; } .ls-sender-name:hover { text-decoration: underline; color: var(--text-primary); } .ls-msg-time { font-size: 9px; color: var(--text-muted); opacity: 0.7; font-weight: normal; margin-left: 4px; }
-            .ls-msg-action { display: none; cursor: pointer; font-size: 13px; filter: grayscale(100%); transition: 0.2s; opacity: 0.6; margin: 0 2px; } .ls-msg-action:hover { filter: grayscale(0%); opacity: 1; transform: scale(1.1); } .ls-message-container:hover .ls-msg-action { display: inline-block; }
-            .ls-message { padding: 10px 14px; font-size: 14px; line-height: 1.45; color: #ffffff; word-wrap: break-word; word-break: break-word; white-space: pre-wrap; overflow-wrap: anywhere; box-shadow: 0 2px 8px rgba(0,0,0,0.15); max-width: 100%; overflow-x: hidden; } .ls-message img { max-width: 100%; border-radius: 8px; display: block; margin-top: 4px; cursor: pointer; transition: transform 0.2s; } .ls-message img:hover { transform: scale(1.02); opacity: 0.9; }
-            .ls-message-container.system-msg-container { max-width: 95%; align-self: center; margin: 6px 0; } .ls-message.system-msg { background: rgba(128, 128, 128, 0.1) !important; color: var(--text-muted); text-align: center; font-weight: 500; border-radius: 12px !important; font-size: 12px; border: 1px solid rgba(128, 128, 128, 0.2); box-shadow: none; padding: 6px 12px; } .ls-message.deleted-msg { background-color: transparent !important; color: var(--text-muted); font-style: italic; border: 1px solid var(--border-color); border-radius: 12px !important; font-size: 13px; box-shadow: none; }
-            .sent .ls-message:not(.deleted-msg) { border-radius: 14px 14px 4px 14px; } .received .ls-message:not(.deleted-msg) { border-radius: 14px 14px 14px 4px; background-color: var(--received-msg) !important; border: 1px solid var(--border-color); }
-            #ls-input-area { display: flex; padding: 12px 16px; background-color: var(--bg-overlay); gap: 10px; align-items: center; position: relative; flex-wrap: nowrap; border-top: 1px solid var(--border-color); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); } .ls-icon-btn { flex-shrink: 0; background: none; border: none; color: var(--text-muted); font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; transition: color 0.2s, transform 0.2s; border-radius: 8px; } .ls-icon-btn:hover { color: var(--text-primary); background: rgba(128,128,128,0.1); transform: scale(1.05); }
-            #ls-input { flex-grow: 1; min-width: 0; background-color: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 20px; padding: 10px 16px; color: var(--text-primary); outline: none; font-size: 14px; transition: 0.2s; } #ls-input:focus { border-color: #6366f1; }
-            #ls-send-btn { flex-shrink: 0; background: var(--btn-primary-bg); color: var(--btn-primary-color); border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); transition: transform 0.2s; } #ls-send-btn:hover { transform: scale(1.05); }
-            .ls-popup-panel { position: absolute; bottom: 70px; background-color: var(--bg-overlay); border-radius: 16px; padding: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: none; z-index: 20; border: 1px solid var(--border-color); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); } #ls-emoji-panel { left: 16px; width: 280px; display: flex; flex-wrap: wrap; gap: 6px; padding: 12px; } .ls-emoji-item { font-size: 20px; cursor: pointer; text-align: center; border-radius: 8px; transition: 0.1s; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; } .ls-emoji-item:hover { background-color: rgba(128,128,128,0.1); transform: scale(1.1); }
-            #ls-plus-panel { left: 16px; width: 280px; flex-direction: column; gap: 4px; } .ls-action-item { color: var(--text-primary); padding: 12px; cursor: pointer; font-size: 14px; border-radius: 10px; display: flex; align-items: center; gap: 10px; font-weight: 500; transition: 0.2s; } .ls-action-item:hover { background-color: rgba(128,128,128,0.1); color: var(--text-primary); }
-            #ls-countdown-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 100; display: none; flex-direction: column; justify-content: center; align-items: center; } #ls-countdown-number { font-size: 110px; font-weight: 700; color: #a5b4fc; text-shadow: 0 0 40px rgba(99, 102, 241, 0.5); animation: pop 1s infinite; letter-spacing: -2px; } #ls-countdown-text { color: #cbd5e1; font-size: 16px; margin-top: 15px; font-weight: 500; letter-spacing: 0.5px;} @keyframes pop { 0% { transform: scale(0.8); opacity: 0.5; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 0.8; } }
-            #ls-image-viewer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 200; display: none; align-items: center; justify-content: center; flex-direction: column; opacity: 0; transition: opacity 0.2s; } #ls-image-viewer.show { opacity: 1; } #ls-viewer-img { max-width: 90%; max-height: 85%; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); object-fit: contain; transform: scale(0.95); transition: transform 0.2s; cursor: default; } #ls-image-viewer.show #ls-viewer-img { transform: scale(1); } #ls-close-viewer { position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.5); border: none; color: white; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: 0.2s; } #ls-close-viewer:hover { background: rgba(0,0,0,0.8); transform: scale(1.1); }
+            .ls-modal-content { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+            .ls-label { color: var(--text-muted); font-size: 12px; font-weight: 600; margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
+            .ls-input-wrapper { position: relative; width: 100%; display: flex; align-items: center; } 
+            .ls-input-text, .ls-select, .ls-textarea, .ls-input-file { background-color: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; color: var(--text-primary); outline: none; font-size: 14px; width: 100%; transition: all 0.2s; } 
+            .ls-input-text:focus, .ls-select:focus, .ls-textarea:focus { border-color: var(--highlight); box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15); } 
+            .ls-textarea { resize: vertical; min-height: 80px; } 
+            .ls-pass-toggle { position: absolute; right: 12px; background: none; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; padding: 4px; border-radius: 4px; transition: 0.2s; } 
+            .ls-pass-toggle:hover { color: var(--highlight); background: rgba(128,128,128,0.1); }
+            .ls-input-color { width: 100%; height: 42px; border: none; border-radius: 10px; cursor: pointer; background: none; padding: 0; } 
+            .ls-input-color::-webkit-color-swatch-wrapper { padding: 0; } 
+            .ls-input-color::-webkit-color-swatch { border: 1px solid var(--border-color); border-radius: 10px; }
+            .ls-checkbox-group { display: flex; align-items: flex-start; gap: 10px; color: var(--text-primary); font-size: 13.5px; margin-top: 5px; cursor: pointer; line-height: 1.5; }
+            
+            /* Botões Gerais */
+            .ls-btn-primary { background: var(--btn-primary-bg); color: var(--btn-primary-color); border: none; border-radius: 10px; padding: 14px; font-weight: 600; cursor: pointer; margin-top: 10px; transition: all 0.2s; width: 100%; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); } 
+            .ls-btn-primary:hover { transform: translateY(-1px); filter: brightness(1.08); box-shadow: 0 6px 16px rgba(91, 92, 246, 0.4); } 
+            .ls-btn-secondary { background-color: var(--btn-secondary-bg); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; width: 100%; font-size: 14px; } 
+            .ls-btn-secondary:hover { filter: brightness(1.08); border-color: var(--highlight); color: var(--highlight); } 
+            .ls-btn-danger { background-color: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 10px; padding: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; width: 100%; font-size: 14px; } 
+            .ls-btn-danger:hover { background-color: #ef4444; color: white; }
+            
+            .ls-config-section { background: rgba(128,128,128,0.05); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 8px;}
+            
+            #ls-chat-area { flex: 1; display: none; flex-direction: column; overflow: hidden; position: relative; } 
+            #ls-messages { flex: 1; padding: 20px 16px 8px; overflow-y: auto; background-color: transparent; display: flex; flex-direction: column; gap: 14px; }
+            #ls-reply-bar { display: none; background: var(--bg-elevated); padding: 8px 12px; border-left: 3px solid var(--highlight); margin: 0 16px 10px; border-radius: 4px; font-size: 12px; color: var(--text-muted); position: relative; border: 1px solid var(--border-color); } 
+            #ls-reply-bar-close { position: absolute; right: 8px; top: 8px; cursor: pointer; font-size: 14px; color: inherit; border: none; background: none; transition: 0.2s; }
+            #ls-reply-bar-close:hover { color: var(--highlight); }
+            
+            #ls-mention-panel { position: absolute; bottom: 60px; left: 16px; background-color: var(--bg-overlay); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); display: none; flex-direction: column; min-width: 150px; max-height: 180px; overflow-y: auto; z-index: 50; padding: 4px 0; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); } 
+            .ls-mention-item { padding: 8px 16px; color: var(--text-primary); font-size: 13px; cursor: pointer; font-weight: 500; } 
+            .ls-mention-item:hover, .ls-mention-item.active { background-color: rgba(128,128,128,0.15); color: var(--highlight); }
+            
+            .ls-message-container { display: flex; flex-direction: column; max-width: 85%; position: relative; } 
+            .ls-message-container.sent { align-self: flex-end; align-items: flex-end; } 
+            .ls-message-container.received { align-self: flex-start; align-items: flex-start; }
+            
+            .ls-sender-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; padding: 0 4px; } 
+            .ls-sender-name { font-size: 11px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.3px; cursor: pointer; transition: 0.2s; } 
+            .ls-sender-name:hover { text-decoration: underline; color: var(--highlight); } 
+            .ls-msg-time { font-size: 9px; color: var(--text-muted); opacity: 0.7; font-weight: normal; margin-left: 4px; }
+            
+            .ls-msg-action { display: none; cursor: pointer; font-size: 13px; filter: grayscale(100%); transition: 0.2s; opacity: 0.6; margin: 0 2px; } 
+            .ls-msg-action:hover { filter: grayscale(0%); opacity: 1; transform: scale(1.1); } 
+            .ls-message-container:hover .ls-msg-action { display: inline-block; }
+            
+            .ls-message { padding: 10px 14px; font-size: 14px; line-height: 1.45; color: #ffffff; word-wrap: break-word; word-break: break-word; white-space: pre-wrap; overflow-wrap: anywhere; box-shadow: 0 2px 8px rgba(0,0,0,0.15); max-width: 100%; overflow-x: hidden; } 
+            .ls-message img { max-width: 100%; border-radius: 8px; display: block; margin-top: 4px; cursor: pointer; transition: transform 0.2s; } 
+            .ls-message img:hover { transform: scale(1.02); opacity: 0.9; }
+            
+            .ls-message-container.system-msg-container { max-width: 95%; align-self: center; margin: 6px 0; } 
+            .ls-message.system-msg { background: rgba(128, 128, 128, 0.1) !important; color: var(--text-muted); text-align: center; font-weight: 500; border-radius: 12px !important; font-size: 12px; border: 1px solid rgba(128, 128, 128, 0.2); box-shadow: none; padding: 6px 12px; } 
+            .ls-message.deleted-msg { background-color: transparent !important; color: var(--text-muted); font-style: italic; border: 1px solid var(--border-color); border-radius: 12px !important; font-size: 13px; box-shadow: none; }
+            
+            .sent .ls-message:not(.deleted-msg) { border-radius: 14px 14px 4px 14px; } 
+            .received .ls-message:not(.deleted-msg) { border-radius: 14px 14px 14px 4px; background-color: var(--received-msg) !important; border: 1px solid var(--border-color); }
+            
+            #ls-input-area { display: flex; padding: 12px 16px; background-color: var(--bg-overlay); gap: 10px; align-items: center; position: relative; flex-wrap: nowrap; border-top: 1px solid var(--border-color); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); } 
+            .ls-icon-btn { flex-shrink: 0; background: none; border: none; color: var(--text-muted); font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; transition: all 0.2s; border-radius: 8px; } 
+            .ls-icon-btn:hover { color: var(--highlight); background: rgba(128,128,128,0.1); transform: scale(1.05); }
+            
+            #ls-input { flex-grow: 1; min-width: 0; background-color: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 20px; padding: 10px 16px; color: var(--text-primary); outline: none; font-size: 14px; transition: 0.2s; } 
+            #ls-input:focus { border-color: var(--highlight); }
+            
+            #ls-send-btn { flex-shrink: 0; background: var(--btn-primary-bg); color: var(--btn-primary-color); border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); transition: all 0.2s; } 
+            #ls-send-btn:hover { transform: scale(1.05); filter: brightness(1.1); box-shadow: 0 4px 12px rgba(91, 92, 246, 0.4);}
+            
+            .ls-popup-panel { position: absolute; bottom: 70px; background-color: var(--bg-overlay); border-radius: 16px; padding: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); display: none; z-index: 20; border: 1px solid var(--border-color); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); } 
+            #ls-emoji-panel { left: 16px; width: 280px; display: flex; flex-wrap: wrap; gap: 6px; padding: 12px; } 
+            .ls-emoji-item { font-size: 20px; cursor: pointer; text-align: center; border-radius: 8px; transition: 0.1s; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; } 
+            .ls-emoji-item:hover { background-color: rgba(128,128,128,0.1); transform: scale(1.1); }
+            
+            #ls-plus-panel { left: 16px; width: 280px; flex-direction: column; gap: 4px; } 
+            .ls-action-item { color: var(--text-primary); padding: 12px; cursor: pointer; font-size: 14px; border-radius: 10px; display: flex; align-items: center; gap: 10px; font-weight: 500; transition: 0.2s; } 
+            .ls-action-item:hover { background-color: rgba(128,128,128,0.1); color: var(--highlight); }
+            
+            #ls-countdown-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(2, 6, 23, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 100; display: none; flex-direction: column; justify-content: center; align-items: center; } 
+            #ls-countdown-number { font-size: 110px; font-weight: 700; color: var(--highlight); text-shadow: 0 0 40px rgba(6, 182, 212, 0.5); animation: pop 1s infinite; letter-spacing: -2px; } 
+            #ls-countdown-text { color: var(--text-secondary); font-size: 16px; margin-top: 15px; font-weight: 500; letter-spacing: 0.5px;} 
+            @keyframes pop { 0% { transform: scale(0.8); opacity: 0.5; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 0.8; } }
+            
+            #ls-image-viewer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 200; display: none; align-items: center; justify-content: center; flex-direction: column; opacity: 0; transition: opacity 0.2s; } 
+            #ls-image-viewer.show { opacity: 1; } 
+            #ls-viewer-img { max-width: 90%; max-height: 85%; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); object-fit: contain; transform: scale(0.95); transition: transform 0.2s; cursor: default; } 
+            #ls-image-viewer.show #ls-viewer-img { transform: scale(1); } 
+            #ls-close-viewer { position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.5); border: none; color: white; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: 0.2s; } 
+            #ls-close-viewer:hover { background: rgba(0,0,0,0.8); transform: scale(1.1); color: var(--highlight); }
             
             #ls-party-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 300; display: none; align-items: center; justify-content: center; overflow: hidden; pointer-events: none; }
             .party-active { animation: discoBg 1s infinite alternate; }
@@ -225,7 +406,7 @@
                 <div id="ls-header">
                     <span id="ls-header-title" style="display:flex; align-items:center; gap:8px; user-select:none;">
                         <button class="ls-header-btn" id="ls-back-btn" style="display:none; margin-left:-8px; margin-right:4px;" title="Voltar ao Lobby"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path><polygon points="10.5,9 15.5,12 10.5,15" fill="currentColor" stroke="currentColor" stroke-width="1"></polygon></svg>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path><polygon points="10.5,9 15.5,12 10.5,15" fill="currentColor" stroke="currentColor" stroke-width="1"></polygon></svg>
                         <span id="ls-header-text">LidySync</span>
                     </span>
                     <div class="ls-header-btns">
@@ -249,7 +430,7 @@
                 
                 <div id="ls-setup-area" class="ls-screen ls-modal-content">
                     <div style="text-align: center; margin-bottom: 10px;">
-                        <span style="font-size: 32px; font-weight: 800; background: linear-gradient(135deg, #6366f1, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: block; margin-bottom: 4px;">LidySync</span>
+                        <span style="font-size: 32px; font-weight: 800; background: linear-gradient(135deg, #5b5cf6, #7c3aed); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: block; margin-bottom: 4px;">LidySync</span>
                         <span style="color: var(--text-primary); font-size: 16px; font-weight: 600;">Bem-vindo!</span>
                     </div>
                     <div><span class="ls-label">Nome de Usuário</span><input type="text" class="ls-input-text" id="ls-setup-name" placeholder="Adicione seu apelido" maxlength="100" /></div>
@@ -259,7 +440,7 @@
                         <div style="text-align: right; margin-top: 4px;"><span id="ls-forgot-pin" style="color: var(--text-muted); font-size: 11px; cursor: pointer; text-decoration: underline;">Esqueci meu PIN</span></div>
                     </div>
                     <div style="display: flex; gap: 10px;">
-                        <div style="flex:1;"><span class="ls-label">Cor da Bolha</span><input type="color" class="ls-input-color" id="ls-setup-color" value="#6366f1" /></div>
+                        <div style="flex:1;"><span class="ls-label">Cor da Bolha</span><input type="color" class="ls-input-color" id="ls-setup-color" value="#5b5cf6" /></div>
                         <div style="flex:1;"><span class="ls-label">Cor do Texto</span><input type="color" class="ls-input-color" id="ls-setup-textcolor" value="#ffffff" /></div>
                     </div>
                     <div style="display: flex; gap: 8px; margin-top: 10px;">
@@ -278,8 +459,8 @@
                     <button id="ls-fab-add" title="Nova Sala">+</button>
                 </div>
 
-                <div id="ls-lobby-settings-overlay" class="ls-modal-overlay" style="top: 0; height: 100%;">
-                    <div class="ls-modal-content" style="margin-top:54px;">
+                <div id="ls-lobby-settings-overlay" class="ls-modal-overlay" style="top: 54px; height: calc(100% - 54px);">
+                    <div class="ls-modal-content">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <span style="color: var(--text-primary); font-size: 20px; font-weight: 700;">Configurações</span>
                             <button id="ls-close-lobby-modal" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px;">✕</button>
@@ -307,27 +488,27 @@
 
                 <div id="ls-profile-overlay" class="ls-modal-overlay-card">
                     <div class="ls-profile-card">
-                        <button id="ls-close-profile-modal">✕</button>
+                        <button id="ls-close-profile-modal" title="Fechar Perfil">✕</button>
                         
-                        <div id="ls-profile-view" style="display: flex; flex-direction: column; width: 100%; overflow-y: auto;">
+                        <div id="ls-profile-view" class="ls-profile-scrollable">
                             <div class="ls-profile-banner" id="ls-profile-v-banner"></div>
-                            <div style="display: flex; justify-content: space-between; align-items: flex-end; padding: 0 20px; margin-top: -40px;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-end; padding: 0 20px;">
                                 <div class="ls-profile-avatar-large" id="ls-profile-v-avatar"><div class="ls-profile-status-indicator" id="ls-profile-v-status"></div></div>
-                                <button id="ls-btn-edit-profile" class="ls-btn-secondary" style="width: auto; padding: 6px 16px; font-size: 12px; margin-bottom: 5px; border-radius: 20px; z-index: 5;">Editar Perfil</button>
+                                <button id="ls-btn-edit-profile" class="ls-btn-secondary" style="width: auto; padding: 8px 16px; font-size: 13px; margin-bottom: 5px; border-radius: 20px; z-index: 5;">Editar Perfil</button>
                             </div>
-                            <div style="padding: 12px 20px 0;">
-                                <div style="font-size:22px; font-weight:800; color:var(--text-primary); display: flex; align-items: center; gap: 8px;" id="ls-profile-v-name">-</div>
-                                <div style="font-size:13px; color:var(--text-muted); margin-top:2px;" id="ls-profile-v-statustext">-</div>
+                            <div style="padding: 16px 20px 0;">
+                                <div style="font-size:24px; font-weight:800; color:var(--text-primary); display: flex; align-items: center; gap: 8px;" id="ls-profile-v-name">-</div>
+                                <div style="font-size:14px; color:var(--text-muted); margin-top:4px;" id="ls-profile-v-statustext">-</div>
                             </div>
-                            <div style="padding: 0 20px; margin-top: 12px;">
+                            <div style="padding: 0 20px; margin-top: 14px;">
                                 <div class="ls-tags-container" id="ls-profile-v-tags"></div>
                             </div>
                             <div style="padding: 0 20px; margin-top: 16px;">
                                 <div class="ls-profile-bio-box" id="ls-profile-v-bio" style="margin-top:0;">-</div>
                             </div>
-                            <div style="padding: 0 20px; margin-top: 12px; display: none;" id="ls-profile-v-fav-container">
-                                <span style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">🍿 Favorito</span>
-                                <div style="color: var(--text-primary); font-size: 14px; font-weight: 500; margin-top: 4px;" id="ls-profile-v-fav">-</div>
+                            <div style="padding: 0 20px; margin-top: 16px; display: none;" id="ls-profile-v-fav-container">
+                                <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">🍿 Assistindo / Favorito</span>
+                                <div style="color: var(--text-primary); font-size: 15px; font-weight: 600; margin-top: 6px; background: rgba(128,128,128,0.05); padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border-color);" id="ls-profile-v-fav">-</div>
                             </div>
                             <div class="ls-profile-grid" style="padding: 20px;">
                                 <div class="ls-profile-stat-box"><span class="ls-profile-stat-label">País</span><span class="ls-profile-stat-value" id="ls-profile-v-country">-</span></div>
@@ -336,9 +517,9 @@
                             </div>
                         </div>
 
-                        <div id="ls-profile-edit" class="ls-modal-content" style="display: none; padding: 20px; overflow-y: auto;">
-                            <div style="font-size: 18px; font-weight: bold; color: var(--text-primary); margin-bottom: 10px; text-align: center;">Editar Perfil</div>
-                            <div style="text-align:center; margin-bottom: 10px;"><div class="ls-profile-avatar-large" id="ls-profile-e-avatar" style="margin: 0 auto; color: var(--text-primary);"></div></div>
+                        <div id="ls-profile-edit" class="ls-profile-scrollable ls-modal-content" style="display: none; padding: 20px;">
+                            <div style="font-size: 20px; font-weight: 800; color: var(--text-primary); margin-bottom: 16px; text-align: center;">Editar Perfil</div>
+                            <div style="text-align:center; margin-bottom: 10px;"><div class="ls-profile-avatar-large" id="ls-profile-e-avatar" style="margin: 0 auto; color: var(--text-primary); margin-top: 0;"></div></div>
                             <div style="display: flex; gap: 10px;">
                                 <div style="flex:1;"><span class="ls-label">Foto (Avatar)</span>
                                     <div style="display:flex; gap:8px;">
@@ -387,8 +568,8 @@
                     </div>
                 </div>
 
-                <div id="ls-add-room-overlay" class="ls-modal-overlay" style="top: 0; height: 100%;">
-                    <div class="ls-modal-content" style="margin-top:54px;">
+                <div id="ls-add-room-overlay" class="ls-modal-overlay" style="top: 54px; height: calc(100% - 54px);">
+                    <div class="ls-modal-content">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <span style="color: var(--text-primary); font-size: 18px; font-weight: 700;">Nova Conexão</span>
                             <button id="ls-close-add-modal" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px;">✕</button>
@@ -402,8 +583,8 @@
                     </div>
                 </div>
 
-                <div id="ls-settings-overlay" class="ls-modal-overlay" style="top: 0; height: 100%;">
-                    <div class="ls-modal-content" style="margin-top:54px;">
+                <div id="ls-settings-overlay" class="ls-modal-overlay" style="top: 54px; height: calc(100% - 54px);">
+                    <div class="ls-modal-content">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <span style="color: var(--text-primary); font-size: 18px; font-weight: 700;">Aparência da Sala</span>
                             <button id="ls-close-settings-modal" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px;">✕</button>
@@ -423,8 +604,8 @@
                     </div>
                 </div>
 
-                <div id="ls-members-overlay" class="ls-modal-overlay" style="top: 0; height: 100%;">
-                    <div class="ls-modal-content" style="margin-top:54px; height: 100%;">
+                <div id="ls-members-overlay" class="ls-modal-overlay" style="top: 54px; height: calc(100% - 54px);">
+                    <div class="ls-modal-content" style="height: 100%;">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <span style="color: var(--text-primary); font-size: 18px; font-weight: 700;">Membros da Sala</span>
                             <button id="ls-close-members-modal" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px;">✕</button>
@@ -527,7 +708,7 @@
 
         let myName = sessionStorage.getItem('ls_username') || ls.getItem('ls_username');
         let myPin = sessionStorage.getItem('ls_userpin') || ls.getItem('ls_userpin');
-        let myColor = ls.getItem('ls_usercolor') || '#6366f1';
+        let myColor = ls.getItem('ls_usercolor') || '#5b5cf6';
         let myTextColor = ls.getItem('ls_usertextcolor') || '#ffffff';
         let myAvatar = ls.getItem('ls_useravatar') || '';
         let myBanner = ls.getItem('ls_userbanner') || '';
@@ -546,7 +727,7 @@
         let mutedRooms = JSON.parse(ls.getItem('ls_muted_rooms') || '[]');
         
         let myBgType = ls.getItem('ls_bg_type') || 'color';
-        let myBgColor = ls.getItem('ls_bg_color') || '#0f172a';
+        let myBgColor = ls.getItem('ls_bg_color') || '#020617';
         let myBgImage = ls.getItem('ls_bg_image') || '';
         let mySyncBg = ls.getItem('ls_sync_bg') === 'true'; 
         let myAutoPlay = ls.getItem('ls_autoplay') !== 'false'; 
@@ -578,6 +759,9 @@
         let floodCount = 0;
         let isFlooding = false;
         let floodResetTimer = null;
+        
+        let lastDocumentTitle = document.title;
+        let lastPingTime = 0;
 
         window.addEventListener('beforeunload', () => {
             if (currentRoom && currentRoomKey) {
@@ -907,7 +1091,7 @@
             btnEdit.style.display = targetUsername === myName ? 'block' : 'none';
 
             shadow.getElementById('ls-profile-v-name').innerText = "Carregando..."; shadow.getElementById('ls-profile-v-country').innerText = "-"; shadow.getElementById('ls-profile-v-bio').innerText = "-"; shadow.getElementById('ls-profile-v-tags').innerHTML = ""; shadow.getElementById('ls-profile-v-created').innerText = "-"; shadow.getElementById('ls-profile-v-rooms').innerText = "-"; shadow.getElementById('ls-profile-v-statustext').innerText = "-";
-            shadow.getElementById('ls-profile-v-banner').style.background = '#6366f1';
+            shadow.getElementById('ls-profile-v-banner').style.background = 'linear-gradient(135deg, #5b5cf6, #7c3aed)';
             shadow.getElementById('ls-profile-v-fav-container').style.display = 'none';
             
             try {
@@ -923,7 +1107,7 @@
                         avatar.innerText = '';
                     } else {
                         avatar.style.backgroundImage = 'none';
-                        avatar.style.backgroundColor = data.color || '#6366f1';
+                        avatar.style.backgroundColor = data.color || '#5b5cf6';
                         avatar.innerText = targetUsername.charAt(0).toUpperCase();
                     }
                     avatar.style.color = data.textColor || '#ffffff';
@@ -931,7 +1115,7 @@
                     if (data.banner) {
                         shadow.getElementById('ls-profile-v-banner').style.background = `url(${data.banner}) center/cover`;
                     } else {
-                        shadow.getElementById('ls-profile-v-banner').style.background = `linear-gradient(135deg, ${data.color || '#6366f1'}, #1e293b)`;
+                        shadow.getElementById('ls-profile-v-banner').style.background = `linear-gradient(135deg, ${data.color || '#5b5cf6'}, #1e293b)`;
                     }
 
                     shadow.getElementById('ls-profile-v-country').innerText = data.country || '🌍';
@@ -1546,11 +1730,11 @@
                                  }
                                  formattedText = formattedText.replace(/(^|\s)@([a-zA-Z0-9_]+)/g, (match, space, nameMatch) => {
                                      if (nameMatch.toLowerCase() === myCleanName) return `${space}<span style="background: var(--fab-bg); color: var(--fab-color); padding: 2px 6px; border-radius: 8px; font-weight: bold; box-shadow: 0 0 10px rgba(99,102,241,0.5);">@${nameMatch}</span>`;
-                                     else return `${space}<span style="color: #8b5cf6; font-weight: bold;">@${nameMatch}</span>`;
+                                     else return `${space}<span style="color: #06b6d4; font-weight: bold;">@${nameMatch}</span>`;
                                  });
                                  msgBubble.innerHTML = formattedText;
                             }
-                            if(isMe) { msgBubble.style.background = data.color || '#6366f1'; }
+                            if(isMe) { msgBubble.style.background = data.color || '#5b5cf6'; }
                         }
                         
                         msgBubble.querySelectorAll('img').forEach(img => {
@@ -1632,8 +1816,8 @@
 
         function applyBackground(type, color, imageUrl) {
             messagesContainer.parentElement.style.backgroundColor = '';
-            if (type === 'image' && imageUrl) messagesContainer.style.background = `linear-gradient(rgba(15, 23, 42, 0.7), rgba(15, 23, 42, 0.7)), url("${imageUrl}") center/cover`;
-            else if (type === 'color' && color && color !== '#0f172a') { messagesContainer.style.background = 'transparent'; messagesContainer.parentElement.style.backgroundColor = color; } 
+            if (type === 'image' && imageUrl) messagesContainer.style.background = `linear-gradient(rgba(2, 6, 23, 0.7), rgba(2, 6, 23, 0.7)), url("${imageUrl}") center/cover`;
+            else if (type === 'color' && color && color !== '#0f172a' && color !== '#020617') { messagesContainer.style.background = 'transparent'; messagesContainer.parentElement.style.backgroundColor = color; } 
             else messagesContainer.style.background = 'transparent';
         }
 
@@ -1711,7 +1895,7 @@
         const countdownOverlay = shadow.getElementById('ls-countdown-overlay'); const countdownNumber = shadow.getElementById('ls-countdown-number');
         function runVisualCountdown(senderName) {
             countdownOverlay.style.display = 'flex'; shadow.getElementById('ls-countdown-text').innerText = `${senderName} vai dar play...`;
-            let count = 3; countdownNumber.innerText = count; countdownNumber.style.color = "#a5b4fc"; 
+            let count = 3; countdownNumber.innerText = count; countdownNumber.style.color = "var(--highlight)"; 
             const timer = setInterval(() => {
                 count--;
                 if (count > 0) { countdownNumber.innerText = count; } 
@@ -1820,6 +2004,8 @@
             let finalText = rawText;
             if (replyTarget) { finalText = `[REPLY:${replyTarget.sender}|${replyTarget.text}] ${rawText}`; replyTarget = null; shadow.getElementById('ls-reply-bar').style.display = 'none'; }
             
+            input.value = '';
+            
             if (isTyping) {
                 clearTimeout(typingTimeout);
                 isTyping = false;
@@ -1897,6 +2083,8 @@
         if (myHideApp) fab.style.display = 'none';
         checkScreenState();
         
+        let lastDocumentTitle = document.title;
+        let lastPingTime = 0;
         setInterval(() => {
             if (!myName) return;
             const now = Date.now();
