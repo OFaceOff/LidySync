@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      76.0
+// @version      78.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -647,7 +647,6 @@
                     <div id="ls-mention-panel"></div>
                     <div id="ls-emoji-panel" class="ls-popup-panel">${emojis.map(e => `<span class="ls-emoji-item">${e}</span>`).join('')}</div>
                     <div id="ls-plus-panel" class="ls-popup-panel">
-                        <div class="ls-action-item" id="btn-action-sync">🔄 Sincronizar com o Anfitrião</div>
                         <div class="ls-action-item" id="btn-action-sharetime">⏳ Compartilhar meu tempo atual</div>
                         <div class="ls-action-item" id="btn-action-invite">🔗 Convidar chat para programação atual</div>
                         <div class="ls-action-item" id="btn-action-countdown">⏱️ Play Sincronizado</div>
@@ -761,6 +760,12 @@
         let floodCount = 0;
         let isFlooding = false;
         let floodResetTimer = null;
+        
+        let lastDocumentTitle = document.title;
+        let lastPingTime = 0;
+
+        let isRemoteAction = false;
+        let lastVideoElement = null;
 
         window.addEventListener('beforeunload', () => {
             if (currentRoom && currentRoomKey) {
@@ -1585,14 +1590,32 @@
                 if (!doc.exists) {
                     alert("A sala foi encerrada pelo criador."); stopChatListeners(); currentRoom = null; currentRoomKey = null; currentRoomData = null; ls.removeItem('ls_current_room'); ls.removeItem('ls_room_key'); savedRooms = savedRooms.filter(r => r.name !== doc.id); ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); checkScreenState();
                 } else {
-                    currentRoomData = doc.data();
+                    const newData = doc.data();
                     
-                    if (currentRoomData.participants && !currentRoomData.participants.includes(myName)) {
+                    if (newData.participants && !newData.participants.includes(myName)) {
                         alert("Você não faz mais parte desta sala (Saiu ou foi expulso).");
                         stopChatListeners(); currentRoom = null; currentRoomKey = null; currentRoomData = null; ls.removeItem('ls_current_room'); ls.removeItem('ls_room_key'); 
                         savedRooms = savedRooms.filter(r => r.name !== doc.id); ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); checkScreenState();
                         return;
                     }
+
+                    if (newData.createdBy !== myName && newData.syncId && (!currentRoomData || currentRoomData.syncId !== newData.syncId)) {
+                        const v = document.querySelector('video');
+                        if (v) {
+                            isRemoteAction = true;
+                            if (Math.abs(v.currentTime - newData.playbackTime) > 1.5) {
+                                v.currentTime = newData.playbackTime;
+                            }
+                            if (newData.playbackState === 'playing' && v.paused) {
+                                v.play().catch(()=>{});
+                            } else if (newData.playbackState === 'paused' && !v.paused) {
+                                v.pause();
+                            }
+                            setTimeout(() => { isRemoteAction = false; }, 1000);
+                        }
+                    }
+
+                    currentRoomData = newData;
 
                     const deleteBtn = shadow.getElementById('ls-menu-delete');
                     const leaveBtn = shadow.getElementById('ls-menu-leave');
@@ -1962,12 +1985,18 @@
 
         shadow.getElementById('btn-action-sync').addEventListener('click', () => {
             plusPanel.style.display = 'none';
-            if (!currentRoomData || typeof currentRoomData.playbackTime === 'undefined') return alert("O anfitrião ainda não está transmitindo o tempo de reprodução.");
+            if (!currentRoomData || typeof currentRoomData.playbackTime === 'undefined') return alert("O anfitrião ainda não reproduziu ou pausou o vídeo para sincronizar.");
             const v = document.querySelector('video');
             if (v) {
+                isRemoteAction = true;
                 v.currentTime = currentRoomData.playbackTime;
-                v.play().catch(()=>{});
+                if(currentRoomData.playbackState === 'playing') {
+                    v.play().catch(()=>{});
+                } else {
+                    v.pause();
+                }
                 sendSystemAction('sincronizou com o anfitrião!');
+                setTimeout(() => { isRemoteAction = false; }, 1000);
             } else {
                 alert("Nenhum vídeo encontrado na tela.");
             }
@@ -2150,8 +2179,6 @@
         if (myHideApp) fab.style.display = 'none';
         checkScreenState();
         
-        let lastDocumentTitle = document.title;
-        let lastPingTime = 0;
         setInterval(() => {
             if (!myName) return;
             const now = Date.now();
