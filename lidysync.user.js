@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      81.0
+// @version      84.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -97,7 +97,7 @@
 
     function buildTagsHTML(isAdm, uData) {
         let html = '';
-        if (isAdm) html += `<span class="ls-tag ls-tag-adm" title="Este usuário é o Administrador desse chat e ele pode alterar ou deletar o chat atual.">ADM</span>`;
+        if (isAdm) html += `<span class="ls-tag ls-tag-host" title="Este usuário é o Host desse chat e ele pode alterar ou deletar o chat atual.">HOST</span>`;
         if (uData && uData.tags) {
             uData.tags.forEach(t => {
                 let c = 'ls-tag-generic';
@@ -241,6 +241,11 @@
             
             #ls-header { background-color: var(--bg-overlay); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); color: var(--text-primary); padding: 16px; display: flex; justify-content: space-between; align-items: center; font-size: 15px; font-weight: 600; z-index: 10; border-bottom: 1px solid var(--border-color); cursor: grab; }
             #ls-header:active { cursor: grabbing; } 
+            
+            #ls-header-text { transition: color 0.2s; }
+            #ls-header-text.clickable { cursor: pointer; }
+            #ls-header-text.clickable:hover { color: var(--highlight); }
+
             .ls-header-btns { display: flex; gap: 8px; align-items: center; cursor: default; } 
             .ls-header-btn { cursor: pointer; color: var(--text-muted); font-size: 18px; background: none; border: none; transition: all 0.2s; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px;} 
             .ls-header-btn:hover { color: var(--highlight); background: rgba(128,128,128,0.1); }
@@ -269,7 +274,7 @@
             
             .ls-tags-container { display: inline-flex; gap: 4px; align-items: center; vertical-align: middle; flex-wrap: wrap; } 
             .ls-tag { font-size: 8px; font-weight: 800; padding: 2px 5px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; cursor: help; } 
-            .ls-tag-adm { background-color: #ef4444; color: #ffffff; } 
+            .ls-tag-host { background-color: #ef4444; color: #ffffff; } 
             .ls-tag-dev { background-color: #facc15; color: #000000; } 
             .ls-tag-owner { background-color: #5b21b6; color: #ffffff; } 
             .ls-tag-mod { background-color: #3b82f6; color: #ffffff; } 
@@ -432,17 +437,17 @@
                     <span id="ls-header-title" style="display:flex; align-items:center; gap:8px; user-select:none;">
                         <button class="ls-header-btn" id="ls-back-btn" style="display:none; margin-left:-8px; margin-right:4px;" title="Voltar ao Lobby"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path><polygon points="10.5,9 15.5,12 10.5,15" fill="currentColor" stroke="currentColor" stroke-width="1"></polygon></svg>
-                        <span id="ls-header-text">LidySync</span>
+                        <span id="ls-header-text" title="Ver membros da sala">LidySync</span>
                     </span>
                     <div class="ls-header-btns">
                         <button class="ls-header-btn" id="ls-lobby-settings-btn" title="Configurações" style="display:none;">⚙️</button>
                         <div class="ls-dropdown-container" id="ls-chat-menu-container" style="display:none;">
                             <button class="ls-header-btn" id="ls-chat-menu-btn" title="Opções da Sala">⋮</button>
                             <div class="ls-dropdown-menu" id="ls-chat-dropdown">
-                                <button class="ls-dropdown-item" id="ls-menu-theater">🖥️ Modo Teatro</button>
-                                <button class="ls-dropdown-item" id="ls-menu-share">🔗 Compartilhar Chat</button>
+                                <button class="ls-dropdown-item" id="ls-menu-share">🔗 Compartilhar Sala</button>
                                 <button class="ls-dropdown-item" id="ls-menu-members">👥 Ver Membros</button>
-                                <button class="ls-dropdown-item" id="ls-menu-settings">🎨 Aparência da Sala</button>
+                                <button class="ls-dropdown-item" id="ls-menu-theater">🖥️ Modo Teatro</button>
+                                <button class="ls-dropdown-item" id="ls-menu-settings">⚙️ Configurações da Sala</button>
                                 <div style="height:1px; background:var(--border-color); margin:4px 0;" id="ls-menu-delete-divider"></div>
                                 <button class="ls-dropdown-item danger" id="ls-menu-leave" style="display:none;">🚪 Sair da Sala</button>
                                 <button class="ls-dropdown-item danger" id="ls-menu-delete">🗑️ Encerrar Sala</button>
@@ -593,15 +598,8 @@
                 <div id="ls-settings-overlay" class="ls-modal-overlay" style="top: 54px; height: calc(100% - 54px);">
                     <div class="ls-modal-content">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span style="color: var(--text-primary); font-size: 18px; font-weight: 700;">Aparência da Sala</span>
+                            <span style="color: var(--text-primary); font-size: 18px; font-weight: 700;">Configurações da Sala</span>
                             <button id="ls-close-settings-modal" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px;">✕</button>
-                        </div>
-                        <div class="ls-config-section">
-                            <span class="ls-label">Fundo do Chat</span>
-                            <select class="ls-select" id="ls-config-bg-type" style="margin-bottom: 12px;"><option value="color">Cor Sólida</option><option value="image">Imagem (Link URL)</option></select>
-                            <div id="ls-bg-color-wrapper"><input type="color" class="ls-input-color" id="ls-config-bg-color" value="#0f172a" /></div>
-                            <div id="ls-bg-image-wrapper" style="display: none;"><input type="text" class="ls-input-text" id="ls-config-bg-image" placeholder="Cole o link .jpg ou .png..." /></div>
-                            <label class="ls-checkbox-group" style="margin-top: 16px;"><input type="checkbox" id="ls-config-sync"><span><b>Sincronizar Fundo</b><br><small style="color: var(--text-muted);">Muda o visual para todos na sala.</small></span></label>
                         </div>
                         <div class="ls-config-section">
                             <span class="ls-label">Sistema</span>
@@ -734,10 +732,6 @@
         let lastReadTimes = JSON.parse(ls.getItem('ls_last_read') || '{}');
         let mutedRooms = JSON.parse(ls.getItem('ls_muted_rooms') || '[]');
         
-        let myBgType = ls.getItem('ls_bg_type') || 'color';
-        let myBgColor = ls.getItem('ls_bg_color') || '#020617';
-        let myBgImage = ls.getItem('ls_bg_image') || '';
-        let mySyncBg = ls.getItem('ls_sync_bg') === 'true'; 
         let myAutoPlay = ls.getItem('ls_autoplay') !== 'false'; 
         let myHideApp = ls.getItem('ls_hide_app') === 'true';
         let myHideRevive = ls.getItem('ls_hide_revive') !== 'false';
@@ -745,14 +739,12 @@
         let myHideSys = ls.getItem('ls_hide_sys') === 'true';
         let myInChatSound = ls.getItem('ls_inchat_sounds') !== 'false';
         
-        let editingRoomAppearance = null;
         let unreadCount = 0;
         let replyTarget = null;
         let isCurrentlyIntegrated = false;
 
         let roomListener = null;
         let messagesListener = null;
-        let settingsListener = null;
         let userProfileUnsubscribe = null;
         let isFirstSnapshot = true;
         let localStream = null;
@@ -967,7 +959,7 @@
         let isDragging = false, startX, startY, currentLeft, currentTop;
 
         header.addEventListener('mousedown', (e) => {
-            if (e.target.closest('.ls-header-btns') || e.target.closest('button')) return;
+            if (e.target.closest('.ls-header-btns') || e.target.closest('#ls-header-text') || e.target.closest('button')) return;
             if (isCurrentlyIntegrated) return;
 
             isDragging = true;
@@ -1105,7 +1097,7 @@
         }
 
         function checkScreenState() {
-            settingsOverlay.style.display = 'none'; addRoomOverlay.style.display = 'none'; lobbySettingsOverlay.style.display = 'none'; membersOverlay.style.display = 'none'; profileOverlay.style.display = 'none'; editingRoomAppearance = null;
+            settingsOverlay.style.display = 'none'; addRoomOverlay.style.display = 'none'; lobbySettingsOverlay.style.display = 'none'; membersOverlay.style.display = 'none'; profileOverlay.style.display = 'none';
             if (myName) db.collection('users').doc(myName).set({ color: myColor, deviceId: myDeviceId, pin: myPin, roomCount: savedRooms.length, watching: document.title, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
             
             const isPlayer = ['/watch', '/video', '/v/', '?v=', '&v=', '/detail', '/player', '/play', '/live-tv', '/on-demand'].some(p => window.location.href.toLowerCase().includes(p));
@@ -1115,16 +1107,26 @@
             if (!myName || !myPin) {
                 if (userProfileUnsubscribe) userProfileUnsubscribe();
                 setupArea.style.display = 'flex'; lobbyArea.style.display = 'none'; chatArea.style.display = 'none'; chatMenuContainer.style.display = 'none'; lobbySettingsBtn.style.display = 'none'; backBtn.style.display = 'none'; headerText.innerText = "LidySync";
+                headerText.classList.remove('clickable');
                 stopLobbyListeners();
             } else if (!currentRoom || !currentRoomKey) {
                 setupArea.style.display = 'none'; lobbyArea.style.display = 'flex'; chatArea.style.display = 'none'; chatMenuContainer.style.display = 'none'; lobbySettingsBtn.style.display = 'flex'; backBtn.style.display = 'none'; headerText.innerText = `Lobby (${myName})`;
+                headerText.classList.remove('clickable');
                 renderSavedRooms(); startLobbyListeners();
             } else {
                 setupArea.style.display = 'none'; lobbyArea.style.display = 'none'; chatArea.style.display = 'flex'; chatMenuContainer.style.display = 'block'; lobbySettingsBtn.style.display = 'none'; backBtn.style.display = 'flex'; headerText.innerText = `${currentRoom}`;
-                if (!mySyncBg) applyBackground(myBgType, myBgColor, myBgImage);
+                headerText.classList.add('clickable');
+                if (myIntegratedMode) toggleIntegratedMode(true);
                 stopLobbyListeners(); startChatListeners();
             }
         }
+
+        shadow.getElementById('ls-header-text').addEventListener('click', () => {
+            if (currentRoom) {
+                membersOverlay.style.display = 'flex';
+                fetchAndRenderMembers(currentRoom, shadow.getElementById('ls-members-list'));
+            }
+        });
 
         async function openProfile(targetUsername) {
             shadow.querySelectorAll('.ls-dropdown-menu').forEach(m => m.classList.remove('show'));
@@ -1351,10 +1353,10 @@
                     <div class="ls-dropdown-container">
                         <button class="ls-room-options" data-index="${index}">⋮</button>
                         <div class="ls-dropdown-menu" id="ls-drop-${index}">
+                            <button class="ls-dropdown-item" data-action="share" data-name="${room.name}" data-rawpass="${rawPass}">🔗 Compartilhar Sala</button>
                             <button class="ls-dropdown-item" data-action="members" data-name="${room.name}">👥 Ver Membros</button>
                             <button class="ls-dropdown-item" data-action="mute" data-name="${room.name}">${isMuted ? '🔔 Reativar Som' : '🔕 Silenciar Chat'}</button>
-                            <button class="ls-dropdown-item" data-action="share" data-name="${room.name}" data-rawpass="${rawPass}">🔗 Compartilhar</button>
-                            <button class="ls-dropdown-item" data-action="appearance" data-name="${room.name}">🎨 Aparência do Chat</button>
+                            <button class="ls-dropdown-item" data-action="appearance" data-name="${room.name}">⚙️ Configurações da Sala</button>
                             <div style="height:1px; background:var(--border-color); margin:4px 0;" id="ls-menu-delete-divider"></div>
                             <button class="ls-dropdown-item danger" id="ls-menu-leave" style="display:none;">🚪 Sair da Sala</button>
                             <button class="ls-dropdown-item danger" id="ls-menu-delete">🗑️ Encerrar Sala</button>
@@ -1371,7 +1373,7 @@
                         if (btn.dataset.action === 'members') { membersOverlay.style.display = 'flex'; fetchAndRenderMembers(btn.dataset.name, shadow.getElementById('ls-members-list')); } 
                         else if (btn.dataset.action === 'mute') { const rName = btn.dataset.name; if(mutedRooms.includes(rName)) { mutedRooms = mutedRooms.filter(r => r !== rName); } else { mutedRooms.push(rName); } ls.setItem('ls_muted_rooms', JSON.stringify(mutedRooms)); renderSavedRooms(); } 
                         else if (btn.dataset.action === 'share') { let passToShare = btn.dataset.rawpass; if (!passToShare) { passToShare = prompt("Qual a senha dessa sala para incluir no convite?") || "[Sua Senha]"; if (passToShare !== "[Sua Senha]") { room.rawPass = passToShare; ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); } } const link = `Vem assistir comigo no LidySync!\n🍿 Nome da Sala: ${btn.dataset.name}\n🔑 Senha: ${passToShare}\n\nCaso não tenha a extensão clique aqui para aprender a instalar: https://ofaceoff.github.io/LidySync/index.html`; navigator.clipboard.writeText(link); alert("Convite copiado!"); } 
-                        else if (btn.dataset.action === 'appearance') { editingRoomAppearance = btn.dataset.name; settingsOverlay.style.display = 'flex'; db.collection('rooms').doc(btn.dataset.name).collection('settings').doc('shared').get().then(doc => { if(doc.exists) { try { const d = JSON.parse(doc.data().theme); shadow.getElementById('ls-config-bg-type').value = d.bgType || 'color'; shadow.getElementById('ls-config-bg-type').dispatchEvent(new Event('change')); shadow.getElementById('ls-config-bg-color').value = d.bgColor || '#0f172a'; shadow.getElementById('ls-config-bg-image').value = d.bgImage || ''; shadow.getElementById('ls-config-sync').checked = true; } catch(e){} } }); } 
+                        else if (btn.dataset.action === 'appearance') { settingsOverlay.style.display = 'flex'; shadow.getElementById('ls-config-autoplay').checked = myAutoPlay; } 
                         else if(btn.dataset.action === 'remove') { savedRooms.splice(btn.dataset.index, 1); ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); await syncUserProfile(); renderSavedRooms(); startLobbyListeners(); }
                         else if(btn.dataset.action === 'leave') {
                             if(!confirm("Tem certeza que deseja sair definitivamente desta sala?")) return;
@@ -1544,7 +1546,7 @@
         shadow.getElementById('ls-menu-settings').addEventListener('click', () => {
             chatDropdown.classList.remove('show');
             if (settingsOverlay.style.display === 'flex') { settingsOverlay.style.display = 'none'; } 
-            else { settingsOverlay.style.display = 'flex'; shadow.getElementById('ls-config-bg-type').value = myBgType; shadow.getElementById('ls-config-bg-type').dispatchEvent(new Event('change')); shadow.getElementById('ls-config-bg-color').value = myBgColor; shadow.getElementById('ls-config-bg-image').value = myBgImage; shadow.getElementById('ls-config-sync').checked = mySyncBg; shadow.getElementById('ls-config-autoplay').checked = myAutoPlay; }
+            else { settingsOverlay.style.display = 'flex'; shadow.getElementById('ls-config-autoplay').checked = myAutoPlay; }
         });
 
         shadow.getElementById('ls-close-settings-modal').addEventListener('click', () => { settingsOverlay.style.display = 'none'; editingRoomAppearance = null; });
@@ -1578,7 +1580,7 @@
         
         shadow.getElementById('ls-menu-delete').addEventListener('click', async () => { 
             chatDropdown.classList.remove('show'); 
-            if (currentRoomData && currentRoomData.createdBy !== myName) return alert("Apenas o Administrador da sala pode encerrá-la.");
+            if (currentRoomData && currentRoomData.createdBy !== myName) return alert("Apenas o Host da sala pode encerrá-la.");
             if(!confirm("Encerrar e deletar a sala para todos?")) return; 
             try { await db.collection('rooms').doc(currentRoom).delete(); } catch(e){} 
         });
@@ -1602,7 +1604,7 @@
             if (!currentRoom) return;
             stopChatListeners(); 
             const roomJoinTime = Date.now(); isFirstSnapshot = true; messagesContainer.innerHTML = ''; userCache = {};
-            const roomRef = db.collection('rooms').doc(currentRoom); const messagesRef = roomRef.collection('messages'); const settingsRef = roomRef.collection('settings').doc('shared');
+            const roomRef = db.collection('rooms').doc(currentRoom); const messagesRef = roomRef.collection('messages');
 
             roomListener = roomRef.onSnapshot(doc => {
                 if (!doc.exists) {
@@ -1667,8 +1669,6 @@
                     }
                 }
             });
-
-            settingsListener = settingsRef.onSnapshot(doc => { if (doc.exists && mySyncBg) { try { const data = JSON.parse(doc.data().theme); applyBackground(data.bgType, data.bgColor, data.bgImage); } catch(e){} } });
 
             messagesListener = messagesRef.orderBy('timestamp', 'asc').limitToLast(50).onSnapshot((snapshot) => {
                 messagesContainer.innerHTML = '';
@@ -1893,31 +1893,14 @@
             });
         }
 
-        function stopChatListeners() { if (roomListener) roomListener(); if (messagesListener) messagesListener(); if (settingsListener) settingsListener(); roomListener = null; messagesListener = null; settingsListener = null; }
-
-        function applyBackground(type, color, imageUrl) {
-            messagesContainer.parentElement.style.backgroundColor = '';
-            if (type === 'image' && imageUrl) messagesContainer.style.background = `linear-gradient(rgba(2, 6, 23, 0.7), rgba(2, 6, 23, 0.7)), url("${imageUrl}") center/cover`;
-            else if (type === 'color' && color && color !== '#0f172a' && color !== '#020617') { messagesContainer.style.background = 'transparent'; messagesContainer.parentElement.style.backgroundColor = color; } 
-            else messagesContainer.style.background = 'transparent';
-        }
-
-        const bgTypeSelect = shadow.getElementById('ls-config-bg-type'); const bgColorWrapper = shadow.getElementById('ls-bg-color-wrapper'); const bgImageWrapper = shadow.getElementById('ls-bg-image-wrapper');
-        bgTypeSelect.addEventListener('change', (e) => {
-            if (e.target.value === 'image') { bgColorWrapper.style.display = 'none'; bgImageWrapper.style.display = 'block'; } 
-            else { bgColorWrapper.style.display = 'block'; bgImageWrapper.style.display = 'none'; }
-        });
+        function stopChatListeners() { if (roomListener) roomListener(); if (messagesListener) messagesListener(); roomListener = null; messagesListener = null; }
 
         shadow.getElementById('ls-save-config-btn').addEventListener('click', async () => {
-            const bType = bgTypeSelect.value; const bColor = shadow.getElementById('ls-config-bg-color').value; const bImage = shadow.getElementById('ls-config-bg-image').value; const bSync = shadow.getElementById('ls-config-sync').checked; const aPlay = shadow.getElementById('ls-config-autoplay').checked;
-            if (editingRoomAppearance) { try { await db.collection('rooms').doc(editingRoomAppearance).collection('settings').doc('shared').set({ theme: JSON.stringify({ bgType: bType, bgColor: bColor, bgImage: bImage }) }, {merge: true}); } catch(e){} } 
-            else {
-                myBgType = bType; myBgColor = bColor; myBgImage = bImage; mySyncBg = bSync; myAutoPlay = aPlay;
-                ls.setItem('ls_bg_type', myBgType); ls.setItem('ls_bg_color', myBgColor); ls.setItem('ls_bg_image', myBgImage); ls.setItem('ls_sync_bg', mySyncBg); ls.setItem('ls_autoplay', myAutoPlay);
-                if (mySyncBg && currentRoom) { try { await db.collection('rooms').doc(currentRoom).collection('settings').doc('shared').set({ theme: JSON.stringify({ bgType: myBgType, bgColor: myBgColor, bgImage: myBgImage }) }, {merge: true}); } catch (e) {} } 
-                else applyBackground(myBgType, myBgColor, myBgImage);
-            }
-            settingsOverlay.style.display = 'none'; editingRoomAppearance = null; scrollToBottom();
+            const aPlay = shadow.getElementById('ls-config-autoplay').checked;
+            myAutoPlay = aPlay;
+            ls.setItem('ls_autoplay', myAutoPlay);
+            settingsOverlay.style.display = 'none';
+            editingRoomAppearance = null;
         });
 
         const scrollToBottom = () => { messagesContainer.scrollTop = messagesContainer.scrollHeight; };
