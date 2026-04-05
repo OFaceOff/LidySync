@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      75.0
+// @version      76.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -386,6 +386,30 @@
             #ls-disco-ball { font-size: 80px; position: absolute; top: -100px; transition: top 1s ease-out; animation: spin 2s linear infinite; }
             #ls-disco-ball.drop { top: 20px; }
             @keyframes spin { 100% { transform: rotate(360deg); } }
+            
+            :root { --ls-chat-width: 350px; }
+            html.ls-integrated-active { margin-right: var(--ls-chat-width) !important; width: calc(100% - var(--ls-chat-width)) !important; }
+            body.ls-integrated-active { max-width: calc(100vw - var(--ls-chat-width)) !important; }
+            
+            .ls-integrated-active .html5-video-player, .ls-integrated-active #ytd-player,
+            .ls-integrated-active .nf-player-container, .ls-integrated-active .watch-video,
+            .ls-integrated-active .webPlayerContainer, .ls-integrated-active .scaling-video-container, .ls-integrated-active .dv-player-fullscreen,
+            .ls-integrated-active div[data-testid="player-container"], .ls-integrated-active div[data-testid="default-player"],
+            .ls-integrated-active #app_body_content, .ls-integrated-active .btm-media-client-element,
+            .ls-integrated-active .video-player-wrapper, .ls-integrated-active #vilos-player,
+            .ls-integrated-active .player-wrapper {
+                width: calc(100vw - var(--ls-chat-width)) !important;
+                max-width: calc(100vw - var(--ls-chat-width)) !important;
+                right: auto !important;
+            }
+            .ls-integrated-active .ytp-chrome-bottom, 
+            .ls-integrated-active .nf-player-controls, 
+            .ls-integrated-active .dv-player-controls,
+            .ls-integrated-active .bottom-controls,
+            .ls-integrated-active [data-testid="player-controls"] {
+                width: calc(100vw - var(--ls-chat-width)) !important;
+                max-width: calc(100vw - var(--ls-chat-width)) !important;
+            }
         `;
 
         const emojis = ['😀','😂','😍','🥰','😎','😭','😡','😱','🍿','🎬','🍕','🥂','👍','👎','❤️','🔥'];
@@ -623,6 +647,8 @@
                     <div id="ls-mention-panel"></div>
                     <div id="ls-emoji-panel" class="ls-popup-panel">${emojis.map(e => `<span class="ls-emoji-item">${e}</span>`).join('')}</div>
                     <div id="ls-plus-panel" class="ls-popup-panel">
+                        <div class="ls-action-item" id="btn-action-sync">🔄 Sincronizar com o Anfitrião</div>
+                        <div class="ls-action-item" id="btn-action-sharetime">⏳ Compartilhar meu tempo atual</div>
                         <div class="ls-action-item" id="btn-action-invite">🔗 Convidar chat para programação atual</div>
                         <div class="ls-action-item" id="btn-action-countdown">⏱️ Play Sincronizado</div>
                         <div class="ls-action-item" id="btn-action-pause">⏸️ Pausar Sincronizado</div>
@@ -735,9 +761,6 @@
         let floodCount = 0;
         let isFlooding = false;
         let floodResetTimer = null;
-        
-        let lastDocumentTitle = document.title;
-        let lastPingTime = 0;
 
         window.addEventListener('beforeunload', () => {
             if (currentRoom && currentRoomKey) {
@@ -1657,6 +1680,9 @@
                         } else if (data.text === 'SYSTEM_PAUSE') {
                             container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg">⏸️ <b>${data.sender}</b> pausou a programação! <span class="ls-msg-time" style="display:block; margin-top:2px;">${formatTime(data.timestamp)}</span></div>`;
+                        } else if (data.text === 'sincronizou com o anfitrião!') {
+                            container.className = 'ls-message-container system-msg-container';
+                            container.innerHTML = `<div class="ls-message system-msg">🔄 <b>${data.sender}</b> sincronizou com o anfitrião! <span class="ls-msg-time" style="display:block; margin-top:2px;">${formatTime(data.timestamp)}</span></div>`;
                         } else {
                             container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg">🎬 ${data.sender} ${data.text} <span class="ls-msg-time" style="display:block; margin-top:2px;">${formatTime(data.timestamp)}</span></div>`;
@@ -1724,6 +1750,16 @@
                                      const blockquote = `<div style="background: rgba(0,0,0,0.2); border-left: 3px solid currentColor; padding: 4px 8px; margin-bottom: 6px; border-radius: 4px; font-size: 11px; opacity: 0.8;"><b>${replyMatch[1]}</b><br>${replyMatch[2]}</div>`;
                                      formattedText = formattedText.replace(replyMatch[0], blockquote);
                                  }
+                                 
+                                 const timeRegex = /\b(\d{1,2}:)?([0-5]?\d):([0-5]\d)\b/g;
+                                 formattedText = formattedText.replace(timeRegex, (match) => {
+                                     const parts = match.split(':').map(Number);
+                                     let secs = 0;
+                                     if (parts.length === 3) secs = parts[0] * 3600 + parts[1] * 60 + parts[2];
+                                     else if (parts.length === 2) secs = parts[0] * 60 + parts[1];
+                                     return `<span class="ls-timecode" data-time="${secs}" style="color: var(--highlight); text-decoration: underline; cursor: pointer; font-weight: bold;" title="Pular para ${match}">${match}</span>`;
+                                 });
+
                                  formattedText = formattedText.replace(/(^|\s)@([a-zA-Z0-9_]+)/g, (match, space, nameMatch) => {
                                      if (nameMatch.toLowerCase() === myCleanName) return `${space}<span style="background: var(--fab-bg); color: var(--fab-color); padding: 2px 6px; border-radius: 8px; font-weight: bold; box-shadow: 0 0 10px rgba(99,102,241,0.5);">@${nameMatch}</span>`;
                                      else return `${space}<span style="color: #06b6d4; font-weight: bold;">@${nameMatch}</span>`;
@@ -1738,6 +1774,14 @@
                                 viewerImg.src = img.src;
                                 imageViewer.style.display = 'flex';
                                 setTimeout(() => imageViewer.classList.add('show'), 10);
+                            });
+                        });
+                        
+                        msgBubble.querySelectorAll('.ls-timecode').forEach(el => {
+                            el.addEventListener('click', () => {
+                                const t = parseFloat(el.getAttribute('data-time'));
+                                const v = document.querySelector('video');
+                                if (v) { v.currentTime = t; v.play().catch(()=>{}); }
                             });
                         });
                         
@@ -1899,6 +1943,35 @@
                 else { clearInterval(timer); countdownOverlay.style.display = 'none'; }
             }, 1000);
         }
+
+        shadow.getElementById('btn-action-sharetime').addEventListener('click', () => {
+            plusPanel.style.display = 'none';
+            const v = document.querySelector('video');
+            if (v) {
+                const s = Math.floor(v.currentTime);
+                const hrs = Math.floor(s / 3600);
+                const mins = Math.floor((s % 3600) / 60);
+                const secs = s % 60;
+                const timeStr = hrs > 0 ? `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}` : `${mins}:${secs.toString().padStart(2, '0')}`;
+                input.value += (input.value ? ' ' : '') + timeStr + ' ';
+                input.focus();
+            } else {
+                alert("Nenhum vídeo encontrado para copiar o tempo.");
+            }
+        });
+
+        shadow.getElementById('btn-action-sync').addEventListener('click', () => {
+            plusPanel.style.display = 'none';
+            if (!currentRoomData || typeof currentRoomData.playbackTime === 'undefined') return alert("O anfitrião ainda não está transmitindo o tempo de reprodução.");
+            const v = document.querySelector('video');
+            if (v) {
+                v.currentTime = currentRoomData.playbackTime;
+                v.play().catch(()=>{});
+                sendSystemAction('sincronizou com o anfitrião!');
+            } else {
+                alert("Nenhum vídeo encontrado na tela.");
+            }
+        });
 
         shadow.getElementById('btn-action-invite').addEventListener('click', async () => {
             plusPanel.style.display = 'none'; if(!currentRoom || !currentRoomKey) return;
@@ -2092,6 +2165,13 @@
                     watching: lastDocumentTitle, 
                     lastSeen: firebase.firestore.FieldValue.serverTimestamp() 
                 }).catch(()=>{});
+            }
+
+            if (currentRoom && currentRoomData && currentRoomData.createdBy === myName) {
+                const v = document.querySelector('video');
+                if (v && !v.paused) {
+                    db.collection('rooms').doc(currentRoom).update({ playbackTime: v.currentTime }).catch(()=>{});
+                }
             }
         }, 5000);
     }
