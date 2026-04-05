@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      84.0
+// @version      87.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
-// @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
+// @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/refs/heads/main/docs/assets/img/favicon.ico
 // @match        *://*/*
 // @grant        GM_setValue
 // @grant        GM_getValue
@@ -36,7 +36,7 @@
             localStorage.removeItem(key);
         },
         clear: function() {
-            const keys = ['ls_device_id','ls_username','ls_userpin','ls_usercolor','ls_usertextcolor','ls_useravatar','ls_userbanner','ls_userbio','ls_usercountry','ls_userfav','ls_hidechats','ls_current_room','ls_room_key','ls_saved_rooms','ls_last_read','ls_muted_rooms','ls_theme','ls_sound','ls_inchat_sounds','ls_hide_sys','ls_hide_app','ls_hide_revive','ls_integrated','ls_bg_type','ls_bg_color','ls_bg_image','ls_sync_bg','ls_autoplay'];
+            const keys = ['ls_device_id','ls_username','ls_userpin','ls_usercolor','ls_usertextcolor','ls_useravatar','ls_userbanner','ls_userbio','ls_usercountry','ls_userfav','ls_hidechats','ls_current_room','ls_room_key','ls_saved_rooms','ls_last_read','ls_muted_rooms','ls_theme','ls_sound','ls_inchat_sounds','ls_hide_sys','ls_hide_app','ls_hide_revive','ls_integrated','ls_autoplay'];
             if (hasGM) keys.forEach(k => GM_deleteValue(k));
             keys.forEach(k => localStorage.removeItem(k));
         }
@@ -49,20 +49,23 @@
         return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
+    let sharedAudioCtx = null;
+
     function playAudio(frequency1, frequency2, duration) {
         try {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
+            if (!sharedAudioCtx) sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (sharedAudioCtx.state === 'suspended') sharedAudioCtx.resume();
+            const osc = sharedAudioCtx.createOscillator();
+            const gain = sharedAudioCtx.createGain();
             osc.connect(gain);
-            gain.connect(ctx.destination);
+            gain.connect(sharedAudioCtx.destination);
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(frequency1, ctx.currentTime);
-            if (frequency2) osc.frequency.exponentialRampToValueAtTime(frequency2, ctx.currentTime + (duration / 2));
-            gain.gain.setValueAtTime(0.05, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+            osc.frequency.setValueAtTime(frequency1, sharedAudioCtx.currentTime);
+            if (frequency2) osc.frequency.exponentialRampToValueAtTime(frequency2, sharedAudioCtx.currentTime + (duration / 2));
+            gain.gain.setValueAtTime(0.05, sharedAudioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, sharedAudioCtx.currentTime + duration);
             osc.start();
-            osc.stop(ctx.currentTime + duration);
+            osc.stop(sharedAudioCtx.currentTime + duration);
         } catch (e) {}
     }
 
@@ -739,6 +742,7 @@
         let myHideSys = ls.getItem('ls_hide_sys') === 'true';
         let myInChatSound = ls.getItem('ls_inchat_sounds') !== 'false';
         
+        let editingRoomAppearance = null;
         let unreadCount = 0;
         let replyTarget = null;
         let isCurrentlyIntegrated = false;
@@ -1097,7 +1101,7 @@
         }
 
         function checkScreenState() {
-            settingsOverlay.style.display = 'none'; addRoomOverlay.style.display = 'none'; lobbySettingsOverlay.style.display = 'none'; membersOverlay.style.display = 'none'; profileOverlay.style.display = 'none';
+            settingsOverlay.style.display = 'none'; addRoomOverlay.style.display = 'none'; lobbySettingsOverlay.style.display = 'none'; membersOverlay.style.display = 'none'; profileOverlay.style.display = 'none'; editingRoomAppearance = null;
             if (myName) db.collection('users').doc(myName).set({ color: myColor, deviceId: myDeviceId, pin: myPin, roomCount: savedRooms.length, watching: document.title, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
             
             const isPlayer = ['/watch', '/video', '/v/', '?v=', '&v=', '/detail', '/player', '/play', '/live-tv', '/on-demand'].some(p => window.location.href.toLowerCase().includes(p));
@@ -1658,8 +1662,11 @@
                         if (typers.length === 1) {
                             typingEl.innerText = `${typers[0]} está digitando...`;
                             typingEl.style.display = 'block';
-                        } else if (typers.length > 1) {
-                            typingEl.innerText = `Alguns usuários estão digitando...`;
+                        } else if (typers.length === 2) {
+                            typingEl.innerText = `${typers[0]} e ${typers[1]} estão digitando...`;
+                            typingEl.style.display = 'block';
+                        } else if (typers.length >= 3) {
+                            typingEl.innerText = `${typers[0]} e mais outras pessoas estão digitando...`;
                             typingEl.style.display = 'block';
                         } else {
                             typingEl.style.display = 'none';
@@ -2190,14 +2197,15 @@
         setInterval(() => {
             if (!myName) return;
             const now = Date.now();
-            const titleChanged = document.title !== lastDocumentTitle;
+            const currentTitle = document.title || "LidySync";
+            const titleChanged = currentTitle !== lastDocumentTitle;
             const needsPing = now - lastPingTime > 120000; 
 
             if ((titleChanged || needsPing) && document.visibilityState === 'visible') {
-                lastDocumentTitle = document.title;
+                lastDocumentTitle = currentTitle;
                 lastPingTime = now;
                 db.collection('users').doc(myName).update({ 
-                    watching: lastDocumentTitle, 
+                    watching: currentTitle, 
                     lastSeen: firebase.firestore.FieldValue.serverTimestamp() 
                 }).catch(()=>{});
             }
