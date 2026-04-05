@@ -1,34 +1,34 @@
 // ==UserScript==
 // @name         LidySync Loader
-// @version      2.0
+// @version      3.0
 // @description  LidySync Loader
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/refs/heads/main/docs/assets/img/favicon.ico
 
-// @updateURL   https://raw.githubusercontent.com/OFaceOff/LidySync/main/lidysync.loader.js
-// @downloadURL https://raw.githubusercontent.com/OFaceOff/LidySync/main/lidysync.loader.js
-
 // @match  *://*.ofaceoff.github.io/LidySync/*
-// @match  *://*.netflix.com/*
-// @match  *://*.primevideo.com/*
-// @match  *://*.disneyplus.com/*
-// @match  *://*.hbomax.com/*
-// @match  *://*.max.com/*
-// @match  *://*.hulu.com/*
-// @match  *://*.paramountplus.com/*
-// @match  *://*.tv.apple.com/*
-// @match  *://*.crunchyroll.com/*
-// @match  *://*.peacocktv.com/*
-// @match  *://*.youtube.com/*
-// @match  *://*.youtube-nocookie.com/*
-// @match  *://*.starplus.com/*
-// @match  *://*.globoplay.globo.com/*
-// @match  *://*.discoveryplus.com/*
-// @match  *://*.pluto.tv/*
-// @match  *://*.tubitv.com/*
-// @match  *://*.plex.tv/*
-// @match  *://*.rakuten.tv/*
-// @match  *://*.mubi.com/*
+// @match *://*.netflix.com/*
+// @match *://*.primevideo.com/*
+// @match *://*.disneyplus.com/*
+// @match *://*.hbomax.com/*
+// @match *://*.max.com/*
+// @match *://*.hulu.com/*
+// @match *://*.paramountplus.com/*
+// @match *://*.tv.apple.com/*
+// @match *://*.crunchyroll.com/*
+// @match *://*.peacocktv.com/*
+// @match *://*.youtube.com/*
+// @match *://*.youtube-nocookie.com/*
+// @match *://*.starplus.com/*
+// @match *://*.globoplay.globo.com/*
+// @match *://*.discoveryplus.com/*
+// @match *://*.pluto.tv/*
+// @match *://*.tubitv.com/*
+// @match *://*.plex.tv/*
+// @match *://*.rakuten.tv/*
+// @match *://*.mubi.com/*
+
+// @updateURL    https://raw.githubusercontent.com/OFaceOff/LidySync/main/lidysync.loader.js
+// @downloadURL  https://raw.githubusercontent.com/OFaceOff/LidySync/main/lidysync.loader.js
 
 // @grant        none
 // @run-at       document-start
@@ -38,72 +38,72 @@
     'use strict';
 
     const SCRIPT_URL = "https://raw.githubusercontent.com/OFaceOff/LidySync/main/lidysync.user.js";
-    const LOADER_URL = "https://raw.githubusercontent.com/OFaceOff/LidySync/main/lidysync.loader.js";
-    const CURRENT_VERSION = "2.0";
+    const CURRENT_VERSION = "3.0";
 
-    function showNotification(message) {
+    function showUpdateNotification(oldV, newV) {
         if (localStorage.getItem("lidysync_disable_notifications") === "true") return;
 
-        const box = document.createElement("div");
-        box.innerHTML = `
+        const div = document.createElement("div");
+        div.innerHTML = `
             <div style="
                 position: fixed;
                 bottom: 20px;
                 right: 20px;
-                background: #0f172a;
+                background: rgba(2,6,23,0.85);
+                backdrop-filter: blur(16px);
                 color: #f9fafb;
-                border: 1px solid rgba(255,255,255,0.06);
                 padding: 12px 14px;
                 border-radius: 10px;
-                font-size: 13px;
+                font-size: 12px;
                 z-index: 999999;
-                backdrop-filter: blur(10px);
-                box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+                box-shadow: 0 8px 25px rgba(91,92,246,0.4);
+                border: 1px solid rgba(255,255,255,0.06);
                 max-width: 260px;
                 font-family: sans-serif;
             ">
-                <div style="margin-bottom:6px;">${message}</div>
+                <div style="margin-bottom:6px;">
+                    LidySync atualizado 🚀<br>
+                    <span style="color:#94a3b8">${oldV} → ${newV}</span>
+                </div>
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <button id="ls-hide" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:11px;">
-                        Não mostrar mais
-                    </button>
-                    <button id="ls-close" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:14px;">
-                        ✕
+                    <button id="ls-close" style="background:none;border:none;color:#94a3b8;cursor:pointer;">✕</button>
+                    <button id="ls-disable" style="background:none;border:none;color:#06b6d4;cursor:pointer;font-size:11px;">
+                        Não mostrar novamente
                     </button>
                 </div>
             </div>
         `;
 
-        document.documentElement.appendChild(box);
+        document.documentElement.appendChild(div);
 
-        box.querySelector("#ls-close").onclick = () => box.remove();
+        const remove = () => div.remove();
 
-        box.querySelector("#ls-hide").onclick = () => {
+        div.querySelector("#ls-close").onclick = remove;
+
+        div.querySelector("#ls-disable").onclick = () => {
             localStorage.setItem("lidysync_disable_notifications", "true");
-            box.remove();
+            remove();
         };
 
-        setTimeout(() => box.remove(), 10000);
+        setTimeout(remove, 8000);
     }
 
-    async function checkLoaderUpdate() {
-        try {
-            const res = await fetch(LOADER_URL + "?t=" + Date.now());
-            const text = await res.text();
-            const match = text.match(/@version\s+([0-9.]+)/);
+    function checkVersion() {
+        const last = localStorage.getItem("lidysync_loader_version");
 
-            if (match && match[1] !== CURRENT_VERSION) {
-                showNotification("Nova versão do LidySync disponível 🚀 Atualize o script!");
-            }
-        } catch { }
+        if (last && last !== CURRENT_VERSION) {
+            showUpdateNotification(last, CURRENT_VERSION);
+        }
+
+        localStorage.setItem("lidysync_loader_version", CURRENT_VERSION);
     }
 
     async function loadScript(url) {
         return new Promise((resolve, reject) => {
             const s = document.createElement("script");
             s.src = url;
-            s.onload = resolve;
-            s.onerror = () => reject(new Error("Erro ao carregar: " + url));
+            s.onload = () => resolve();
+            s.onerror = () => reject();
             document.head.appendChild(s);
         });
     }
@@ -125,31 +125,34 @@
     async function fetchWithRetry(url, attempts = 3) {
         for (let i = 1; i <= attempts; i++) {
             try {
-                const res = await fetch(url + "?t=" + Date.now());
+                const res = await fetch(url + "?t=" + Date.now(), { cache: "no-store" });
 
-                if (!res.ok) throw new Error(res.status);
+                if (!res.ok) throw new Error();
 
                 const text = await res.text();
 
-                if (!text || text.length < 50) throw new Error("Script inválido");
+                if (!text || text.length < 50) throw new Error();
 
                 return text;
 
-            } catch (err) {
-                if (i === attempts) throw err;
+            } catch {
+                if (i === attempts) throw new Error("Falha ao baixar script");
                 await new Promise(r => setTimeout(r, 1000 * i));
             }
         }
     }
 
     try {
-        checkLoaderUpdate();
+        checkVersion();
+
         await loadFirebase();
+
         const code = await fetchWithRetry(SCRIPT_URL);
+
         (new Function(code))();
+
     } catch (err) {
-        console.error("[LidySync] Erro:", err);
-        showNotification("Erro ao carregar LidySync ⚠️");
+        console.error("[LidySync] Erro no loader:", err);
     }
 
 })();
