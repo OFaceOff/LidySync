@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name         LidySync Loader
-// @version      3.1
+// @version      3.2
 // @description  LidySync Loader
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/refs/heads/main/docs/assets/img/favicon.ico
 
-// @match  *://*.ofaceoff.github.io/LidySync/*
+// @match *://*.ofaceoff.github.io/LidySync/*
 // @match *://*.netflix.com/*
 // @match *://*.primevideo.com/*
 // @match *://*.disneyplus.com/*
@@ -38,10 +38,12 @@
     'use strict';
 
     const SCRIPT_URL = "https://raw.githubusercontent.com/OFaceOff/LidySync/main/lidysync.user.js";
-    const CURRENT_VERSION = "3.1";
+    const CURRENT_VERSION = "3.2";
 
-    function createNotification(html) {
-        if (localStorage.getItem("lidysync_disable_notifications") === "true") return;
+    function createNotification(html, isError = false) {
+        const disable = localStorage.getItem("lidysync_disable_notifications") === "true";
+
+        if (!isError && disable) return;
 
         const div = document.createElement("div");
         div.innerHTML = `
@@ -58,16 +60,36 @@
                 z-index: 999999;
                 box-shadow: 0 8px 25px rgba(91,92,246,0.4);
                 border: 1px solid rgba(255,255,255,0.06);
-                max-width: 260px;
+                max-width: 270px;
                 font-family: sans-serif;
+                position: relative;
             ">
+                <button id="ls-close" style="
+                    position:absolute;
+                    top:6px;
+                    right:8px;
+                    background:none;
+                    border:none;
+                    color:#94a3b8;
+                    cursor:pointer;
+                    font-size:12px;
+                ">✕</button>
+
                 ${html}
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
-                    <button id="ls-close" style="background:none;border:none;color:#94a3b8;cursor:pointer;">✕</button>
-                    <button id="ls-disable" style="background:none;border:none;color:#06b6d4;cursor:pointer;font-size:11px;">
+
+                ${!isError ? `
+                <div style="margin-top:8px;">
+                    <button id="ls-disable" style="
+                        background:none;
+                        border:none;
+                        color:#06b6d4;
+                        cursor:pointer;
+                        font-size:11px;
+                    ">
                         Não mostrar novamente
                     </button>
                 </div>
+                ` : ""}
             </div>
         `;
 
@@ -77,12 +99,14 @@
 
         div.querySelector("#ls-close").onclick = remove;
 
-        div.querySelector("#ls-disable").onclick = () => {
-            localStorage.setItem("lidysync_disable_notifications", "true");
-            remove();
-        };
+        if (!isError) {
+            div.querySelector("#ls-disable").onclick = () => {
+                localStorage.setItem("lidysync_disable_notifications", "true");
+                remove();
+            };
+        }
 
-        setTimeout(remove, 8000);
+        setTimeout(remove, isError ? 12000 : 8000);
     }
 
     function showUpdateNotification(oldV, newV) {
@@ -91,7 +115,7 @@
                 LidySync atualizado 🚀<br>
                 <span style="color:#94a3b8">${oldV} → ${newV}</span>
             </div>
-        `);
+        `, false);
     }
 
     function showErrorNotification() {
@@ -99,10 +123,12 @@
             <div style="color:#f87171;">
                 Erro ao instalar nova versão do LidySync Loader ⚠️<br>
                 <span style="color:#94a3b8">
-                    Contate o suporte para ajuda
+                    Contate o <a href="https://discord.gg/4nSXkv4zwp" target="_blank" style="color:#06b6d4;">suporte</a>,
+                    ou verifique o <a href="https://ofaceoff.github.io/LidySync/" target="_blank" style="color:#06b6d4;">site oficial</a>
+                    ou nosso <a href="https://github.com/OFaceOff/LidySync" target="_blank" style="color:#06b6d4;">GitHub</a>.
                 </span>
             </div>
-        `);
+        `, true);
     }
 
     function checkVersion() {
