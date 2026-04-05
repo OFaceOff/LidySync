@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      87.0
+// @version      88.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/refs/heads/main/docs/assets/img/favicon.ico
@@ -654,11 +654,10 @@
                     <div id="ls-mention-panel"></div>
                     <div id="ls-emoji-panel" class="ls-popup-panel">${emojis.map(e => `<span class="ls-emoji-item">${e}</span>`).join('')}</div>
                     <div id="ls-plus-panel" class="ls-popup-panel">
-                        <div class="ls-action-item" id="btn-action-sync">🔄 Sincronizar com o Anfitrião</div>
-                        <div class="ls-action-item" id="btn-action-sharetime">⏳ Compartilhar meu tempo atual</div>
-                        <div class="ls-action-item" id="btn-action-invite">🔗 Convidar chat para programação atual</div>
                         <div class="ls-action-item" id="btn-action-countdown">⏱️ Play Sincronizado</div>
                         <div class="ls-action-item" id="btn-action-pause">⏸️ Pausar Sincronizado</div>
+                        <div class="ls-action-item" id="btn-action-sharetime">⏳ Compartilhar meu tempo atual</div>
+                        <div class="ls-action-item" id="btn-action-sync">🔄 Sincronizar com o Anfitrião</div>
                         <div class="ls-action-item" id="btn-action-gif">🎞️ Adicionar GIF</div>
                         <div class="ls-action-item" id="btn-action-camera">📷 Tirar Foto</div>
                     </div>
@@ -1735,18 +1734,6 @@
                             container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg">🎬 ${data.sender} ${data.text} <span class="ls-msg-time" style="display:block; margin-top:2px;">${formatTime(data.timestamp)}</span></div>`;
                         }
-                    } else if (data.type === 'invite') {
-                        if (data.deleted) return;
-                        lastSender = null; lastMsgType = 'system'; lastTimestamp = msgTimeMs;
-                        container.className = 'ls-message-container system-msg-container';
-                        container.innerHTML = `
-                            <div class="ls-message system-msg" style="background: var(--btn-primary-bg) !important; color: var(--btn-primary-color) !important; border:none; padding:0;">
-                                <a href="${data.url}" target="_blank" style="color: inherit; text-decoration: none; display: block; padding: 10px 16px;">
-                                    🍿 ${data.sender} convidou o chat para a programação atual!<br><small style="text-decoration:underline;">Clique para abrir</small>
-                                    <span class="ls-msg-time" style="display:block; margin-top:4px; color:inherit; opacity:0.8;">${formatTime(data.timestamp)}</span>
-                                </a>
-                            </div>
-                        `;
                     } else if (data.type === 'text' || data.type === 'image' || data.type === 'gif') {
                         container.className = `ls-message-container ${isMe ? 'sent' : 'received'}`;
                         if (isSameSender) container.style.marginTop = '-8px';
@@ -2008,12 +1995,6 @@
             } else {
                 alert("Nenhum vídeo encontrado na tela.");
             }
-        });
-
-        shadow.getElementById('btn-action-invite').addEventListener('click', async () => {
-            plusPanel.style.display = 'none'; if(!currentRoom || !currentRoomKey) return;
-            if (checkFlood()) return;
-            try { await db.collection('rooms').doc(currentRoom).collection('messages').add({ type: 'invite', text: 'convidou o chat para a programação atual!', url: window.location.href, sender: myName, deviceId: myDeviceId, color: myColor, roomKey: currentRoomKey, timestamp: firebase.firestore.FieldValue.serverTimestamp(), deleted: false }); updateLastRead(currentRoom); playSendSound(); } catch (e) {}
         });
 
         shadow.getElementById('btn-action-countdown').addEventListener('click', async () => { 
