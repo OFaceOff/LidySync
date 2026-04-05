@@ -5,6 +5,7 @@
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/refs/heads/main/docs/assets/img/favicon.ico
 
+// @match  *://*.ofaceoff.github.io/LidySync/*
 // @match *://*.netflix.com/*
 // @match *://*.primevideo.com/*
 // @match *://*.disneyplus.com/*
