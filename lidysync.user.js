@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      68.0
+// @version      69.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -754,9 +754,6 @@
         let floodCount = 0;
         let isFlooding = false;
         let floodResetTimer = null;
-        
-        let lastDocumentTitle = document.title;
-        let lastPingTime = 0;
 
         window.addEventListener('beforeunload', () => {
             if (currentRoom && currentRoomKey) {
@@ -1752,11 +1749,11 @@
                             const partyOverlay = shadow.getElementById('ls-party-overlay');
                             const ball = shadow.getElementById('ls-disco-ball');
                             if (partyOverlay) {
-                                clearTimeout(window.lsPartyTimeout);
+                                clearTimeout(lsPartyTimeout);
                                 partyOverlay.style.display = 'flex';
                                 partyOverlay.classList.add('party-active');
                                 setTimeout(() => ball.classList.add('drop'), 100);
-                                window.lsPartyTimeout = setTimeout(() => {
+                                lsPartyTimeout = setTimeout(() => {
                                     partyOverlay.style.display = 'none';
                                     partyOverlay.classList.remove('party-active');
                                     ball.classList.remove('drop');
@@ -1769,7 +1766,7 @@
                             const partyOverlay = shadow.getElementById('ls-party-overlay');
                             const ball = shadow.getElementById('ls-disco-ball');
                             if (partyOverlay) {
-                                clearTimeout(window.lsPartyTimeout);
+                                clearTimeout(lsPartyTimeout);
                                 partyOverlay.style.display = 'none';
                                 partyOverlay.classList.remove('party-active');
                                 ball.classList.remove('drop');
@@ -2074,24 +2071,6 @@
         
         if (myHideApp) fab.style.display = 'none';
         checkScreenState();
-        
-        let lastDocumentTitle = document.title;
-        let lastPingTime = 0;
-        setInterval(() => {
-            if (!myName) return;
-            const now = Date.now();
-            const titleChanged = document.title !== lastDocumentTitle;
-            const needsPing = now - lastPingTime > 120000; 
-
-            if ((titleChanged || needsPing) && document.visibilityState === 'visible') {
-                lastDocumentTitle = document.title;
-                lastPingTime = now;
-                db.collection('users').doc(myName).update({ 
-                    watching: lastDocumentTitle, 
-                    lastSeen: firebase.firestore.FieldValue.serverTimestamp() 
-                }).catch(()=>{});
-            }
-        }, 5000);
     }
 
     function tryInject() {
