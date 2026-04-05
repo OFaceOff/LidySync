@@ -96,9 +96,7 @@ function sendMockupMessage() {
     msgElement.innerHTML = escapeHTML(text);
 
     mockupMessages.appendChild(msgElement);
-
     playMockupSendSound();
-
     mockupInput.value = '';
     mockupMessages.scrollTop = mockupMessages.scrollHeight;
 

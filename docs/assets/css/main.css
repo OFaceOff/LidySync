@@ -22,7 +22,7 @@
 
 html {
     scroll-behavior: smooth;
-    scroll-padding-top: 90px;
+    scroll-padding-top: 110px;
 }
 
 body {
@@ -749,7 +749,7 @@ footer {
     }
 
     .hero {
-        padding-top: 120px;
+        padding-top: 130px;
         gap: 32px;
     }
 
@@ -775,12 +775,20 @@ footer {
 }
 
 @media (max-width: 600px) {
+    html {
+        scroll-padding-top: 120px;
+    }
+
     .container {
         padding: 0 16px;
     }
 
     nav {
         padding: 16px;
+    }
+
+    .hero {
+        padding-top: 120px;
     }
 
     .hero-btns {
@@ -806,23 +814,24 @@ footer {
 
     .mockup-wrapper {
         aspect-ratio: auto;
-        height: 600px;
+        height: 650px;
         border-radius: 16px;
+        margin-top: 20px;
     }
 
     .mockup-profile {
         display: flex;
         left: 50%;
-        top: 24px;
+        top: 40px;
         --base-tx: -50%;
-        --base-scale: 0.9;
+        --base-scale: 0.85;
         transform-origin: center top;
     }
 
     .mockup-chat {
         width: calc(100% - 32px);
         max-width: 340px;
-        height: 350px;
+        height: 320px;
         left: 50%;
         --base-tx: -50%;
         bottom: 24px;
