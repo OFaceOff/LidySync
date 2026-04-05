@@ -7,12 +7,12 @@ async function fetchLatestVersion() {
         const versionMatch = text.match(/\/\/\s*@version\s+([\d\.]+)/i);
 
         if (versionMatch && versionMatch[1]) {
-            versionDisplay.textContent = `Versão Atual: ${versionMatch[1]}`;
+            versionDisplay.textContent = `Versão Atual do LidySync: ${versionMatch[1]}`;
         } else {
-            versionDisplay.textContent = `Versão Atual: Desconhecida`;
+            versionDisplay.textContent = `Versão Atual do LidySync: Desconhecida`;
         }
     } catch (error) {
-        versionDisplay.textContent = `Versão Atual: Offline`;
+        versionDisplay.textContent = `Versão Atual do LidySync: Offline`;
     }
 }
 document.addEventListener('DOMContentLoaded', fetchLatestVersion);
