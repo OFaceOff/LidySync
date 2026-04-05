@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      72.0
+// @version      74.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -386,6 +386,30 @@
             #ls-disco-ball { font-size: 80px; position: absolute; top: -100px; transition: top 1s ease-out; animation: spin 2s linear infinite; }
             #ls-disco-ball.drop { top: 20px; }
             @keyframes spin { 100% { transform: rotate(360deg); } }
+            
+            :root { --ls-chat-width: 350px; }
+            html.ls-integrated-active { margin-right: var(--ls-chat-width) !important; width: calc(100% - var(--ls-chat-width)) !important; }
+            body.ls-integrated-active { max-width: calc(100vw - var(--ls-chat-width)) !important; }
+            
+            .ls-integrated-active .html5-video-player, .ls-integrated-active #ytd-player,
+            .ls-integrated-active .nf-player-container, .ls-integrated-active .watch-video,
+            .ls-integrated-active .webPlayerContainer, .ls-integrated-active .scaling-video-container, .ls-integrated-active .dv-player-fullscreen,
+            .ls-integrated-active div[data-testid="player-container"], .ls-integrated-active div[data-testid="default-player"],
+            .ls-integrated-active #app_body_content, .ls-integrated-active .btm-media-client-element,
+            .ls-integrated-active .video-player-wrapper, .ls-integrated-active #vilos-player,
+            .ls-integrated-active .player-wrapper {
+                width: calc(100vw - var(--ls-chat-width)) !important;
+                max-width: calc(100vw - var(--ls-chat-width)) !important;
+                right: auto !important;
+            }
+            .ls-integrated-active .ytp-chrome-bottom, 
+            .ls-integrated-active .nf-player-controls, 
+            .ls-integrated-active .dv-player-controls,
+            .ls-integrated-active .bottom-controls,
+            .ls-integrated-active [data-testid="player-controls"] {
+                width: calc(100vw - var(--ls-chat-width)) !important;
+                max-width: calc(100vw - var(--ls-chat-width)) !important;
+            }
         `;
 
         const emojis = ['😀','😂','😍','🥰','😎','😭','😡','😱','🍿','🎬','🍕','🥂','👍','👎','❤️','🔥'];
@@ -735,9 +759,6 @@
         let floodCount = 0;
         let isFlooding = false;
         let floodResetTimer = null;
-        
-        let lastDocumentTitle = document.title;
-        let lastPingTime = 0;
 
         window.addEventListener('beforeunload', () => {
             if (currentRoom && currentRoomKey) {
@@ -964,9 +985,8 @@
             if (active) {
                 isCurrentlyIntegrated = true;
                 if (!pushStyle) {
-                    pushStyle = document.createElement('style'); pushStyle.id = pushStyleId;
-                    pushStyle.innerHTML = `html { margin-right: 350px !important; width: calc(100% - 350px) !important; } body { width: 100% !important; } .html5-video-player, #ytd-player, .nf-player-container, .webPlayerContainer, #dv-web-player { width: calc(100vw - 350px) !important; }`;
-                    document.head.appendChild(pushStyle);
+                    document.documentElement.classList.add('ls-integrated-active');
+                    document.body.classList.add('ls-integrated-active');
                 }
                 chatWindow.classList.add('integrated'); chatWindow.classList.add('open');
                 host.style.cssText = 'position: fixed !important; top: 0 !important; right: 0 !important; bottom: 0 !important; width: 350px !important; height: 100vh !important; z-index: 2147483647 !important; pointer-events: auto !important;';
@@ -976,7 +996,8 @@
                 const tBtn = shadow.getElementById('ls-menu-theater'); if(tBtn) tBtn.innerText = '🖥️ Sair do Modo Teatro';
             } else {
                 isCurrentlyIntegrated = false;
-                if (pushStyle) pushStyle.remove();
+                document.documentElement.classList.remove('ls-integrated-active');
+                document.body.classList.remove('ls-integrated-active');
                 chatWindow.classList.remove('integrated');
                 host.style.cssText = 'position: fixed !important; bottom: 90px !important; right: 20px !important; z-index: 2147483647 !important; pointer-events: none !important;';
                 const wrapperEl = shadow.getElementById('ls-wrapper');
@@ -1605,15 +1626,12 @@
                         lastSender = null; lastMsgType = 'system'; lastTimestamp = msgTimeMs;
                         
                         if (data.text === 'SYSTEM_CREATED') {
-                            if (myHideSys) return;
                             container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg" style="background:transparent!important; box-shadow:none; border:none; padding:4px;">✨ <b>${data.sender}</b> criou a sala <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
                         } else if (data.text === 'SYSTEM_FIRST_JOIN') {
-                            if (myHideSys) return;
                             container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg" style="background:transparent!important; box-shadow:none; border:none; padding:4px;">👋 <b>${data.sender}</b> agora faz parte dessa sala <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
                         } else if (data.text === 'SYSTEM_LEFT_PERMANENTLY') {
-                            if (myHideSys) return;
                             container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg" style="background:transparent!important; box-shadow:none; border:none; padding:4px; opacity:0.6;">🚪 <b>${data.sender}</b> não faz mais parte dessa sala <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
                         } else if (data.text.startsWith('SYSTEM_KICKED:')) {
@@ -1621,7 +1639,6 @@
                             container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg" style="background:rgba(239,68,68,0.1)!important; color:#ef4444; border:1px solid rgba(239,68,68,0.2); padding:6px 12px;">🚫 <b>${targetUser}</b> foi expulso da sala e não faz mais parte dela <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
                         } else if (data.text === 'SYSTEM_WENT_AWAY') {
-                            if (myHideSys) return;
                             container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg" style="background:transparent!important; box-shadow:none; border:none; padding:4px; opacity:0.6;">🚶 <b>${data.sender}</b> foi embora <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
                         } else if (data.text === 'SYSTEM_JOIN') {
@@ -2055,8 +2072,6 @@
         if (myHideApp) fab.style.display = 'none';
         checkScreenState();
         
-        let lastDocumentTitle = document.title;
-        let lastPingTime = 0;
         setInterval(() => {
             if (!myName) return;
             const now = Date.now();
