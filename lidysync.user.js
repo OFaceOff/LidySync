@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      74.0
+// @version      75.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -386,30 +386,6 @@
             #ls-disco-ball { font-size: 80px; position: absolute; top: -100px; transition: top 1s ease-out; animation: spin 2s linear infinite; }
             #ls-disco-ball.drop { top: 20px; }
             @keyframes spin { 100% { transform: rotate(360deg); } }
-            
-            :root { --ls-chat-width: 350px; }
-            html.ls-integrated-active { margin-right: var(--ls-chat-width) !important; width: calc(100% - var(--ls-chat-width)) !important; }
-            body.ls-integrated-active { max-width: calc(100vw - var(--ls-chat-width)) !important; }
-            
-            .ls-integrated-active .html5-video-player, .ls-integrated-active #ytd-player,
-            .ls-integrated-active .nf-player-container, .ls-integrated-active .watch-video,
-            .ls-integrated-active .webPlayerContainer, .ls-integrated-active .scaling-video-container, .ls-integrated-active .dv-player-fullscreen,
-            .ls-integrated-active div[data-testid="player-container"], .ls-integrated-active div[data-testid="default-player"],
-            .ls-integrated-active #app_body_content, .ls-integrated-active .btm-media-client-element,
-            .ls-integrated-active .video-player-wrapper, .ls-integrated-active #vilos-player,
-            .ls-integrated-active .player-wrapper {
-                width: calc(100vw - var(--ls-chat-width)) !important;
-                max-width: calc(100vw - var(--ls-chat-width)) !important;
-                right: auto !important;
-            }
-            .ls-integrated-active .ytp-chrome-bottom, 
-            .ls-integrated-active .nf-player-controls, 
-            .ls-integrated-active .dv-player-controls,
-            .ls-integrated-active .bottom-controls,
-            .ls-integrated-active [data-testid="player-controls"] {
-                width: calc(100vw - var(--ls-chat-width)) !important;
-                max-width: calc(100vw - var(--ls-chat-width)) !important;
-            }
         `;
 
         const emojis = ['😀','😂','😍','🥰','😎','😭','😡','😱','🍿','🎬','🍕','🥂','👍','👎','❤️','🔥'];
@@ -759,6 +735,9 @@
         let floodCount = 0;
         let isFlooding = false;
         let floodResetTimer = null;
+        
+        let lastDocumentTitle = document.title;
+        let lastPingTime = 0;
 
         window.addEventListener('beforeunload', () => {
             if (currentRoom && currentRoomKey) {
@@ -985,6 +964,31 @@
             if (active) {
                 isCurrentlyIntegrated = true;
                 if (!pushStyle) {
+                    pushStyle = document.createElement('style'); 
+                    pushStyle.id = pushStyleId;
+                    pushStyle.innerHTML = `
+                        :root { --ls-chat-width: 350px; }
+                        html.ls-integrated-active, body.ls-integrated-active { margin-right: var(--ls-chat-width) !important; width: calc(100% - var(--ls-chat-width)) !important; }
+                        html.ls-integrated-active div[id^="layer-root-"], html.ls-integrated-active div[data-testid="playerContainer"],
+                        html.ls-integrated-active .html5-video-player, html.ls-integrated-active #ytd-player,
+                        html.ls-integrated-active .nf-player-container, html.ls-integrated-active .watch-video,
+                        html.ls-integrated-active .webPlayerContainer, html.ls-integrated-active .scaling-video-container, 
+                        html.ls-integrated-active .dv-player-fullscreen, html.ls-integrated-active div[data-testid="player-container"],
+                        html.ls-integrated-active #app_body_content, html.ls-integrated-active .btm-media-client-element,
+                        html.ls-integrated-active .video-player-wrapper, html.ls-integrated-active #vilos-player,
+                        html.ls-integrated-active .player-wrapper {
+                            width: calc(100vw - var(--ls-chat-width)) !important;
+                            max-width: calc(100vw - var(--ls-chat-width)) !important;
+                            right: auto !important;
+                        }
+                        html.ls-integrated-active .ytp-chrome-bottom, html.ls-integrated-active .nf-player-controls, 
+                        html.ls-integrated-active .dv-player-controls, html.ls-integrated-active .bottom-controls,
+                        html.ls-integrated-active [data-testid="player-controls"], html.ls-integrated-active [data-testid="playback_controls"] {
+                            width: calc(100vw - var(--ls-chat-width)) !important;
+                            max-width: calc(100vw - var(--ls-chat-width)) !important;
+                        }
+                    `;
+                    document.head.appendChild(pushStyle);
                     document.documentElement.classList.add('ls-integrated-active');
                     document.body.classList.add('ls-integrated-active');
                 }
@@ -996,6 +1000,7 @@
                 const tBtn = shadow.getElementById('ls-menu-theater'); if(tBtn) tBtn.innerText = '🖥️ Sair do Modo Teatro';
             } else {
                 isCurrentlyIntegrated = false;
+                if (pushStyle) pushStyle.remove();
                 document.documentElement.classList.remove('ls-integrated-active');
                 document.body.classList.remove('ls-integrated-active');
                 chatWindow.classList.remove('integrated');
@@ -2072,6 +2077,8 @@
         if (myHideApp) fab.style.display = 'none';
         checkScreenState();
         
+        let lastDocumentTitle = document.title;
+        let lastPingTime = 0;
         setInterval(() => {
             if (!myName) return;
             const now = Date.now();
