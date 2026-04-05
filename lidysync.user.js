@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      88.1
+// @version      90.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/refs/heads/main/docs/assets/img/favicon.ico
@@ -1104,7 +1104,8 @@
             settingsOverlay.style.display = 'none'; addRoomOverlay.style.display = 'none'; lobbySettingsOverlay.style.display = 'none'; membersOverlay.style.display = 'none'; profileOverlay.style.display = 'none'; editingRoomAppearance = null;
             if (myName) db.collection('users').doc(myName).set({ color: myColor, deviceId: myDeviceId, pin: myPin, roomCount: savedRooms.length, watching: document.title, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
             
-            const isPlayer = ['/watch', '/video', '/v/', '?v=', '&v=', '/detail', '/player', '/play', '/live-tv', '/on-demand'].some(p => window.location.href.toLowerCase().includes(p));
+            const pathToCheck = (window.location.pathname + window.location.search).toLowerCase();
+            const isPlayer = ['/watch', '/video/', '/v/', '?v=', '&v=', '/detail/', '/player/', '/play/', '/live-tv', '/on-demand'].some(p => pathToCheck.includes(p));
             if (myIntegratedMode && isPlayer) toggleIntegratedMode(true); 
             else toggleIntegratedMode(false, true);
 
@@ -1120,7 +1121,7 @@
             } else {
                 setupArea.style.display = 'none'; lobbyArea.style.display = 'none'; chatArea.style.display = 'flex'; chatMenuContainer.style.display = 'block'; lobbySettingsBtn.style.display = 'none'; backBtn.style.display = 'flex'; headerText.innerText = `${currentRoom}`;
                 headerText.classList.add('clickable');
-                if (myIntegratedMode) toggleIntegratedMode(true);
+                if (myIntegratedMode && isPlayer) toggleIntegratedMode(true);
                 stopLobbyListeners(); startChatListeners();
             }
         }
