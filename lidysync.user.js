@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      88.0
+// @version      88.1
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/refs/heads/main/docs/assets/img/favicon.ico
@@ -516,6 +516,7 @@
                         </div>
                         <div class="ls-config-section" style="margin-top:auto;"><button class="ls-btn-danger" id="ls-wipe-data-btn">Desconectar e Apagar Dados</button></div>
                         <button class="ls-btn-primary" id="ls-save-lobby-config-btn" style="margin-top: 0;">Salvar Alterações</button>
+                        <div style="text-align: center; margin-top: 8px; color: var(--text-muted); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Versão Atual - 89.0</div>
                     </div>
                 </div>
 
@@ -1734,6 +1735,18 @@
                             container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg">🎬 ${data.sender} ${data.text} <span class="ls-msg-time" style="display:block; margin-top:2px;">${formatTime(data.timestamp)}</span></div>`;
                         }
+                    } else if (data.type === 'invite') {
+                        if (data.deleted) return;
+                        lastSender = null; lastMsgType = 'system'; lastTimestamp = msgTimeMs;
+                        container.className = 'ls-message-container system-msg-container';
+                        container.innerHTML = `
+                            <div class="ls-message system-msg" style="background: var(--btn-primary-bg) !important; color: var(--btn-primary-color) !important; border:none; padding:0;">
+                                <a href="${data.url}" target="_blank" style="color: inherit; text-decoration: none; display: block; padding: 10px 16px;">
+                                    🍿 ${data.sender} convidou o chat para a programação atual!<br><small style="text-decoration:underline;">Clique para abrir</small>
+                                    <span class="ls-msg-time" style="display:block; margin-top:4px; color:inherit; opacity:0.8;">${formatTime(data.timestamp)}</span>
+                                </a>
+                            </div>
+                        `;
                     } else if (data.type === 'text' || data.type === 'image' || data.type === 'gif') {
                         container.className = `ls-message-container ${isMe ? 'sent' : 'received'}`;
                         if (isSameSender) container.style.marginTop = '-8px';
@@ -1995,6 +2008,12 @@
             } else {
                 alert("Nenhum vídeo encontrado na tela.");
             }
+        });
+
+        shadow.getElementById('btn-action-invite').addEventListener('click', async () => {
+            plusPanel.style.display = 'none'; if(!currentRoom || !currentRoomKey) return;
+            if (checkFlood()) return;
+            try { await db.collection('rooms').doc(currentRoom).collection('messages').add({ type: 'invite', text: 'convidou o chat para a programação atual!', url: window.location.href, sender: myName, deviceId: myDeviceId, color: myColor, roomKey: currentRoomKey, timestamp: firebase.firestore.FieldValue.serverTimestamp(), deleted: false }); updateLastRead(currentRoom); playSendSound(); } catch (e) {}
         });
 
         shadow.getElementById('btn-action-countdown').addEventListener('click', async () => { 
