@@ -418,8 +418,8 @@
                 if (!response.ok) throw new Error();
                 const text = await response.text();
                 const versionMatch = text.match(/\/\/\s*@version\s+([\d\.]+)/i);
-                if (versionMatch && versionMatch[1]) { versionDisplay.textContent = `Versão Atual: ${versionMatch[1]}`; }
-            } catch (error) { versionDisplay.textContent = `Versão Atual: Offline`; }
+                if (versionMatch && versionMatch[1]) { versionDisplay.textContent = `Versão Atual do LidySync: ${versionMatch[1]}`; }
+            } catch (error) { versionDisplay.textContent = `Versão Atual do LidySync: Offline`; }
         }
         document.addEventListener('DOMContentLoaded', fetchLatestVersion);
         const canvas = document.getElementById('gameCanvas');
