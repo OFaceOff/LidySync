@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      78.0
+// @version      81.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/main/icon.ico
@@ -161,6 +161,7 @@
                 --fab-shadow: 0 8px 25px rgba(91, 92, 246, 0.4); 
                 --btn-primary-bg: linear-gradient(135deg, #5b5cf6, #7c3aed); 
                 --btn-primary-color: #ffffff; 
+                --btn-primary-shadow: rgba(91, 92, 246, 0.4);
                 --btn-secondary-bg: #1e293b; 
                 pointer-events: auto; display: flex; flex-direction: column; align-items: flex-end; position: relative; 
             }
@@ -180,6 +181,7 @@
                 --fab-color: #ffffff; 
                 --fab-shadow: 0 8px 25px rgba(91, 92, 246, 0.3); 
                 --btn-primary-bg: linear-gradient(135deg, #5b5cf6, #7c3aed); 
+                --btn-primary-shadow: rgba(91, 92, 246, 0.3);
                 --btn-secondary-bg: #f1f5f9; 
             }
             
@@ -192,9 +194,12 @@
                 --border-color: rgba(255,255,255,0.1); 
                 --glass-blur: blur(16px); 
                 --received-msg: rgba(255, 255, 255, 0.1); 
-                --fab-bg: linear-gradient(135deg, #5b5cf6, #7c3aed); 
-                --fab-shadow: 0 8px 25px rgba(91, 92, 246, 0.4); 
-                --btn-primary-bg: linear-gradient(135deg, #5b5cf6, #7c3aed); 
+                --fab-bg: rgba(255, 255, 255, 0.15); 
+                --fab-color: #ffffff; 
+                --fab-shadow: 0 8px 25px rgba(0, 0, 0, 0.4); 
+                --btn-primary-bg: rgba(255, 255, 255, 0.2); 
+                --btn-primary-color: #ffffff; 
+                --btn-primary-shadow: rgba(0, 0, 0, 0.3);
                 --btn-secondary-bg: rgba(0, 0, 0, 0.3); 
             }
             
@@ -213,6 +218,7 @@
                 --fab-bg: linear-gradient(135deg, #fb7185, #e11d48); 
                 --fab-shadow: 0 8px 25px rgba(225, 29, 72, 0.3); 
                 --btn-primary-bg: linear-gradient(135deg, #fb7185, #e11d48); 
+                --btn-primary-shadow: rgba(225, 29, 72, 0.3);
                 --btn-secondary-bg: #ffe4e6; 
             }
 
@@ -305,7 +311,7 @@
             .ls-checkbox-group { display: flex; align-items: flex-start; gap: 10px; color: var(--text-primary); font-size: 13.5px; margin-top: 5px; cursor: pointer; line-height: 1.5; }
             
             .ls-btn-primary { background: var(--btn-primary-bg); color: var(--btn-primary-color); border: none; border-radius: 10px; padding: 14px; font-weight: 600; cursor: pointer; margin-top: 10px; transition: all 0.2s; width: 100%; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); } 
-            .ls-btn-primary:hover { transform: translateY(-1px); filter: brightness(1.08); box-shadow: 0 6px 16px rgba(91, 92, 246, 0.4); } 
+            .ls-btn-primary:hover { transform: translateY(-1px); filter: brightness(1.08); box-shadow: 0 6px 16px var(--btn-primary-shadow); } 
             .ls-btn-secondary { background-color: var(--btn-secondary-bg); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; width: 100%; font-size: 14px; } 
             .ls-btn-secondary:hover { filter: brightness(1.08); border-color: var(--highlight); color: var(--highlight); } 
             .ls-btn-danger { background-color: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 10px; padding: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; width: 100%; font-size: 14px; } 
@@ -355,7 +361,7 @@
             #ls-input:focus { border-color: var(--highlight); }
             
             #ls-send-btn { flex-shrink: 0; background: var(--btn-primary-bg); color: var(--btn-primary-color); border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); transition: all 0.2s; } 
-            #ls-send-btn:hover { transform: scale(1.05); filter: brightness(1.1); box-shadow: 0 4px 12px rgba(91, 92, 246, 0.4);}
+            #ls-send-btn:hover { transform: scale(1.05); filter: brightness(1.1); box-shadow: 0 4px 12px var(--btn-primary-shadow);}
             
             .ls-popup-panel { position: absolute; bottom: 70px; background-color: var(--bg-overlay); border-radius: 16px; padding: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); display: none; z-index: 20; border: 1px solid var(--border-color); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); } 
             #ls-emoji-panel { left: 16px; width: 280px; display: flex; flex-wrap: wrap; gap: 6px; padding: 12px; } 
@@ -647,6 +653,7 @@
                     <div id="ls-mention-panel"></div>
                     <div id="ls-emoji-panel" class="ls-popup-panel">${emojis.map(e => `<span class="ls-emoji-item">${e}</span>`).join('')}</div>
                     <div id="ls-plus-panel" class="ls-popup-panel">
+                        <div class="ls-action-item" id="btn-action-sync">🔄 Sincronizar com o Anfitrião</div>
                         <div class="ls-action-item" id="btn-action-sharetime">⏳ Compartilhar meu tempo atual</div>
                         <div class="ls-action-item" id="btn-action-invite">🔗 Convidar chat para programação atual</div>
                         <div class="ls-action-item" id="btn-action-countdown">⏱️ Play Sincronizado</div>
@@ -766,6 +773,7 @@
 
         let isRemoteAction = false;
         let lastVideoElement = null;
+        let lastUrl = window.location.href;
 
         window.addEventListener('beforeunload', () => {
             if (currentRoom && currentRoomKey) {
@@ -985,7 +993,7 @@
             if (isDragging) { isDragging = false; chatWindow.style.transition = 'background-color 0.3s, backdrop-filter 0.3s'; }
         });
 
-        function toggleIntegratedMode(active) {
+        function toggleIntegratedMode(active, temporary = false) {
             const pushStyleId = 'ls-integrated-push-style';
             let pushStyle = document.getElementById(pushStyleId);
 
@@ -1028,6 +1036,10 @@
                 const tBtn = shadow.getElementById('ls-menu-theater'); if(tBtn) tBtn.innerText = '🖥️ Sair do Modo Teatro';
             } else {
                 isCurrentlyIntegrated = false;
+                if (!temporary) {
+                    myIntegratedMode = false;
+                    ls.setItem('ls_integrated', false);
+                }
                 if (pushStyle) pushStyle.remove();
                 document.documentElement.classList.remove('ls-integrated-active');
                 document.body.classList.remove('ls-integrated-active');
@@ -1096,7 +1108,9 @@
             settingsOverlay.style.display = 'none'; addRoomOverlay.style.display = 'none'; lobbySettingsOverlay.style.display = 'none'; membersOverlay.style.display = 'none'; profileOverlay.style.display = 'none'; editingRoomAppearance = null;
             if (myName) db.collection('users').doc(myName).set({ color: myColor, deviceId: myDeviceId, pin: myPin, roomCount: savedRooms.length, watching: document.title, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
             
-            if (myIntegratedMode) toggleIntegratedMode(true); else toggleIntegratedMode(false);
+            const isPlayer = ['/watch', '/video', '/v/', '?v=', '&v=', '/detail', '/player', '/play', '/live-tv', '/on-demand'].some(p => window.location.href.toLowerCase().includes(p));
+            if (myIntegratedMode && isPlayer) toggleIntegratedMode(true); 
+            else toggleIntegratedMode(false, true);
 
             if (!myName || !myPin) {
                 if (userProfileUnsubscribe) userProfileUnsubscribe();
@@ -1108,7 +1122,6 @@
             } else {
                 setupArea.style.display = 'none'; lobbyArea.style.display = 'none'; chatArea.style.display = 'flex'; chatMenuContainer.style.display = 'block'; lobbySettingsBtn.style.display = 'none'; backBtn.style.display = 'flex'; headerText.innerText = `${currentRoom}`;
                 if (!mySyncBg) applyBackground(myBgType, myBgColor, myBgImage);
-                if (myIntegratedMode) toggleIntegratedMode(true);
                 stopLobbyListeners(); startChatListeners();
             }
         }
@@ -1513,7 +1526,12 @@
         const chatDropdown = shadow.getElementById('ls-chat-dropdown');
 
         chatMenuBtn.addEventListener('click', (e) => { e.stopPropagation(); chatDropdown.classList.toggle('show'); });
-        shadow.getElementById('ls-menu-theater').addEventListener('click', () => { chatDropdown.classList.remove('show'); myIntegratedMode = !myIntegratedMode; ls.setItem('ls_integrated', myIntegratedMode); checkScreenState(); });
+        shadow.getElementById('ls-menu-theater').addEventListener('click', () => { 
+            chatDropdown.classList.remove('show'); 
+            myIntegratedMode = !myIntegratedMode; 
+            ls.setItem('ls_integrated', myIntegratedMode); 
+            checkScreenState(); 
+        });
         shadow.getElementById('ls-menu-share').addEventListener('click', () => {
             chatDropdown.classList.remove('show'); if(!currentRoom) return;
             let passToShare = ""; const roomData = savedRooms.find(r => r.name === currentRoom);
@@ -2178,6 +2196,13 @@
         
         if (myHideApp) fab.style.display = 'none';
         checkScreenState();
+        
+        setInterval(() => {
+            if (window.location.href !== lastUrl) {
+                lastUrl = window.location.href;
+                if (myIntegratedMode) checkScreenState();
+            }
+        }, 1000);
         
         setInterval(() => {
             if (!myName) return;
