@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      92.0
+// @version      91.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/refs/heads/main/docs/assets/img/favicon.ico
@@ -516,7 +516,7 @@
                         </div>
                         <div class="ls-config-section" style="margin-top:auto;"><button class="ls-btn-danger" id="ls-wipe-data-btn">Desconectar e Apagar Dados</button></div>
                         <button class="ls-btn-primary" id="ls-save-lobby-config-btn" style="margin-top: 0;">Salvar Alterações</button>
-                        <div style="text-align: center; margin-top: 8px; color: var(--text-muted); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Versão Atual - 92.0</div>
+                        <div style="text-align: center; margin-top: 8px; color: var(--text-muted); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Versão Atual - 91.0</div>
                     </div>
                 </div>
 
@@ -1043,14 +1043,7 @@
                 host.style.cssText = 'position: fixed !important; bottom: 90px !important; right: 20px !important; z-index: 2147483647 !important; pointer-events: none !important;';
                 const wrapperEl = shadow.getElementById('ls-wrapper');
                 wrapperEl.style.display = 'flex'; wrapperEl.style.width = 'auto'; wrapperEl.style.height = 'auto';
-                
-                if (temporary) {
-                    chatWindow.classList.remove('open');
-                }
-
                 if (!chatWindow.classList.contains('open') && !myHideApp) fab.style.display = 'flex';
-                else if (!chatWindow.classList.contains('open') && myHideApp) fab.style.display = 'none';
-                
                 const tBtn = shadow.getElementById('ls-menu-theater'); if(tBtn) tBtn.innerText = '🖥️ Modo Teatro';
             }
         }
@@ -1113,7 +1106,6 @@
             
             const pathToCheck = (window.location.pathname + window.location.search).toLowerCase();
             const isPlayer = ['/watch', '/video/', '/v/', '?v=', '&v=', '/detail/', '/player/', '/play/', '/live-tv', '/on-demand'].some(p => pathToCheck.includes(p));
-            
             if (myIntegratedMode && isPlayer) toggleIntegratedMode(true); 
             else toggleIntegratedMode(false, true);
 
@@ -1133,20 +1125,6 @@
                 stopLobbyListeners(); startChatListeners();
             }
         }
-
-        shadow.getElementById('ls-minimize-btn').addEventListener('click', () => {
-            if (isCurrentlyIntegrated) { alert("O Chat está no Modo Teatro. Desative essa opção no menu ou nas configurações para minimizar a janela."); return; }
-            chatWindow.classList.remove('open');
-            if (myHideApp) fab.style.display = 'none'; else fab.style.display = 'flex';
-            if (currentRoom) updateLastRead(currentRoom);
-        });
-
-        shadow.getElementById('ls-close-btn').addEventListener('click', () => { 
-            if (isCurrentlyIntegrated) { alert("O Chat está no Modo Teatro. Desative essa opção no menu ou nas configurações para fechar o app."); return; }
-            chatWindow.classList.remove('open'); 
-            fab.style.display = 'none';
-            if (currentRoom) updateLastRead(currentRoom);
-        });
 
         shadow.getElementById('ls-header-text').addEventListener('click', () => {
             if (currentRoom) {
@@ -1591,6 +1569,20 @@
             stopChatListeners(); currentRoom = null; currentRoomKey = null; currentRoomData = null; ls.removeItem('ls_current_room'); ls.removeItem('ls_room_key'); checkScreenState();
         });
 
+        shadow.getElementById('ls-minimize-btn').addEventListener('click', () => {
+            if (myIntegratedMode) { alert("O Chat está no Modo Teatro. Desative essa opção no menu ou nas configurações para minimizar a janela."); return; }
+            chatWindow.classList.remove('open');
+            if (myHideApp) fab.style.display = 'none'; else fab.style.display = 'flex';
+            if (currentRoom) updateLastRead(currentRoom);
+        });
+
+        shadow.getElementById('ls-close-btn').addEventListener('click', () => { 
+            if (myIntegratedMode) { alert("O Chat está no Modo Teatro. Desative essa opção no menu ou nas configurações para fechar o app."); return; }
+            chatWindow.classList.remove('open'); 
+            fab.style.display = 'none';
+            if (currentRoom) updateLastRead(currentRoom);
+        });
+        
         shadow.getElementById('ls-menu-delete').addEventListener('click', async () => { 
             chatDropdown.classList.remove('show'); 
             if (currentRoomData && currentRoomData.createdBy !== myName) return alert("Apenas o Host da sala pode encerrá-la.");
@@ -1744,18 +1736,6 @@
                             container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg">🎬 ${data.sender} ${data.text} <span class="ls-msg-time" style="display:block; margin-top:2px;">${formatTime(data.timestamp)}</span></div>`;
                         }
-                    } else if (data.type === 'invite') {
-                        if (data.deleted) return;
-                        lastSender = null; lastMsgType = 'system'; lastTimestamp = msgTimeMs;
-                        container.className = 'ls-message-container system-msg-container';
-                        container.innerHTML = `
-                            <div class="ls-message system-msg" style="background: var(--btn-primary-bg) !important; color: var(--btn-primary-color) !important; border:none; padding:0;">
-                                <a href="${data.url}" target="_blank" style="color: inherit; text-decoration: none; display: block; padding: 10px 16px;">
-                                    🍿 ${data.sender} convidou o chat para a programação atual!<br><small style="text-decoration:underline;">Clique para abrir</small>
-                                    <span class="ls-msg-time" style="display:block; margin-top:4px; color:inherit; opacity:0.8;">${formatTime(data.timestamp)}</span>
-                                </a>
-                            </div>
-                        `;
                     } else if (data.type === 'text' || data.type === 'image' || data.type === 'gif') {
                         container.className = `ls-message-container ${isMe ? 'sent' : 'received'}`;
                         if (isSameSender) container.style.marginTop = '-8px';
@@ -1925,7 +1905,7 @@
 
         const minimizeBtnObj = shadow.getElementById('ls-minimize-btn');
         minimizeBtnObj.addEventListener('click', () => {
-            if (isCurrentlyIntegrated) { alert("O Chat está no Modo Teatro. Desative essa opção no menu ou nas configurações para minimizar a janela."); return; }
+            if (myIntegratedMode) { alert("O Chat está no Modo Teatro. Desative essa opção no menu ou nas configurações para minimizar a janela."); return; }
             chatWindow.classList.remove('open');
             if (myHideApp) fab.style.display = 'none'; else fab.style.display = 'flex';
             if (currentRoom) updateLastRead(currentRoom);
@@ -1933,7 +1913,7 @@
 
         const closeBtnObj = shadow.getElementById('ls-close-btn');
         closeBtnObj.addEventListener('click', () => { 
-            if (isCurrentlyIntegrated) { alert("O Chat está no Modo Teatro. Desative essa opção no menu ou nas configurações para fechar o app."); return; }
+            if (myIntegratedMode) { alert("O Chat está no Modo Teatro. Desative essa opção no menu ou nas configurações para fechar o app."); return; }
             chatWindow.classList.remove('open'); 
             fab.style.display = 'none';
             if (currentRoom) updateLastRead(currentRoom);
@@ -2017,12 +1997,6 @@
             } else {
                 alert("Nenhum vídeo encontrado na tela.");
             }
-        });
-
-        shadow.getElementById('btn-action-invite').addEventListener('click', async () => {
-            plusPanel.style.display = 'none'; if(!currentRoom || !currentRoomKey) return;
-            if (checkFlood()) return;
-            try { await db.collection('rooms').doc(currentRoom).collection('messages').add({ type: 'invite', text: 'convidou o chat para a programação atual!', url: window.location.href, sender: myName, deviceId: myDeviceId, color: myColor, roomKey: currentRoomKey, timestamp: firebase.firestore.FieldValue.serverTimestamp(), deleted: false }); updateLastRead(currentRoom); playSendSound(); } catch (e) {}
         });
 
         shadow.getElementById('btn-action-countdown').addEventListener('click', async () => { 
@@ -2196,30 +2170,12 @@
         if (myHideApp) fab.style.display = 'none';
         checkScreenState();
         
-        const checkUrlChange = () => {
+        setInterval(() => {
             if (window.location.href !== lastUrl) {
                 lastUrl = window.location.href;
                 if (myIntegratedMode) checkScreenState();
             }
-        };
-
-        const originalPushState = history.pushState;
-        history.pushState = function() {
-            originalPushState.apply(this, arguments);
-            setTimeout(checkUrlChange, 50);
-        };
-
-        const originalReplaceState = history.replaceState;
-        history.replaceState = function() {
-            originalReplaceState.apply(this, arguments);
-            setTimeout(checkUrlChange, 50);
-        };
-
-        window.addEventListener('popstate', () => {
-            setTimeout(checkUrlChange, 50);
-        });
-        
-        setInterval(checkUrlChange, 1000);
+        }, 1000);
         
         setInterval(() => {
             if (!myName) return;
