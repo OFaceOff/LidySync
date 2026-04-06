@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      91.0
+// @version      92.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/refs/heads/main/docs/assets/img/favicon.ico
@@ -189,14 +189,14 @@
             }
             
             #ls-wrapper.theme-glass { 
-                --bg-base: rgba(2, 6, 23, 0.35); 
-                --bg-surface: rgba(15, 23, 42, 0.55); 
-                --bg-elevated: rgba(30, 41, 59, 0.65);
+                --bg-base: rgba(2, 6, 23, 0.50); 
+                --bg-surface: rgba(15, 23, 42, 0.65); 
+                --bg-elevated: rgba(30, 41, 59, 0.75);
                 --bg-overlay: rgba(2, 6, 23, 0.85); 
                 --bg-modal: rgba(15, 23, 42, 0.95); 
-                --border-color: rgba(255,255,255,0.1); 
-                --glass-blur: blur(16px); 
-                --received-msg: rgba(255, 255, 255, 0.1); 
+                --border-color: rgba(255,255,255,0.15); 
+                --glass-blur: blur(20px); 
+                --received-msg: rgba(255, 255, 255, 0.15); 
                 --fab-bg: rgba(255, 255, 255, 0.15); 
                 --fab-color: #ffffff; 
                 --fab-shadow: 0 8px 25px rgba(0, 0, 0, 0.4); 
@@ -204,6 +204,13 @@
                 --btn-primary-color: #ffffff; 
                 --btn-primary-shadow: rgba(0, 0, 0, 0.3);
                 --btn-secondary-bg: rgba(0, 0, 0, 0.3); 
+                text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+            }
+            #ls-wrapper.theme-glass input, #ls-wrapper.theme-glass textarea, #ls-wrapper.theme-glass select { 
+                text-shadow: none; 
+            }
+            #ls-wrapper.theme-glass .ls-message { 
+                text-shadow: 0 1px 2px rgba(0,0,0,0.8); 
             }
             
             #ls-wrapper.theme-hellokitty { 
@@ -378,7 +385,7 @@
             
             #ls-plus-panel { left: 16px; width: 280px; flex-direction: column; gap: 4px; } 
             .ls-action-item { color: var(--text-primary); padding: 12px; cursor: pointer; font-size: 14px; border-radius: 10px; display: flex; align-items: center; gap: 10px; font-weight: 500; transition: 0.2s; } 
-            .ls-action-item:hover { background-color: rgba(128,128,128,0.1); color: var(--highlight); }
+            .ls-action-item:hover { background: rgba(128,128,128,0.1); color: var(--highlight); }
             
             #ls-countdown-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(2, 6, 23, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 100; display: none; flex-direction: column; justify-content: center; align-items: center; } 
             #ls-countdown-number { font-size: 110px; font-weight: 700; color: var(--highlight); text-shadow: 0 0 40px rgba(6, 182, 212, 0.5); animation: pop 1s infinite; letter-spacing: -2px; } 
@@ -516,7 +523,7 @@
                         </div>
                         <div class="ls-config-section" style="margin-top:auto;"><button class="ls-btn-danger" id="ls-wipe-data-btn">Desconectar e Apagar Dados</button></div>
                         <button class="ls-btn-primary" id="ls-save-lobby-config-btn" style="margin-top: 0;">Salvar Alterações</button>
-                        <div style="text-align: center; margin-top: 8px; color: var(--text-muted); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Versão Atual - 91.0</div>
+                        <div style="text-align: center; margin-top: 8px; color: var(--text-muted); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Versão Atual - 92.0</div>
                     </div>
                 </div>
 
@@ -1421,7 +1428,7 @@
                             const data = snap.docs[0].data(); const statusEl = shadow.getElementById(`ls-status-${room.name}`); const unreadEl = shadow.getElementById(`ls-unread-${room.name}`);
                             if (statusEl && !data.deleted) {
                                 let msgText = data.text;
-                                if (data.type === 'image') msgText = '📷 Imagem'; else if (data.type === 'gif') msgText = '🎞️ GIF'; else if (data.type === 'invite') msgText = '🔗 Convite'; else if (data.type === 'countdown') msgText = 'Ação do Sistema';
+                                if (data.type === 'image') msgText = '📷 Imagem'; else if (data.type === 'gif') msgText = '🎞️ GIF'; else if (data.type === 'countdown') msgText = 'Ação do Sistema';
                                 
                                 if (data.text === 'SYSTEM_CREATED') msgText = 'Criou a sala';
                                 else if (data.text === 'SYSTEM_FIRST_JOIN') msgText = 'Entrou na sala';
@@ -1876,7 +1883,7 @@
                                 if (!chatWindow.classList.contains('open') && !myIntegratedMode) {
                                     if(!mutedRooms.includes(currentRoom)) playNotificationSound();
                                     unreadCount++; badge.style.display = 'flex'; badge.innerText = unreadCount > 5 ? '5+' : unreadCount;
-                                    if (myHideApp && myHideRevive) fab.style.display = 'flex';
+                                    if (myHideApp && myHideRevive) { fab.style.display = 'flex'; }
                                 } else { if(!mutedRooms.includes(currentRoom)) playReceiveSound(); }
                             }
                         }
@@ -2170,12 +2177,30 @@
         if (myHideApp) fab.style.display = 'none';
         checkScreenState();
         
-        setInterval(() => {
+        const checkUrlChange = () => {
             if (window.location.href !== lastUrl) {
                 lastUrl = window.location.href;
                 if (myIntegratedMode) checkScreenState();
             }
-        }, 1000);
+        };
+
+        const originalPushState = history.pushState;
+        history.pushState = function() {
+            originalPushState.apply(this, arguments);
+            setTimeout(checkUrlChange, 50);
+        };
+
+        const originalReplaceState = history.replaceState;
+        history.replaceState = function() {
+            originalReplaceState.apply(this, arguments);
+            setTimeout(checkUrlChange, 50);
+        };
+
+        window.addEventListener('popstate', () => {
+            setTimeout(checkUrlChange, 50);
+        });
+        
+        setInterval(checkUrlChange, 1000);
         
         setInterval(() => {
             if (!myName) return;
