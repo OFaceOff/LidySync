@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         LidySync Loader
-// @version      3.3
+// @version      3.4
 // @description  LidySync Loader
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/refs/heads/main/docs/assets/img/favicon.ico
@@ -37,7 +37,7 @@
 
     const SCRIPT_URL = "https://raw.githubusercontent.com/OFaceOff/LidySync/main/lidysync.user.js";
     const LOADER_URL = "https://raw.githubusercontent.com/OFaceOff/LidySync/main/lidysync.loader.user.js";
-    const CURRENT_VERSION = "3.3";
+    const CURRENT_VERSION = "3.4";
 
     function logError(contexto, erroTecnico) {
         const hora = new Date().toLocaleTimeString();
@@ -101,8 +101,11 @@
                 <div style="line-height: 1.4 !important;">
                     <strong style="color: #f8fafc !important; font-size: 13.5px !important; font-weight: 600 !important;">${titulo}</strong><br>
                     <span style="color: #94a3b8 !important; font-size: 12px !important;">${desc}</span>
-                    <div style="margin-top: 10px !important; font-size: 11px !important; color: #cbd5e1 !important;">
-                        Canais de suporte: <a href="https://discord.gg/4nSXkv4zwp" target="_blank" style="color: #fca5a5 !important; text-decoration: none !important; background: rgba(252, 165, 165, 0.1) !important; padding: 2px 4px !important; border-radius: 3px !important; border: 1px solid rgba(252, 165, 165, 0.2) !important;">Discord</a> | <a href="https://ofaceoff.github.io/LidySync/" target="_blank" style="color: #fca5a5 !important; text-decoration: none !important; background: rgba(252, 165, 165, 0.1) !important; padding: 2px 4px !important; border-radius: 3px !important; border: 1px solid rgba(252, 165, 165, 0.2) !important;">Site Oficial</a>
+                    <div style="margin-top: 12px !important; font-size: 11px !important;">
+                        <span style="color: #cbd5e1 !important; display: block !important; margin-bottom: 6px !important;">Canais de suporte Oficiais:</span>
+                        <a href="https://discord.gg/4nSXkv4zwp" target="_blank" style="color: #fca5a5 !important; text-decoration: none !important; background: rgba(252, 165, 165, 0.1) !important; padding: 3px 6px !important; border-radius: 4px !important; border: 1px solid rgba(252, 165, 165, 0.2) !important; transition: all 0.2s;" onmouseover="this.style.background='rgba(252,165,165,0.2)'; this.style.borderColor='rgba(252,165,165,0.4)';" onmouseout="this.style.background='rgba(252,165,165,0.1)'; this.style.borderColor='rgba(252,165,165,0.2)';">Discord</a>
+                        <span style="color: #475569 !important; margin: 0 4px !important;">|</span>
+                        <a href="https://ofaceoff.github.io/LidySync/" target="_blank" style="color: #fca5a5 !important; text-decoration: none !important; background: rgba(252, 165, 165, 0.1) !important; padding: 3px 6px !important; border-radius: 4px !important; border: 1px solid rgba(252, 165, 165, 0.2) !important; transition: all 0.2s;" onmouseover="this.style.background='rgba(252,165,165,0.2)'; this.style.borderColor='rgba(252,165,165,0.4)';" onmouseout="this.style.background='rgba(252,165,165,0.1)'; this.style.borderColor='rgba(252,165,165,0.2)';">Site Oficial</a>
                     </div>
                 </div>
             </div>
