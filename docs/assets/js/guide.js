@@ -19,7 +19,7 @@ async function fetchLatestVersion() {
 async function fetchLoaderCode() {
     const codeElement = document.getElementById('loader-code');
     try {
-        const response = await fetch('https://raw.githubusercontent.com/OFaceOff/LidySync/main/lidysync.loader.js');
+        const response = await fetch('https://raw.githubusercontent.com/OFaceOff/LidySync/main/lidysync.loader.user.js');
         if (!response.ok) throw new Error('Erro ao buscar o arquivo loader');
         const text = await response.text();
         codeElement.textContent = text;
