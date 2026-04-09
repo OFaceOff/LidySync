@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      1.1.0
+// @version      1.2.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/refs/heads/main/docs/assets/img/favicon.ico
@@ -218,6 +218,9 @@
             }
             #ls-wrapper.theme-glass .ls-message { 
                 text-shadow: 0 1px 2px rgba(0,0,0,0.8); 
+            }
+            #ls-wrapper.theme-glass #ls-main-logo { 
+                text-shadow: none; 
             }
             
             #ls-wrapper.theme-hellokitty { 
@@ -541,7 +544,7 @@
                             <button class="ls-btn-danger" id="ls-wipe-data-btn" style="margin-top: 0;">Apagar Conta e Desconectar</button>
                         </div>
                         <button class="ls-btn-primary" id="ls-save-lobby-config-btn" style="margin-top: 0;">Salvar Alterações</button>
-                        <div style="text-align: center; margin-top: 8px; color: var(--text-muted); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Versão Atual - 100.0</div>
+                        <div style="text-align: center; margin-top: 8px; color: var(--text-muted); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Versão Atual - 1.2.0</div>
                     </div>
                 </div>
 
@@ -699,10 +702,10 @@
                     <div id="ls-mention-panel"></div>
                     <div id="ls-emoji-panel" class="ls-popup-panel">${emojis.map(e => `<span class="ls-emoji-item">${e}</span>`).join('')}</div>
                     <div id="ls-plus-panel" class="ls-popup-panel">
+                        <div class="ls-action-item" id="btn-action-mastersync" style="display:none; color: #10b981;">👑 Iniciar Sincronização do Anfitrião</div>
                         <div class="ls-action-item" id="btn-action-countdown">⏱️ Play Sincronizado</div>
                         <div class="ls-action-item" id="btn-action-pause">⏸️ Pausar Sincronizado</div>
                         <div class="ls-action-item" id="btn-action-sharetime">⏳ Compartilhar meu tempo atual</div>
-                        <div class="ls-action-item" id="btn-action-sync">🔄 Sincronizar com o Anfitrião</div>
                         <div class="ls-action-item" id="btn-action-gif">🎞️ Adicionar GIF</div>
                         <div class="ls-action-item" id="btn-action-camera">📷 Tirar Foto</div>
                     </div>
@@ -795,6 +798,11 @@
         let isFlooding = false;
         let floodResetTimer = null;
 
+        let masterSyncActive = false;
+        let syncThrottle = null;
+        let lastProcessedSyncId = null;
+        let boundVideo = null;
+
         let isRemoteAction = false;
         let lastVideoElement = null;
         let lastUrl = window.location.href;
@@ -853,6 +861,40 @@
                 return true;
             }
             return false;
+        }
+
+        const pushSyncUpdate = (state) => {
+            if (!currentRoom || !masterSyncActive || isRemoteAction) return;
+            const v = document.querySelector('video');
+            if (!v) return;
+            if (syncThrottle) clearTimeout(syncThrottle);
+            syncThrottle = setTimeout(() => {
+                const syncData = { state: state, time: v.currentTime, syncId: Date.now() + Math.random() };
+                db.collection('rooms').doc(currentRoom).update({ masterSync: syncData }).catch(() => { });
+            }, 300);
+        };
+
+        const onHostPlay = () => pushSyncUpdate('playing');
+        const onHostPause = () => pushSyncUpdate('paused');
+        const onHostSeeked = () => pushSyncUpdate(document.querySelector('video')?.paused ? 'paused' : 'playing');
+
+        function attachMasterSync() {
+            const v = document.querySelector('video');
+            if (!v) { masterSyncActive = false; return alert('Nenhum vídeo encontrado na tela!'); }
+            boundVideo = v;
+            v.addEventListener('play', onHostPlay);
+            v.addEventListener('pause', onHostPause);
+            v.addEventListener('seeked', onHostSeeked);
+            pushSyncUpdate(v.paused ? 'paused' : 'playing');
+        }
+
+        function detachMasterSync() {
+            if (boundVideo) {
+                boundVideo.removeEventListener('play', onHostPlay);
+                boundVideo.removeEventListener('pause', onHostPause);
+                boundVideo.removeEventListener('seeked', onHostSeeked);
+                boundVideo = null;
+            }
         }
 
         safeAddEvt('ls-forgot-pin', 'click', () => {
@@ -1216,6 +1258,42 @@
             } catch (e) { }
         }
 
+        let hasFetchedRooms = false;
+        async function fetchMyRoomsFromFirestore() {
+            if (!myName || hasFetchedRooms) return;
+            hasFetchedRooms = true;
+            try {
+                const snapshot = await db.collection('rooms').where('participants', 'array-contains', myName).get();
+                let updated = false;
+                const myActiveRooms = [];
+
+                snapshot.forEach(doc => {
+                    myActiveRooms.push(doc.id);
+                    const rData = doc.data();
+                    const exists = savedRooms.find(r => r.name === doc.id);
+                    if (!exists) {
+                        savedRooms.push({ name: doc.id, hash: rData.password, rawPass: '' });
+                        updated = true;
+                    } else if (exists.hash !== rData.password) {
+                        exists.hash = rData.password;
+                        updated = true;
+                    }
+                });
+
+                const originalLength = savedRooms.length;
+                savedRooms = savedRooms.filter(r => myActiveRooms.includes(r.name));
+                if (savedRooms.length !== originalLength) updated = true;
+
+                if (updated) {
+                    ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms));
+                    if (!currentRoom) {
+                        renderSavedRooms();
+                        startLobbyListeners();
+                    }
+                }
+            } catch (e) { }
+        }
+
         function checkScreenState() {
             const settingsOverlay = shadow.getElementById('ls-settings-overlay');
             const addRoomOverlay = shadow.getElementById('ls-add-room-overlay');
@@ -1275,6 +1353,7 @@
                 if (backBtn) backBtn.style.display = 'none';
                 if (headerText) { headerText.innerText = `Lobby (${myName})`; headerText.classList.remove('clickable'); }
                 renderSavedRooms(); startLobbyListeners();
+                fetchMyRoomsFromFirestore();
             } else {
                 if (setupArea) setupArea.style.display = 'none';
                 if (lobbyArea) lobbyArea.style.display = 'none';
@@ -1854,6 +1933,19 @@
             const messagesContainer = shadow.getElementById('ls-messages');
             if (messagesContainer) messagesContainer.innerHTML = '';
             userCache = {};
+
+            masterSyncActive = false;
+            lastProcessedSyncId = null;
+            const mBtn = shadow.getElementById('btn-action-mastersync');
+            if (mBtn) { mBtn.innerHTML = '👑 Iniciar Sincronização do Anfitrião'; mBtn.style.color = '#10b981'; }
+            detachMasterSync();
+
+            const ep = shadow.getElementById('ls-emoji-panel'); if (ep) ep.style.display = 'none';
+            const pp = shadow.getElementById('ls-plus-panel'); if (pp) pp.style.display = 'none';
+            const mp = shadow.getElementById('ls-mention-panel'); if (mp) mp.style.display = 'none';
+            const rb = shadow.getElementById('ls-reply-bar'); if (rb) rb.style.display = 'none';
+            replyTarget = null;
+
             const roomRef = db.collection('rooms').doc(currentRoom); const messagesRef = roomRef.collection('messages');
 
             roomListener = roomRef.onSnapshot(doc => {
@@ -1869,19 +1961,22 @@
                         return;
                     }
 
-                    if (newData.createdBy !== myName && newData.syncId && (!currentRoomData || currentRoomData.syncId !== newData.syncId)) {
-                        const v = document.querySelector('video');
-                        if (v) {
-                            isRemoteAction = true;
-                            if (Math.abs(v.currentTime - newData.playbackTime) > 1.5) {
-                                v.currentTime = newData.playbackTime;
+                    if (newData.createdBy !== myName && newData.masterSync) {
+                        if (!lastProcessedSyncId || lastProcessedSyncId !== newData.masterSync.syncId) {
+                            lastProcessedSyncId = newData.masterSync.syncId;
+                            const v = document.querySelector('video');
+                            if (v) {
+                                isRemoteAction = true;
+                                if (Math.abs(v.currentTime - newData.masterSync.time) > 1.5) {
+                                    v.currentTime = newData.masterSync.time;
+                                }
+                                if (newData.masterSync.state === 'playing' && v.paused) {
+                                    v.play().catch(() => { });
+                                } else if (newData.masterSync.state === 'paused' && !v.paused) {
+                                    v.pause();
+                                }
+                                setTimeout(() => { isRemoteAction = false; }, 1000);
                             }
-                            if (newData.playbackState === 'playing' && v.paused) {
-                                v.play().catch(() => { });
-                            } else if (newData.playbackState === 'paused' && !v.paused) {
-                                v.pause();
-                            }
-                            setTimeout(() => { isRemoteAction = false; }, 1000);
                         }
                     }
 
@@ -1890,14 +1985,17 @@
                     const deleteBtn = shadow.getElementById('ls-menu-delete');
                     const leaveBtn = shadow.getElementById('ls-menu-leave');
                     const deleteDiv = shadow.getElementById('ls-menu-delete-divider');
+                    const masterSyncBtn = shadow.getElementById('btn-action-mastersync');
                     if (currentRoomData.createdBy === myName) {
                         if (deleteBtn) deleteBtn.style.display = 'flex';
                         if (leaveBtn) leaveBtn.style.display = 'none';
                         if (deleteDiv) deleteDiv.style.display = 'block';
+                        if (masterSyncBtn) masterSyncBtn.style.display = 'flex';
                     } else {
                         if (deleteBtn) deleteBtn.style.display = 'none';
                         if (leaveBtn) leaveBtn.style.display = 'flex';
                         if (deleteDiv) deleteDiv.style.display = 'block';
+                        if (masterSyncBtn) masterSyncBtn.style.display = 'none';
                     }
 
                     if (currentRoomData.participants) { currentRoomData.participants.forEach(p => { if (!userCache[p]) { db.collection('users').doc(p).get().then(u => { if (u.exists) userCache[p] = u.data(); }); } }); }
@@ -2147,7 +2245,12 @@
             });
         }
 
-        function stopChatListeners() { if (roomListener) roomListener(); if (messagesListener) messagesListener(); roomListener = null; messagesListener = null; }
+        function stopChatListeners() {
+            if (masterSyncActive) { masterSyncActive = false; detachMasterSync(); }
+            if (roomListener) roomListener();
+            if (messagesListener) messagesListener();
+            roomListener = null; messagesListener = null;
+        }
 
         safeAddEvt('ls-save-config-btn', 'click', async () => {
             const cb = shadow.getElementById('ls-config-autoplay');
@@ -2275,22 +2378,22 @@
             }
         });
 
-        safeAddEvt('btn-action-sync', 'click', () => {
+        safeAddEvt('btn-action-mastersync', 'click', () => {
             const pp = shadow.getElementById('ls-plus-panel'); if (pp) pp.style.display = 'none';
-            if (!currentRoomData || typeof currentRoomData.playbackTime === 'undefined') return alert("O anfitrião ainda não reproduziu ou pausou o vídeo para sincronizar.");
-            const v = document.querySelector('video');
-            if (v) {
-                isRemoteAction = true;
-                v.currentTime = currentRoomData.playbackTime;
-                if (currentRoomData.playbackState === 'playing') {
-                    v.play().catch(() => { });
-                } else {
-                    v.pause();
+            if (checkFlood()) return;
+
+            masterSyncActive = !masterSyncActive;
+            const btn = shadow.getElementById('btn-action-mastersync');
+            if (masterSyncActive) {
+                attachMasterSync();
+                if (masterSyncActive) {
+                    if (btn) { btn.innerHTML = '👑 Parar Sincronização do Anfitrião'; btn.style.color = '#ef4444'; }
+                    sendSystemAction('ativou a Sincronização do Anfitrião!');
                 }
-                sendSystemAction('sincronizou com o anfitrião!');
-                setTimeout(() => { isRemoteAction = false; }, 1000);
             } else {
-                alert("Nenhum vídeo encontrado na tela.");
+                detachMasterSync();
+                if (btn) { btn.innerHTML = '👑 Iniciar Sincronização do Anfitrião'; btn.style.color = '#10b981'; }
+                sendSystemAction('desativou a Sincronização do Anfitrião.');
             }
         });
 
@@ -2498,12 +2601,18 @@
 
         setInterval(() => {
             if (!myName) return;
+            const now = Date.now();
+            const currentTitle = document.title || "LidySync";
+            const titleChanged = currentTitle !== lastDocumentTitle;
+            const needsPing = now - lastPingTime > 120000;
 
-            if (currentRoom && currentRoomData && currentRoomData.createdBy === myName) {
-                const v = document.querySelector('video');
-                if (v && !v.paused) {
-                    db.collection('rooms').doc(currentRoom).update({ playbackTime: v.currentTime }).catch(() => { });
-                }
+            if ((titleChanged || needsPing) && document.visibilityState === 'visible') {
+                lastDocumentTitle = currentTitle;
+                lastPingTime = now;
+                db.collection('users').doc(myName).update({
+                    watching: currentTitle,
+                    lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+                }).catch(() => { });
             }
         }, 5000);
     }
