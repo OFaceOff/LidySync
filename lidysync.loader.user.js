@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         LidySync Loader
-// @version      3.6
+// @version      3.7
 // @description  LidySync Loader
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/refs/heads/main/docs/assets/img/favicon.ico
@@ -37,7 +37,7 @@
 
     const SCRIPT_URL = "https://raw.githubusercontent.com/OFaceOff/LidySync/main/lidysync.user.js";
     const LOADER_URL = "https://raw.githubusercontent.com/OFaceOff/LidySync/main/lidysync.loader.user.js";
-    const CURRENT_VERSION = "3.6";
+    const CURRENT_VERSION = "3.7";
 
     function logError(contexto, erroTecnico) {
         const hora = new Date().toLocaleTimeString();
@@ -46,9 +46,6 @@
 
     function createNotification(html, isError = false, duration = 8000) {
         if (document.getElementById("ls-notification-container")) return;
-
-        const disable = localStorage.getItem("lidysync_disable_notifications") === "true";
-        if (!isError && disable && duration > 0) return;
 
         const container = document.createElement("div");
         container.id = "ls-notification-container";
@@ -74,20 +71,14 @@
                 font-family: sans-serif !important; 
                 display: block !important;
             ">
-                <button id="ls-close" style="position:absolute !important; top:10px !important; right:12px !important; background:none !important; border:none !important; color:#94a3b8 !important; cursor:pointer !important; font-size:14px !important; padding:4px !important; line-height:1 !important;">✕</button>
+                <button id="ls-close" style="position:absolute !important; top:10px !important; right:12px !important; background:none !important; border:none !important; color:#94a3b8 !important; cursor:pointer !important; font-size:14px !important; padding:4px !important; line-height:1 !important; transition: color 0.2s !important;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">✕</button>
                 ${html}
-                ${!isError && duration > 0 ? `
-                <div style="margin-top:10px !important; text-align: center !important;">
-                    <button id="ls-disable" style="background:none !important; border:none !important; color:#64748b !important; cursor:pointer !important; font-size:11px !important; text-decoration: underline !important;">Não mostrar novamente</button>
-                </div>
-                ` : ""}
             </div>
         `;
 
         document.documentElement.appendChild(container);
         const remove = () => container.remove();
         container.querySelector("#ls-close").onclick = remove;
-        if (container.querySelector("#ls-disable")) container.querySelector("#ls-disable").onclick = () => { localStorage.setItem("lidysync_disable_notifications", "true"); remove(); };
         if (duration > 0) setTimeout(remove, duration);
     }
 
@@ -158,7 +149,7 @@
                         <span style="color: #94a3b8 !important; font-size: 12px !important;">LidySync → ${CURRENT_VERSION}</span>
                     </div>
                 </div>
-            `, false, 20000);
+            `, false, 15000);
         }
         localStorage.setItem("lidysync_last_run_version", CURRENT_VERSION);
     }
