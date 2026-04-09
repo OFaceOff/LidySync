@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      93.0
+// @version      1.1.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/refs/heads/main/docs/assets/img/favicon.ico
@@ -14,12 +14,12 @@
 // @require      https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js
 // ==/UserScript==
 
-(function() {
+(function () {
     'use strict';
 
     const hasGM = typeof GM_getValue !== 'undefined';
     const ls = {
-        getItem: function(key) {
+        getItem: function (key) {
             let val = hasGM ? GM_getValue(key) : undefined;
             if (val === undefined || val === null) {
                 val = localStorage.getItem(key);
@@ -27,16 +27,16 @@
             }
             return (val === undefined || val === null) ? null : val;
         },
-        setItem: function(key, val) {
+        setItem: function (key, val) {
             if (hasGM) GM_setValue(key, String(val));
             localStorage.setItem(key, val);
         },
-        removeItem: function(key) {
+        removeItem: function (key) {
             if (hasGM) GM_deleteValue(key);
             localStorage.removeItem(key);
         },
-        clear: function() {
-            const keys = ['ls_device_id','ls_username','ls_userpin','ls_usercolor','ls_usertextcolor','ls_useravatar','ls_userbanner','ls_userbio','ls_usercountry','ls_userfav','ls_hidechats','ls_current_room','ls_room_key','ls_saved_rooms','ls_last_read','ls_muted_rooms','ls_theme','ls_sound','ls_inchat_sounds','ls_hide_sys','ls_hide_app','ls_hide_revive','ls_integrated','ls_autoplay'];
+        clear: function () {
+            const keys = ['ls_device_id', 'ls_username', 'ls_userpin', 'ls_usercolor', 'ls_usertextcolor', 'ls_useravatar', 'ls_userbanner', 'ls_userbio', 'ls_usercountry', 'ls_userfav', 'ls_hidechats', 'ls_current_room', 'ls_room_key', 'ls_saved_rooms', 'ls_last_read', 'ls_muted_rooms', 'ls_theme', 'ls_sound', 'ls_inchat_sounds', 'ls_hide_sys', 'ls_hide_app', 'ls_hide_revive', 'ls_integrated', 'ls_autoplay'];
             if (hasGM) keys.forEach(k => GM_deleteValue(k));
             keys.forEach(k => localStorage.removeItem(k));
         }
@@ -66,7 +66,7 @@
             gain.gain.exponentialRampToValueAtTime(0.01, sharedAudioCtx.currentTime + duration);
             osc.start();
             osc.stop(sharedAudioCtx.currentTime + duration);
-        } catch (e) {}
+        } catch (e) { }
     }
 
     function playNotificationSound() { if (ls.getItem('ls_sound') !== 'false') playAudio(600, 1000, 0.1); }
@@ -89,7 +89,7 @@
             const canvas = document.createElement('canvas');
             let width = img.width, height = img.height;
             const max = 800;
-            if (width > height && width > max) { height *= max / width; width = max; } 
+            if (width > height && width > max) { height *= max / width; width = max; }
             else if (height > max) { width *= max / height; height = max; }
             canvas.width = width; canvas.height = height;
             canvas.getContext('2d').drawImage(img, 0, 0, width, height);
@@ -106,14 +106,15 @@
                 let c = 'ls-tag-generic';
                 let text = t;
                 let title = '';
-                
+
                 if (t === 'DEV') { c = 'ls-tag-dev'; title = 'Este usuário faz parte da equipe de desenvolvimento da FStudio'; }
                 else if (t === 'OWNER') { c = 'ls-tag-owner'; title = 'Este usuário detém a posse do aplicativo, ele que manda e desmanda, quer coisas novas ? pede pra ele que é ele que adiciona :3'; }
                 else if (t === 'MOD') { c = 'ls-tag-mod'; title = 'Este usuário faz parte da equipe de moderação e está aqui para te ajudar'; }
                 else if (t === 'LINDA DE MORRER' || t === 'Do Biel') { c = 'ls-tag-linda'; text = 'LINDA DE MORRER'; title = 'Essa pessoa é considerada muito linda por quem deu a tag a ela.'; }
                 else if (t === 'VERIFICADO') { c = 'ls-tag-verified'; text = '✓'; title = 'Este usuário é verificado e com certeza não é um bot'; }
                 else if (t === 'VIP') { c = 'ls-tag-vip'; title = 'Membro VIP - Apoiador da Comunidade'; }
-                
+                else if (t === 'DELETED') { c = 'ls-tag-host'; text = 'EXCLUÍDA'; title = 'Esta conta foi excluída pelo usuário.'; }
+
                 html += `<span class="ls-tag ${c}" title="${title}">${text}</span>`;
             });
         }
@@ -140,10 +141,16 @@
         const host = document.createElement('div');
         host.id = 'lidysync-host';
         host.style.cssText = 'position: fixed !important; bottom: 90px !important; right: 20px !important; z-index: 2147483647 !important; pointer-events: none !important;';
-        
+
         const shadow = host.attachShadow({ mode: 'open' });
+
+        function safeAddEvt(id, evt, cb) {
+            const el = shadow.getElementById(id);
+            if (el) el.addEventListener(evt, cb);
+        }
+
         const style = document.createElement('style');
-        
+
         style.textContent = `
             * { box-sizing: border-box; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
             #ls-wrapper { 
@@ -285,12 +292,12 @@
             .ls-tags-container { display: inline-flex; gap: 4px; align-items: center; vertical-align: middle; flex-wrap: wrap; } 
             .ls-tag { font-size: 8px; font-weight: 800; padding: 2px 5px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; cursor: help; } 
             .ls-tag-host { background-color: #ef4444; color: #ffffff; } 
-            .ls-tag-dev { background-color: #facc15; color: #000000; } 
+            .ls-tag-dev { background-color: #ff5a08 !important; color: #000000 !important; } 
             .ls-tag-owner { background-color: #5b21b6; color: #ffffff; } 
             .ls-tag-mod { background-color: #3b82f6; color: #ffffff; } 
             .ls-tag-linda { background-color: #fbcfe8; color: #be185d; } 
             .ls-tag-generic { background-color: rgba(128,128,128,0.2); color: inherit; }
-            .ls-tag-vip { background: linear-gradient(135deg, #facc15, #eab308) !important; color: #000000 !important; border: 1px solid #ca8a04 !important; font-weight: 900 !important; text-shadow: none !important; }
+            .ls-tag-vip { background-color: #d6ac60 !important; color: #000000 !important; border: none !important; font-weight: 900 !important; text-shadow: none !important; }
             .ls-tag-verified { background-color: #0ea5e9 !important; color: #ffffff !important; border-radius: 50% !important; width: 14px !important; height: 14px !important; display: inline-flex !important; justify-content: center; align-items: center; padding: 0 !important; font-size: 9px !important; border: 1px solid #ffffff; box-shadow: 0 0 4px rgba(14, 165, 233, 0.6); }
             
             #ls-fab-add { position: absolute; bottom: 20px; right: 20px; width: 50px; height: 50px; background: var(--fab-bg); color: var(--fab-color); border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: var(--fab-shadow); font-size: 24px; transition: 0.2s; z-index: 20; border: none; backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); } 
@@ -411,6 +418,9 @@
             .ls-mask-avatar { width: 200px; height: 200px; border-radius: 50%; top: 50px; left: 50px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7); position: absolute; pointer-events: none; border: 2px solid var(--highlight); box-sizing: border-box; }
             .ls-mask-banner { width: 300px; height: 108px; border-radius: 8px; top: 96px; left: 0; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7); position: absolute; pointer-events: none; border: 2px solid var(--highlight); box-sizing: border-box; }
             
+            @keyframes ls-gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+            #ls-main-logo { font-size: 32px; font-weight: 800; display: block; margin-bottom: 4px; background: linear-gradient(270deg, #5b5cf6, #06b6d4, #7c3aed, #5b5cf6); background-size: 300% 300%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: ls-gradientShift 6s ease infinite; filter: drop-shadow(0 0 8px rgba(6, 182, 212, 0.6)); }
+
             :root { --ls-chat-width: 350px; }
             html.ls-integrated-active { margin-right: var(--ls-chat-width) !important; width: calc(100% - var(--ls-chat-width)) !important; }
             body.ls-integrated-active { max-width: calc(100vw - var(--ls-chat-width)) !important; }
@@ -436,14 +446,14 @@
             }
         `;
 
-        const emojis = ['😀','😂','😍','🥰','😎','😭','😡','😱','🍿','🎬','🍕','🥂','👍','👎','❤️','🔥'];
+        const emojis = ['😀', '😂', '😍', '🥰', '😎', '😭', '😡', '😱', '🍿', '🎬', '🍕', '🥂', '👍', '👎', '❤️', '🔥'];
         const svgEye = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
         const svgEyeOff = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
 
         const wrapper = document.createElement('div');
         wrapper.id = 'ls-wrapper';
-        wrapper.className = ls.getItem('ls_theme') !== null ? ls.getItem('ls_theme') : ''; 
-        
+        wrapper.className = ls.getItem('ls_theme') !== null ? ls.getItem('ls_theme') : '';
+
         wrapper.innerHTML = `
             <div id="ls-chat-window">
                 <div id="ls-header">
@@ -473,14 +483,20 @@
                 
                 <div id="ls-setup-area" class="ls-screen ls-modal-content">
                     <div style="text-align: center; margin-bottom: 10px;">
-                        <span style="font-size: 32px; font-weight: 800; background: linear-gradient(135deg, #5b5cf6, #7c3aed); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: block; margin-bottom: 4px;">LidySync</span>
+                        <span id="ls-main-logo">LidySync</span>
                         <span style="color: var(--text-primary); font-size: 16px; font-weight: 600;">Bem-vindo!</span>
                     </div>
                     <div><span class="ls-label">Nome de Usuário</span><input type="text" class="ls-input-text" id="ls-setup-name" placeholder="Adicione seu apelido" maxlength="100" /></div>
                     <div>
                         <span class="ls-label">PIN de Acesso (Mín. 4 dígitos)</span>
                         <input type="password" class="ls-input-text" id="ls-setup-pin" placeholder="Ex: 1234" maxlength="8" />
-                        <div style="text-align: right; margin-top: 4px;"><span id="ls-forgot-pin" style="color: var(--text-muted); font-size: 11px; cursor: pointer; text-decoration: underline;">Esqueci meu PIN</span></div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                            <label class="ls-checkbox-group" style="margin-top: 0; gap: 6px;">
+                                <input type="checkbox" id="ls-setup-keep" checked>
+                                <span style="font-weight: 500; font-size: 11px; color: var(--text-muted);">Manter logado</span>
+                            </label>
+                            <span id="ls-forgot-pin" style="color: var(--text-muted); font-size: 11px; cursor: pointer; text-decoration: underline;">Esqueci meu PIN</span>
+                        </div>
                     </div>
                     <div style="display: flex; gap: 10px;">
                         <div style="flex:1;"><span class="ls-label">Cor da Bolha</span><input type="color" class="ls-input-color" id="ls-setup-color" value="#5b5cf6" /></div>
@@ -490,10 +506,6 @@
                         <button class="ls-btn-primary" id="ls-login-btn" style="flex: 1; margin-top: 0;">Entrar</button>
                         <button class="ls-btn-secondary" id="ls-register-btn" style="flex: 1; margin-top: 0;">Registrar</button>
                     </div>
-                    <label class="ls-checkbox-group" style="margin-top:12px; justify-content: center;">
-                        <input type="checkbox" id="ls-setup-keep" checked>
-                        <span style="font-weight: 500;">Manter logado</span>
-                    </label>
                 </div>
 
                 <div id="ls-lobby-area" class="ls-screen" style="padding: 16px;">
@@ -524,9 +536,12 @@
                             <label class="ls-checkbox-group"><input type="checkbox" id="ls-app-revive" checked><span><b>Despertar com Notificação</b><br><small style="color: var(--text-muted);">Reaparece se chegar mensagem.</small></span></label>
                             <label class="ls-checkbox-group"><input type="checkbox" id="ls-app-integrated"><span><b>Modo Teatro (Integrado)</b><br><small style="color: var(--text-muted);">Fixa o chat na direita da tela.</small></span></label>
                         </div>
-                        <div class="ls-config-section" style="margin-top:auto;"><button class="ls-btn-danger" id="ls-wipe-data-btn">Desconectar e Apagar Dados</button></div>
+                        <div class="ls-config-section" style="margin-top:auto;">
+                            <button class="ls-btn-secondary" id="ls-logout-btn" style="margin-bottom: 10px; margin-top: 0;">Sair da Conta</button>
+                            <button class="ls-btn-danger" id="ls-wipe-data-btn" style="margin-top: 0;">Apagar Conta e Desconectar</button>
+                        </div>
                         <button class="ls-btn-primary" id="ls-save-lobby-config-btn" style="margin-top: 0;">Salvar Alterações</button>
-                        <div style="text-align: center; margin-top: 8px; color: var(--text-muted); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Versão Atual - 93.0</div>
+                        <div style="text-align: center; margin-top: 8px; color: var(--text-muted); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Versão Atual - 100.0</div>
                     </div>
                 </div>
 
@@ -551,7 +566,7 @@
                                 <div class="ls-profile-bio-box" id="ls-profile-v-bio" style="margin-top:0;">-</div>
                             </div>
                             <div style="padding: 0 20px; margin-top: 16px; display: none;" id="ls-profile-v-fav-container">
-                                <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">🍿 Assistindo / Favorito</span>
+                                <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">🍿 Favorito</span>
                                 <div style="color: var(--text-primary); font-size: 15px; font-weight: 600; margin-top: 6px; background: rgba(128,128,128,0.05); padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border-color);" id="ls-profile-v-fav">-</div>
                             </div>
                             <div class="ls-profile-grid" style="padding: 20px;">
@@ -583,8 +598,8 @@
                                 <div style="flex:1;"><span class="ls-label">Cor Principal</span><input type="color" class="ls-input-color" id="ls-profile-e-color" /></div>
                                 <div style="flex:1;"><span class="ls-label">Cor do Texto</span><input type="color" class="ls-input-color" id="ls-profile-e-textcolor" /></div>
                             </div>
-                            <div><span class="ls-label">Filme/Série Favorita</span><input type="text" class="ls-input-text" id="ls-profile-e-fav" placeholder="O que você mais gosta?" maxlength="50" /></div>
-                            <div><span class="ls-label">Bio</span><textarea class="ls-textarea" id="ls-profile-e-bio" placeholder="Fale um pouco sobre você..." maxlength="200"></textarea></div>
+                            <div><span class="ls-label">Filme/Série Favorita</span><input type="text" class="ls-input-text" id="ls-profile-e-fav" placeholder="O que você mais gosta?" maxlength="80" /></div>
+                            <div><span class="ls-label">Bio</span><textarea class="ls-textarea" id="ls-profile-e-bio" placeholder="Fale um pouco sobre você..." maxlength="100"></textarea></div>
                             <label class="ls-checkbox-group" style="margin-top:5px;"><input type="checkbox" id="ls-profile-e-hiderooms"><span><b>Ocultar quantidade de chats ativos</b></span></label>
                             <div style="display: flex; gap: 10px; margin-top: 10px;">
                                 <button class="ls-btn-secondary" id="ls-btn-cancel-profile">Cancelar</button>
@@ -709,170 +724,22 @@
         shadow.appendChild(wrapper);
         target.appendChild(host);
 
-        // VARIAVEIS DO CROPPER
-        let cropImgObj = new Image();
-        let cropX = 0, cropY = 0, cropScale = 1;
-        let isDraggingCrop = false, startCropX = 0, startCropY = 0;
-        let currentCropType = 'avatar'; // 'avatar' ou 'banner'
-
-        const cropperOverlay = shadow.getElementById('ls-cropper-overlay');
-        const cropperFrame = shadow.getElementById('ls-cropper-frame');
-        const cropperImg = shadow.getElementById('ls-cropper-img');
-        const cropperMask = shadow.getElementById('ls-cropper-mask');
-        const cropperZoom = shadow.getElementById('ls-cropper-zoom');
-        const cropperSaveBtn = shadow.getElementById('ls-cropper-save');
-        const cropperCancelBtn = shadow.getElementById('ls-cropper-cancel');
-
-        function updateCropImg() {
-            cropperImg.style.transform = `translate(${cropX}px, ${cropY}px) scale(${cropScale})`;
+        function safeAddEvt(id, evt, cb) {
+            const el = shadow.getElementById(id);
+            if (el) el.addEventListener(evt, cb);
         }
 
-        function openCropper(type) {
-            currentCropType = type;
-            cropperImg.src = cropImgObj.src;
-            
-            if (type === 'avatar') {
-                cropperMask.className = 'ls-mask-avatar';
-                cropScale = Math.max(200 / cropImgObj.width, 200 / cropImgObj.height);
-                cropX = 150 - (cropImgObj.width * cropScale) / 2;
-                cropY = 150 - (cropImgObj.height * cropScale) / 2;
-            } else {
-                cropperMask.className = 'ls-mask-banner';
-                cropScale = Math.max(300 / cropImgObj.width, 108 / cropImgObj.height);
-                cropX = 150 - (cropImgObj.width * cropScale) / 2;
-                cropY = 150 - (cropImgObj.height * cropScale) / 2;
-            }
-            
-            cropperZoom.min = cropScale * 0.5;
-            cropperZoom.max = cropScale * 5;
-            cropperZoom.value = cropScale;
-            
-            updateCropImg();
-            cropperOverlay.style.display = 'flex';
-        }
-
-        // EVENTOS DO CROPPER
-        cropperFrame.addEventListener('mousedown', (e) => {
-            isDraggingCrop = true;
-            startCropX = e.clientX - cropX;
-            startCropY = e.clientY - cropY;
-            cropperFrame.style.cursor = 'grabbing';
-        });
-        window.addEventListener('mousemove', (e) => {
-            if(!isDraggingCrop) return;
-            cropX = e.clientX - startCropX;
-            cropY = e.clientY - startCropY;
-            updateCropImg();
-        });
-        window.addEventListener('mouseup', () => {
-            isDraggingCrop = false;
-            cropperFrame.style.cursor = 'grab';
-        });
-
-        // Toque (Mobile) no Cropper
-        cropperFrame.addEventListener('touchstart', (e) => {
-            if(e.touches.length === 1) {
-                isDraggingCrop = true;
-                startCropX = e.touches[0].clientX - cropX;
-                startCropY = e.touches[0].clientY - cropY;
+        safeAddEvt('ls-close-viewer', 'click', () => {
+            const imageViewer = shadow.getElementById('ls-image-viewer');
+            const viewerImg = shadow.getElementById('ls-viewer-img');
+            if (imageViewer && viewerImg) {
+                imageViewer.classList.remove('show');
+                setTimeout(() => { imageViewer.style.display = 'none'; viewerImg.src = ''; }, 200);
             }
         });
-        window.addEventListener('touchmove', (e) => {
-            if(!isDraggingCrop) return;
-            if(e.touches.length === 1) {
-                cropX = e.touches[0].clientX - startCropX;
-                cropY = e.touches[0].clientY - startCropY;
-                updateCropImg();
-            }
-        });
-        window.addEventListener('touchend', () => { isDraggingCrop = false; });
 
-        cropperZoom.addEventListener('input', (e) => {
-            const newScale = parseFloat(e.target.value);
-            const maskCx = 150;
-            const maskCy = 150;
-            cropX = maskCx - (maskCx - cropX) * (newScale / cropScale);
-            cropY = maskCy - (maskCy - cropY) * (newScale / cropScale);
-            cropScale = newScale;
-            updateCropImg();
-        });
-
-        shadow.getElementById('ls-crop-zoom-in').addEventListener('click', () => { cropperZoom.value = parseFloat(cropperZoom.value) + 0.1; cropperZoom.dispatchEvent(new Event('input')); });
-        shadow.getElementById('ls-crop-zoom-out').addEventListener('click', () => { cropperZoom.value = parseFloat(cropperZoom.value) - 0.1; cropperZoom.dispatchEvent(new Event('input')); });
-
-        cropperCancelBtn.addEventListener('click', () => {
-            cropperOverlay.style.display = 'none';
-        });
-
-        cropperSaveBtn.addEventListener('click', () => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            let mWidth, mHeight, mLeft, mTop, outWidth, outHeight;
-            
-            if (currentCropType === 'avatar') {
-                mWidth = 200; mHeight = 200; mLeft = 50; mTop = 50;
-                outWidth = 400; outHeight = 400;
-            } else {
-                mWidth = 300; mHeight = 108; mLeft = 0; mTop = 96;
-                outWidth = 720; outHeight = 260;
-            }
-            
-            canvas.width = outWidth;
-            canvas.height = outHeight;
-            
-            const ratioX = outWidth / mWidth;
-            const ratioY = outHeight / mHeight;
-            
-            const drawX = (cropX - mLeft) * ratioX;
-            const drawY = (cropY - mTop) * ratioY;
-            const drawW = cropImgObj.width * cropScale * ratioX;
-            const drawH = cropImgObj.height * cropScale * ratioY;
-            
-            ctx.drawImage(cropImgObj, drawX, drawY, drawW, drawH);
-            const finalUrl = canvas.toDataURL('image/jpeg', 0.85);
-            
-            if (currentCropType === 'avatar') {
-                tempAvatar = finalUrl;
-                const av = shadow.getElementById('ls-profile-e-avatar');
-                av.style.backgroundImage = `url(${finalUrl})`;
-                av.style.backgroundColor = 'transparent';
-                av.innerText = '';
-            } else {
-                tempBanner = finalUrl;
-            }
-            
-            cropperOverlay.style.display = 'none';
-        });
-
-        const fab = shadow.getElementById('ls-fab');
-        const badge = shadow.getElementById('ls-unread-badge');
-        const chatWindow = shadow.getElementById('ls-chat-window');
-        const closeBtn = shadow.getElementById('ls-close-btn');
-        const minimizeBtn = shadow.getElementById('ls-minimize-btn');
-        const lobbySettingsBtn = shadow.getElementById('ls-lobby-settings-btn');
-        const backBtn = shadow.getElementById('ls-back-btn');
-        const headerText = shadow.getElementById('ls-header-text');
-        const chatMenuContainer = shadow.getElementById('ls-chat-menu-container');
-        
-        const setupArea = shadow.getElementById('ls-setup-area');
-        const lobbyArea = shadow.getElementById('ls-lobby-area');
-        const addRoomOverlay = shadow.getElementById('ls-add-room-overlay');
-        const chatArea = shadow.getElementById('ls-chat-area');
-        const settingsOverlay = shadow.getElementById('ls-settings-overlay');
-        const membersOverlay = shadow.getElementById('ls-members-overlay');
-        const lobbySettingsOverlay = shadow.getElementById('ls-lobby-settings-overlay');
-        const profileOverlay = shadow.getElementById('ls-profile-overlay');
-        const messagesContainer = shadow.getElementById('ls-messages');
-        const input = shadow.getElementById('ls-input');
-        const inputSetupName = shadow.getElementById('ls-setup-name');
-        const inputSetupPin = shadow.getElementById('ls-setup-pin');
-
-        const imageViewer = shadow.getElementById('ls-image-viewer');
-        const viewerImg = shadow.getElementById('ls-viewer-img');
-        const closeViewerBtn = shadow.getElementById('ls-close-viewer');
-
-        closeViewerBtn.addEventListener('click', () => { imageViewer.classList.remove('show'); setTimeout(() => { imageViewer.style.display = 'none'; viewerImg.src = ''; }, 200); });
-        imageViewer.addEventListener('click', (e) => { if(e.target === imageViewer) closeViewerBtn.click(); });
+        const imgViewer = shadow.getElementById('ls-image-viewer');
+        if (imgViewer) imgViewer.addEventListener('click', (e) => { if (e.target === imgViewer) { const cvb = shadow.getElementById('ls-close-viewer'); if (cvb) cvb.click(); } });
 
         let myDeviceId = ls.getItem('ls_device_id');
         if (!myDeviceId) {
@@ -889,23 +756,23 @@
         let myBio = ls.getItem('ls_userbio') || '';
         let myFav = ls.getItem('ls_userfav') || '';
         let myHideChats = ls.getItem('ls_hidechats') === 'true';
-        let currentRoom = ls.getItem('ls_current_room'); 
-        let currentRoomKey = ls.getItem('ls_room_key'); 
-        
+        let currentRoom = ls.getItem('ls_current_room');
+        let currentRoomKey = ls.getItem('ls_room_key');
+
         let tempAvatar = '';
         let tempBanner = '';
-        
+
         let savedRooms = JSON.parse(ls.getItem('ls_saved_rooms') || '[]');
         let lastReadTimes = JSON.parse(ls.getItem('ls_last_read') || '{}');
         let mutedRooms = JSON.parse(ls.getItem('ls_muted_rooms') || '[]');
-        
-        let myAutoPlay = ls.getItem('ls_autoplay') !== 'false'; 
+
+        let myAutoPlay = ls.getItem('ls_autoplay') !== 'false';
         let myHideApp = ls.getItem('ls_hide_app') === 'true';
         let myHideRevive = ls.getItem('ls_hide_revive') !== 'false';
         let myIntegratedMode = ls.getItem('ls_integrated') === 'true';
         let myHideSys = ls.getItem('ls_hide_sys') === 'true';
         let myInChatSound = ls.getItem('ls_inchat_sounds') !== 'false';
-        
+
         let editingRoomAppearance = null;
         let unreadCount = 0;
         let replyTarget = null;
@@ -919,7 +786,7 @@
         let lobbyUnsubscribes = [];
         let currentRoomData = null;
         let userCache = {};
-        
+
         let isTyping = false;
         let typingTimeout = null;
         let lsPartyTimeout = null;
@@ -927,65 +794,78 @@
         let floodCount = 0;
         let isFlooding = false;
         let floodResetTimer = null;
-        
-        let lastDocumentTitle = document.title;
-        let lastPingTime = 0;
 
         let isRemoteAction = false;
         let lastVideoElement = null;
         let lastUrl = window.location.href;
 
         window.addEventListener('beforeunload', () => {
+            if (myName) {
+                db.collection('users').doc(myName).update({ lastSeen: firebase.firestore.FieldValue.serverTimestamp() }).catch(() => { });
+            }
             if (currentRoom && currentRoomKey) {
                 db.collection('rooms').doc(currentRoom).collection('messages').add({
                     type: 'countdown', text: 'SYSTEM_WENT_AWAY', sender: myName, deviceId: myDeviceId, color: myColor, roomKey: currentRoomKey,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp(), deleted: false
-                }).catch(()=>{});
+                }).catch(() => { });
             }
         });
 
         function checkFlood() {
             if (isFlooding) return true;
             floodCount++;
-            
+
             if (!floodResetTimer) {
                 floodResetTimer = setTimeout(() => {
                     floodCount = 0;
                     floodResetTimer = null;
-                }, 10000); 
+                }, 10000);
             }
-            
+
             if (floodCount > 20) {
                 isFlooding = true;
                 clearTimeout(floodResetTimer);
                 floodResetTimer = null;
-                
-                input.disabled = true;
-                input.placeholder = "Você foi silenciado por 5seg digite mais devagar";
-                shadow.getElementById('ls-send-btn').style.pointerEvents = 'none';
-                shadow.getElementById('ls-send-btn').style.opacity = '0.5';
+
+                const inp = shadow.getElementById('ls-input');
+                if (inp) {
+                    inp.disabled = true;
+                    inp.placeholder = "Você foi silenciado por 5seg digite mais devagar";
+                }
+                const btnSend = shadow.getElementById('ls-send-btn');
+                if (btnSend) {
+                    btnSend.style.pointerEvents = 'none';
+                    btnSend.style.opacity = '0.5';
+                }
                 setTimeout(() => {
                     isFlooding = false;
                     floodCount = 0;
-                    input.disabled = false;
-                    input.placeholder = "Mensagem...";
-                    shadow.getElementById('ls-send-btn').style.pointerEvents = 'auto';
-                    shadow.getElementById('ls-send-btn').style.opacity = '1';
-                    input.focus();
+                    if (inp) {
+                        inp.disabled = false;
+                        inp.placeholder = "Mensagem...";
+                    }
+                    if (btnSend) {
+                        btnSend.style.pointerEvents = 'auto';
+                        btnSend.style.opacity = '1';
+                    }
+                    if (inp) inp.focus();
                 }, 5000);
                 return true;
             }
             return false;
         }
 
-        shadow.getElementById('ls-forgot-pin').addEventListener('click', () => {
-            alert("No momento o serviço de recuperação de PIN está desativado, em breve criaremos nosso discord para tickets de suporte e ajuda, obrigado!");
+        safeAddEvt('ls-forgot-pin', 'click', () => {
+            window.open('https://discord.gg/6wrtGpt9bg', '_blank');
         });
 
-        inputSetupName.addEventListener('keypress', (e) => { if (e.key === 'Enter') shadow.getElementById('ls-login-btn').click(); });
-        inputSetupPin.addEventListener('keypress', (e) => { if (e.key === 'Enter') shadow.getElementById('ls-login-btn').click(); });
+        safeAddEvt('ls-setup-name', 'keypress', (e) => { if (e.key === 'Enter') { const btn = shadow.getElementById('ls-login-btn'); if (btn) btn.click(); } });
+        safeAddEvt('ls-setup-pin', 'keypress', (e) => { if (e.key === 'Enter') { const btn = shadow.getElementById('ls-login-btn'); if (btn) btn.click(); } });
 
-        shadow.getElementById('ls-register-btn').addEventListener('click', async () => {
+        safeAddEvt('ls-register-btn', 'click', async () => {
+            const inputSetupName = shadow.getElementById('ls-setup-name');
+            const inputSetupPin = shadow.getElementById('ls-setup-pin');
+            if (!inputSetupName || !inputSetupPin) return;
             const name = inputSetupName.value.trim();
             const pin = inputSetupPin.value.trim();
             if (!name) return alert("Digite um apelido!");
@@ -999,10 +879,19 @@
                 if (snapshot.size >= 3) return alert("Você já atingiu o limite de 3 perfis criados neste dispositivo.");
 
                 myName = name; myPin = pin;
-                myColor = shadow.getElementById('ls-setup-color').value;
-                myTextColor = shadow.getElementById('ls-setup-textcolor').value;
-                
-                const keepLogged = shadow.getElementById('ls-setup-keep').checked;
+                const pColor = shadow.getElementById('ls-setup-color'); if (pColor) myColor = pColor.value;
+                const ptColor = shadow.getElementById('ls-setup-textcolor'); if (ptColor) myTextColor = ptColor.value;
+
+                myBio = ''; myFav = ''; myAvatar = ''; myBanner = ''; myHideChats = false;
+                tempAvatar = ''; tempBanner = '';
+                savedRooms = []; mutedRooms = []; lastReadTimes = {};
+                ls.setItem('ls_saved_rooms', '[]');
+                ls.setItem('ls_muted_rooms', '[]');
+                ls.setItem('ls_last_read', '{}');
+
+                const cbKeep = shadow.getElementById('ls-setup-keep');
+                const keepLogged = cbKeep ? cbKeep.checked : true;
+
                 if (keepLogged) {
                     ls.setItem('ls_username', myName);
                     ls.setItem('ls_userpin', myPin);
@@ -1017,11 +906,20 @@
 
                 ls.setItem('ls_usercolor', myColor);
                 ls.setItem('ls_usertextcolor', myTextColor);
+                ls.setItem('ls_userbio', myBio);
+                ls.setItem('ls_hidechats', myHideChats);
+                ls.setItem('ls_useravatar', myAvatar);
+                ls.setItem('ls_userbanner', myBanner);
+                ls.setItem('ls_userfav', myFav);
+
                 await syncUserProfile(); checkScreenState();
             } catch (e) { alert("Erro ao conectar ao banco de dados."); }
         });
 
-        shadow.getElementById('ls-login-btn').addEventListener('click', async () => {
+        safeAddEvt('ls-login-btn', 'click', async () => {
+            const inputSetupName = shadow.getElementById('ls-setup-name');
+            const inputSetupPin = shadow.getElementById('ls-setup-pin');
+            if (!inputSetupName || !inputSetupPin) return;
             const name = inputSetupName.value.trim();
             const pin = inputSetupPin.value.trim();
             if (!name || !pin) return alert("Preencha o Apelido e o PIN para entrar.");
@@ -1031,16 +929,21 @@
                 if (!userDoc.exists) return alert("Usuário não encontrado! Verifique o nome ou clique em 'Registrar'.");
                 const data = userDoc.data();
                 if (data.isBanned) return alert("Você foi banido por: " + (data.banReason || "Violação das regras."));
+                if (data.tags && data.tags.includes('DELETED')) return alert("Esta conta foi excluída e não pode mais ser acessada.");
                 if (data.pin !== pin) return alert("PIN incorreto!");
 
                 myName = name; myPin = pin;
-                myColor = data.color || shadow.getElementById('ls-setup-color').value;
-                myTextColor = data.textColor || shadow.getElementById('ls-setup-textcolor').value;
+                const pColor = shadow.getElementById('ls-setup-color');
+                const ptColor = shadow.getElementById('ls-setup-textcolor');
+                myColor = data.color || (pColor ? pColor.value : '#5b5cf6');
+                myTextColor = data.textColor || (ptColor ? ptColor.value : '#ffffff');
                 myBio = data.bio || ''; myHideChats = data.hideChats || false;
                 myAvatar = data.avatar || ''; myBanner = data.banner || ''; myFav = data.fav || '';
-                
-                const keepLogged = shadow.getElementById('ls-setup-keep').checked;
-                if (keepLogged) {
+                tempAvatar = ''; tempBanner = '';
+
+                const cbKeep = shadow.getElementById('ls-setup-keep');
+                const keepLoggedChecked = cbKeep ? cbKeep.checked : true;
+                if (keepLoggedChecked) {
                     ls.setItem('ls_username', myName);
                     ls.setItem('ls_userpin', myPin);
                     sessionStorage.removeItem('ls_username');
@@ -1051,14 +954,14 @@
                     ls.removeItem('ls_username');
                     ls.removeItem('ls_userpin');
                 }
-                
+
                 ls.setItem('ls_usercolor', myColor);
                 ls.setItem('ls_usertextcolor', myTextColor);
                 ls.setItem('ls_userbio', myBio);
                 ls.setItem('ls_hidechats', myHideChats);
                 ls.setItem('ls_useravatar', myAvatar); ls.setItem('ls_userbanner', myBanner);
                 ls.setItem('ls_userfav', myFav);
-                
+
                 await syncUserProfile(); checkScreenState();
             } catch (e) { alert("Erro ao conectar ao banco de dados."); }
         });
@@ -1066,41 +969,86 @@
         const mentionPanel = shadow.getElementById('ls-mention-panel');
         let isMentioning = false; let activeMentionIndex = 0; let mentionMatches = [];
 
-        input.addEventListener('input', (e) => {
-            if (currentRoom && currentRoomKey) {
-                if (!isTyping) {
-                    isTyping = true;
-                    db.collection('rooms').doc(currentRoom).update({ typing: firebase.firestore.FieldValue.arrayUnion(myName) }).catch(()=>{});
+        const input = shadow.getElementById('ls-input');
+        if (input) {
+            input.addEventListener('input', (e) => {
+                if (currentRoom && currentRoomKey) {
+                    if (!isTyping) {
+                        isTyping = true;
+                        db.collection('rooms').doc(currentRoom).update({ typing: firebase.firestore.FieldValue.arrayUnion(myName) }).catch(() => { });
+                    }
+                    clearTimeout(typingTimeout);
+                    typingTimeout = setTimeout(() => {
+                        isTyping = false;
+                        db.collection('rooms').doc(currentRoom).update({ typing: firebase.firestore.FieldValue.arrayRemove(myName) }).catch(() => { });
+                    }, 2000);
                 }
-                clearTimeout(typingTimeout);
-                typingTimeout = setTimeout(() => {
+
+                const val = input.value; const cursorPos = input.selectionStart;
+                const textBeforeCursor = val.substring(0, cursorPos);
+                const match = textBeforeCursor.match(/(?:^|\s)@([^@\n]*)$/);
+                const mentionPanel = shadow.getElementById('ls-mention-panel');
+
+                if (match && currentRoomData && currentRoomData.participants) {
+                    const searchStr = match[1].toLowerCase();
+                    if (searchStr.length > 20) { if (mentionPanel) mentionPanel.style.display = 'none'; isMentioning = false; return; }
+                    mentionMatches = currentRoomData.participants.filter(p => p.toLowerCase().includes(searchStr));
+
+                    if (mentionMatches.length > 0 && mentionPanel) {
+                        isMentioning = true; mentionPanel.innerHTML = ''; activeMentionIndex = 0;
+                        mentionMatches.forEach((p, index) => {
+                            const div = document.createElement('div');
+                            div.className = 'ls-mention-item' + (index === 0 ? ' active' : '');
+                            div.innerText = `@${p.replace(/\s/g, '')}`;
+                            div.onmousedown = (ev) => { ev.preventDefault(); insertMention(p); };
+                            mentionPanel.appendChild(div);
+                        });
+                        mentionPanel.style.display = 'flex';
+                    } else { if (mentionPanel) mentionPanel.style.display = 'none'; isMentioning = false; }
+                } else { if (mentionPanel) mentionPanel.style.display = 'none'; isMentioning = false; }
+            });
+
+            input.addEventListener('blur', () => {
+                setTimeout(() => { const mentionPanel = shadow.getElementById('ls-mention-panel'); if (mentionPanel) mentionPanel.style.display = 'none'; isMentioning = false; }, 150);
+                if (isTyping && currentRoom) {
+                    clearTimeout(typingTimeout);
                     isTyping = false;
-                    db.collection('rooms').doc(currentRoom).update({ typing: firebase.firestore.FieldValue.arrayRemove(myName) }).catch(()=>{});
-                }, 2000);
-            }
+                    db.collection('rooms').doc(currentRoom).update({ typing: firebase.firestore.FieldValue.arrayRemove(myName) }).catch(() => { });
+                }
+            });
 
-            const val = input.value; const cursorPos = input.selectionStart;
-            const textBeforeCursor = val.substring(0, cursorPos);
-            const match = textBeforeCursor.match(/(?:^|\s)@([^@\n]*)$/);
+            input.addEventListener('keydown', (e) => {
+                const mentionPanel = shadow.getElementById('ls-mention-panel');
+                if (isMentioning && mentionPanel && mentionPanel.style.display === 'flex') {
+                    const items = mentionPanel.querySelectorAll('.ls-mention-item');
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault(); items[activeMentionIndex].classList.remove('active'); activeMentionIndex = (activeMentionIndex + 1) % items.length; items[activeMentionIndex].classList.add('active'); items[activeMentionIndex].scrollIntoView({ block: 'nearest' });
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault(); items[activeMentionIndex].classList.remove('active'); activeMentionIndex = (activeMentionIndex - 1 + items.length) % items.length; items[activeMentionIndex].classList.add('active'); items[activeMentionIndex].scrollIntoView({ block: 'nearest' });
+                    } else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); insertMention(mentionMatches[activeMentionIndex]); }
+                    else if (e.key === 'Escape') { mentionPanel.style.display = 'none'; isMentioning = false; }
+                } else if (e.key === 'Enter') { sendMessage(); }
+            });
 
-            if (match && currentRoomData && currentRoomData.participants) {
-                const searchStr = match[1].toLowerCase();
-                if (searchStr.length > 20) { mentionPanel.style.display = 'none'; isMentioning = false; return; }
-                mentionMatches = currentRoomData.participants.filter(p => p.toLowerCase().includes(searchStr));
+            input.addEventListener('focus', () => {
+                const emojiPanel = shadow.getElementById('ls-emoji-panel');
+                const plusPanel = shadow.getElementById('ls-plus-panel');
+                if (emojiPanel) emojiPanel.style.display = 'none';
+                if (plusPanel) plusPanel.style.display = 'none';
+            });
 
-                if (mentionMatches.length > 0) {
-                    isMentioning = true; mentionPanel.innerHTML = ''; activeMentionIndex = 0;
-                    mentionMatches.forEach((p, index) => {
-                        const div = document.createElement('div');
-                        div.className = 'ls-mention-item' + (index === 0 ? ' active' : '');
-                        div.innerText = `@${p.replace(/\s/g, '')}`;
-                        div.onmousedown = (ev) => { ev.preventDefault(); insertMention(p); };
-                        mentionPanel.appendChild(div);
-                    });
-                    mentionPanel.style.display = 'flex';
-                } else { mentionPanel.style.display = 'none'; isMentioning = false; }
-            } else { mentionPanel.style.display = 'none'; isMentioning = false; }
-        });
+            input.addEventListener('paste', (e) => {
+                const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+                for (let index in items) {
+                    const item = items[index];
+                    if (item.kind === 'file' && item.type.indexOf('image/') === 0) {
+                        const blob = item.getAsFile(); const reader = new FileReader();
+                        reader.onload = async (event) => { compressImage(event.target.result, async (compressedUrl) => { await sendImageMsg(compressedUrl); }); };
+                        reader.readAsDataURL(blob);
+                    }
+                }
+            });
+        }
 
         function insertMention(name) {
             const cleanName = name.replace(/\s/g, '');
@@ -1111,56 +1059,54 @@
             const newTextBefore = textBeforeCursor.substring(0, lastAtPos) + `@${cleanName} `;
             input.value = newTextBefore + textAfterCursor;
             input.focus(); input.selectionStart = input.selectionEnd = newTextBefore.length;
-            mentionPanel.style.display = 'none'; isMentioning = false;
+            const mentionPanel = shadow.getElementById('ls-mention-panel');
+            if (mentionPanel) mentionPanel.style.display = 'none';
+            isMentioning = false;
         }
-
-        input.addEventListener('blur', () => { 
-            setTimeout(() => { mentionPanel.style.display = 'none'; isMentioning = false; }, 150); 
-            if (isTyping && currentRoom) {
-                clearTimeout(typingTimeout);
-                isTyping = false;
-                db.collection('rooms').doc(currentRoom).update({ typing: firebase.firestore.FieldValue.arrayRemove(myName) }).catch(()=>{});
-            }
-        });
 
         const header = shadow.getElementById('ls-header');
         let isDragging = false, startX, startY, currentLeft, currentTop;
+        const chatWindow = shadow.getElementById('ls-chat-window');
 
-        header.addEventListener('mousedown', (e) => {
-            if (e.target.closest('.ls-header-btns') || e.target.closest('#ls-header-text') || e.target.closest('button')) return;
-            if (isCurrentlyIntegrated) return;
+        if (header && chatWindow) {
+            header.addEventListener('mousedown', (e) => {
+                if (e.target.closest('.ls-header-btns') || e.target.closest('#ls-header-text') || e.target.closest('button')) return;
+                if (isCurrentlyIntegrated) return;
 
-            isDragging = true;
-            const rect = chatWindow.getBoundingClientRect();
-            if (chatWindow.style.position !== 'fixed') {
-                chatWindow.style.position = 'fixed'; chatWindow.style.margin = '0';
-                chatWindow.style.bottom = 'auto'; chatWindow.style.right = 'auto';
-            }
-            currentLeft = rect.left; currentTop = rect.top;
-            chatWindow.style.left = currentLeft + 'px'; chatWindow.style.top = currentTop + 'px';
-            startX = e.clientX; startY = e.clientY;
-            chatWindow.style.transition = 'none';
-        });
+                isDragging = true;
+                const rect = chatWindow.getBoundingClientRect();
+                if (chatWindow.style.position !== 'fixed') {
+                    chatWindow.style.position = 'fixed'; chatWindow.style.margin = '0';
+                    chatWindow.style.bottom = 'auto'; chatWindow.style.right = 'auto';
+                }
+                currentLeft = rect.left; currentTop = rect.top;
+                chatWindow.style.left = currentLeft + 'px'; chatWindow.style.top = currentTop + 'px';
+                startX = e.clientX; startY = e.clientY;
+                chatWindow.style.transition = 'none';
+            });
 
-        window.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            currentLeft += e.clientX - startX; currentTop += e.clientY - startY;
-            startX = e.clientX; startY = e.clientY;
-            chatWindow.style.left = currentLeft + 'px'; chatWindow.style.top = currentTop + 'px';
-        });
+            window.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                currentLeft += e.clientX - startX; currentTop += e.clientY - startY;
+                startX = e.clientX; startY = e.clientY;
+                chatWindow.style.left = currentLeft + 'px'; chatWindow.style.top = currentTop + 'px';
+            });
 
-        window.addEventListener('mouseup', () => {
-            if (isDragging) { isDragging = false; chatWindow.style.transition = 'background-color 0.3s, backdrop-filter 0.3s'; }
-        });
+            window.addEventListener('mouseup', () => {
+                if (isDragging) { isDragging = false; chatWindow.style.transition = 'background-color 0.3s, backdrop-filter 0.3s'; }
+            });
+        }
 
         function toggleIntegratedMode(active, temporary = false) {
             const pushStyleId = 'ls-integrated-push-style';
             let pushStyle = document.getElementById(pushStyleId);
+            const fab = shadow.getElementById('ls-fab');
+            const badge = shadow.getElementById('ls-unread-badge');
 
             if (active) {
                 isCurrentlyIntegrated = true;
                 if (!pushStyle) {
-                    pushStyle = document.createElement('style'); 
+                    pushStyle = document.createElement('style');
                     pushStyle.id = pushStyleId;
                     pushStyle.innerHTML = `
                         :root { --ls-chat-width: 350px; }
@@ -1188,12 +1134,13 @@
                     document.documentElement.classList.add('ls-integrated-active');
                     document.body.classList.add('ls-integrated-active');
                 }
-                chatWindow.classList.add('integrated'); chatWindow.classList.add('open');
+                if (chatWindow) { chatWindow.classList.add('integrated'); chatWindow.classList.add('open'); }
                 host.style.cssText = 'position: fixed !important; top: 0 !important; right: 0 !important; bottom: 0 !important; width: 350px !important; height: 100vh !important; z-index: 2147483647 !important; pointer-events: auto !important;';
                 const wrapperEl = shadow.getElementById('ls-wrapper');
-                wrapperEl.style.display = 'block'; wrapperEl.style.width = '100%'; wrapperEl.style.height = '100%';
-                fab.style.display = 'none'; badge.style.display = 'none';
-                const tBtn = shadow.getElementById('ls-menu-theater'); if(tBtn) tBtn.innerText = '🖥️ Sair do Modo Teatro';
+                if (wrapperEl) { wrapperEl.style.display = 'block'; wrapperEl.style.width = '100%'; wrapperEl.style.height = '100%'; }
+                if (fab) fab.style.display = 'none';
+                if (badge) badge.style.display = 'none';
+                const tBtn = shadow.getElementById('ls-menu-theater'); if (tBtn) tBtn.innerText = '🖥️ Sair do Modo Teatro';
             } else {
                 isCurrentlyIntegrated = false;
                 if (!temporary) {
@@ -1203,23 +1150,28 @@
                 if (pushStyle) pushStyle.remove();
                 document.documentElement.classList.remove('ls-integrated-active');
                 document.body.classList.remove('ls-integrated-active');
-                chatWindow.classList.remove('integrated');
+                if (chatWindow) chatWindow.classList.remove('integrated');
                 host.style.cssText = 'position: fixed !important; bottom: 90px !important; right: 20px !important; z-index: 2147483647 !important; pointer-events: none !important;';
                 const wrapperEl = shadow.getElementById('ls-wrapper');
-                wrapperEl.style.display = 'flex'; wrapperEl.style.width = 'auto'; wrapperEl.style.height = 'auto';
-                if (!chatWindow.classList.contains('open') && !myHideApp) fab.style.display = 'flex';
-                const tBtn = shadow.getElementById('ls-menu-theater'); if(tBtn) tBtn.innerText = '🖥️ Modo Teatro';
+                if (wrapperEl) { wrapperEl.style.display = 'flex'; wrapperEl.style.width = 'auto'; wrapperEl.style.height = 'auto'; }
+
+                if (chatWindow && !chatWindow.classList.contains('open') && !myHideApp && fab) fab.style.display = 'flex';
+                else if (chatWindow && !chatWindow.classList.contains('open') && myHideApp && fab) fab.style.display = 'none';
+
+                const tBtn = shadow.getElementById('ls-menu-theater'); if (tBtn) tBtn.innerText = '🖥️ Modo Teatro';
             }
         }
 
         shadow.addEventListener('click', (e) => {
-            if(!e.target.closest('.ls-dropdown-container')) { shadow.querySelectorAll('.ls-dropdown-menu').forEach(m => m.classList.remove('show')); }
+            if (!e.target.closest('.ls-dropdown-container')) { shadow.querySelectorAll('.ls-dropdown-menu').forEach(m => m.classList.remove('show')); }
         });
 
-        shadow.getElementById('ls-toggle-pass-1').addEventListener('click', (e) => {
+        safeAddEvt('ls-toggle-pass-1', 'click', (e) => {
             const inputField = shadow.getElementById('ls-lobby-pass');
-            if (inputField.type === 'password') { inputField.type = 'text'; e.currentTarget.innerHTML = svgEye; } 
-            else { inputField.type = 'password'; e.currentTarget.innerHTML = svgEyeOff; }
+            if (inputField) {
+                if (inputField.type === 'password') { inputField.type = 'text'; e.currentTarget.innerHTML = svgEye; }
+                else { inputField.type = 'password'; e.currentTarget.innerHTML = svgEyeOff; }
+            }
         });
 
         function formatTime(timestamp) {
@@ -1233,13 +1185,13 @@
         }
 
         async function sendSystemAction(actionText) {
-            if(!currentRoom || !currentRoomKey) return;
+            if (!currentRoom || !currentRoomKey) return;
             try {
                 await db.collection('rooms').doc(currentRoom).collection('messages').add({
                     type: 'countdown', text: actionText, sender: myName, deviceId: myDeviceId, color: myColor, roomKey: currentRoomKey,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp(), deleted: false
                 });
-            } catch(e){}
+            } catch (e) { }
         }
 
         async function syncUserProfile() {
@@ -1255,153 +1207,224 @@
 
                 if (userProfileUnsubscribe) userProfileUnsubscribe();
                 userProfileUnsubscribe = userRef.onSnapshot(snap => {
-                    if(snap.exists) {
+                    if (snap.exists) {
                         const data = snap.data();
-                        if(data.isBanned) { alert("⚠️ Acesso Negado: Você foi banido. Motivo: " + (data.banReason || "Violação das regras.")); ls.clear(); sessionStorage.clear(); location.reload(); }
-                        if(data.username && data.username !== myName) { alert(`⚠️ Moderação: Seu nome foi alterado pelo administrador para "${data.username}".`); ls.setItem('ls_username', data.username); location.reload(); }
+                        if (data.isBanned) { alert("⚠️ Acesso Negado: Você foi banido. Motivo: " + (data.banReason || "Violação das regras.")); ls.clear(); sessionStorage.clear(); location.reload(); }
+                        if (data.username && data.username !== myName) { alert(`⚠️ Moderação: Seu nome foi alterado pelo administrador para "${data.username}".`); ls.setItem('ls_username', data.username); location.reload(); }
                     }
                 });
-            } catch(e) { }
+            } catch (e) { }
         }
 
         function checkScreenState() {
-            settingsOverlay.style.display = 'none'; addRoomOverlay.style.display = 'none'; lobbySettingsOverlay.style.display = 'none'; membersOverlay.style.display = 'none'; profileOverlay.style.display = 'none'; editingRoomAppearance = null;
-            if (myName) db.collection('users').doc(myName).set({ color: myColor, deviceId: myDeviceId, pin: myPin, roomCount: savedRooms.length, watching: document.title, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
-            
+            const settingsOverlay = shadow.getElementById('ls-settings-overlay');
+            const addRoomOverlay = shadow.getElementById('ls-add-room-overlay');
+            const lobbySettingsOverlay = shadow.getElementById('ls-lobby-settings-overlay');
+            const membersOverlay = shadow.getElementById('ls-members-overlay');
+            const profileOverlay = shadow.getElementById('ls-profile-overlay');
+            const setupArea = shadow.getElementById('ls-setup-area');
+            const lobbyArea = shadow.getElementById('ls-lobby-area');
+            const chatArea = shadow.getElementById('ls-chat-area');
+            const chatMenuContainer = shadow.getElementById('ls-chat-menu-container');
+            const lobbySettingsBtn = shadow.getElementById('ls-lobby-settings-btn');
+            const backBtn = shadow.getElementById('ls-back-btn');
+            const headerText = shadow.getElementById('ls-header-text');
+
+            if (settingsOverlay) settingsOverlay.style.display = 'none';
+            if (addRoomOverlay) addRoomOverlay.style.display = 'none';
+            if (lobbySettingsOverlay) lobbySettingsOverlay.style.display = 'none';
+            if (membersOverlay) membersOverlay.style.display = 'none';
+            if (profileOverlay) profileOverlay.style.display = 'none';
+            editingRoomAppearance = null;
+
+            if (myName) db.collection('users').doc(myName).set({ color: myColor, deviceId: myDeviceId, pin: myPin, roomCount: savedRooms.length, watching: document.title, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(() => { });
+
             const pathToCheck = (window.location.pathname + window.location.search).toLowerCase();
             const isPlayer = ['/watch', '/video/', '/v/', '?v=', '&v=', '/detail/', '/player/', '/play/', '/live-tv', '/on-demand'].some(p => pathToCheck.includes(p));
-            if (myIntegratedMode && isPlayer) toggleIntegratedMode(true); 
-            else toggleIntegratedMode(false, true);
+
+            const wasIntegrated = isCurrentlyIntegrated;
+
+            if (myIntegratedMode && isPlayer) {
+                toggleIntegratedMode(true);
+            } else {
+                toggleIntegratedMode(false, true);
+                if (wasIntegrated) {
+                    const cw = shadow.getElementById('ls-chat-window');
+                    if (cw) cw.classList.remove('open');
+                    const fb = shadow.getElementById('ls-fab');
+                    if (fb && !myHideApp) fb.style.display = 'flex';
+                }
+            }
 
             if (!myName || !myPin) {
                 if (userProfileUnsubscribe) userProfileUnsubscribe();
-                setupArea.style.display = 'flex'; lobbyArea.style.display = 'none'; chatArea.style.display = 'none'; chatMenuContainer.style.display = 'none'; lobbySettingsBtn.style.display = 'none'; backBtn.style.display = 'none'; headerText.innerText = "LidySync";
-                headerText.classList.remove('clickable');
+                if (setupArea) setupArea.style.display = 'flex';
+                if (lobbyArea) lobbyArea.style.display = 'none';
+                if (chatArea) chatArea.style.display = 'none';
+                if (chatMenuContainer) chatMenuContainer.style.display = 'none';
+                if (lobbySettingsBtn) lobbySettingsBtn.style.display = 'none';
+                if (backBtn) backBtn.style.display = 'none';
+                if (headerText) { headerText.innerText = "LidySync"; headerText.classList.remove('clickable'); }
                 stopLobbyListeners();
             } else if (!currentRoom || !currentRoomKey) {
-                setupArea.style.display = 'none'; lobbyArea.style.display = 'flex'; chatArea.style.display = 'none'; chatMenuContainer.style.display = 'none'; lobbySettingsBtn.style.display = 'flex'; backBtn.style.display = 'none'; headerText.innerText = `Lobby (${myName})`;
-                headerText.classList.remove('clickable');
+                if (setupArea) setupArea.style.display = 'none';
+                if (lobbyArea) lobbyArea.style.display = 'flex';
+                if (chatArea) chatArea.style.display = 'none';
+                if (chatMenuContainer) chatMenuContainer.style.display = 'none';
+                if (lobbySettingsBtn) lobbySettingsBtn.style.display = 'flex';
+                if (backBtn) backBtn.style.display = 'none';
+                if (headerText) { headerText.innerText = `Lobby (${myName})`; headerText.classList.remove('clickable'); }
                 renderSavedRooms(); startLobbyListeners();
             } else {
-                setupArea.style.display = 'none'; lobbyArea.style.display = 'none'; chatArea.style.display = 'flex'; chatMenuContainer.style.display = 'block'; lobbySettingsBtn.style.display = 'none'; backBtn.style.display = 'flex'; headerText.innerText = `${currentRoom}`;
-                headerText.classList.add('clickable');
+                if (setupArea) setupArea.style.display = 'none';
+                if (lobbyArea) lobbyArea.style.display = 'none';
+                if (chatArea) chatArea.style.display = 'flex';
+                if (chatMenuContainer) chatMenuContainer.style.display = 'block';
+                if (lobbySettingsBtn) lobbySettingsBtn.style.display = 'none';
+                if (backBtn) backBtn.style.display = 'flex';
+                if (headerText) { headerText.innerText = `${currentRoom}`; headerText.classList.add('clickable'); }
                 if (myIntegratedMode && isPlayer) toggleIntegratedMode(true);
                 stopLobbyListeners(); startChatListeners();
             }
         }
 
-        shadow.getElementById('ls-header-text').addEventListener('click', () => {
+        safeAddEvt('ls-header-text', 'click', () => {
             if (currentRoom) {
-                membersOverlay.style.display = 'flex';
+                const membersOverlay = shadow.getElementById('ls-members-overlay');
+                if (membersOverlay) membersOverlay.style.display = 'flex';
                 fetchAndRenderMembers(currentRoom, shadow.getElementById('ls-members-list'));
             }
         });
 
         async function openProfile(targetUsername) {
             shadow.querySelectorAll('.ls-dropdown-menu').forEach(m => m.classList.remove('show'));
-            profileOverlay.style.display = 'flex'; shadow.getElementById('ls-profile-view').style.display = 'flex'; shadow.getElementById('ls-profile-edit').style.display = 'none';
-            const btnEdit = shadow.getElementById('ls-btn-edit-profile');
-            btnEdit.style.display = targetUsername === myName ? 'block' : 'none';
+            const profileOverlay = shadow.getElementById('ls-profile-overlay');
+            if (profileOverlay) profileOverlay.style.display = 'flex';
 
-            shadow.getElementById('ls-profile-v-name').innerText = "Carregando..."; shadow.getElementById('ls-profile-v-bio').innerText = "-"; shadow.getElementById('ls-profile-v-tags').innerHTML = ""; shadow.getElementById('ls-profile-v-created').innerText = "-"; shadow.getElementById('ls-profile-v-rooms').innerText = "-"; shadow.getElementById('ls-profile-v-statustext').innerText = "-";
-            shadow.getElementById('ls-profile-v-banner').style.background = 'linear-gradient(135deg, #5b5cf6, #7c3aed)';
-            shadow.getElementById('ls-profile-v-fav-container').style.display = 'none';
-            
+            const pv = shadow.getElementById('ls-profile-view');
+            const pe = shadow.getElementById('ls-profile-edit');
+            if (pv) pv.style.display = 'flex';
+            if (pe) pe.style.display = 'none';
+
+            const btnEdit = shadow.getElementById('ls-btn-edit-profile');
+            if (btnEdit) btnEdit.style.display = targetUsername === myName ? 'block' : 'none';
+
+            const pName = shadow.getElementById('ls-profile-v-name'); if (pName) pName.innerText = "Carregando...";
+            const pBio = shadow.getElementById('ls-profile-v-bio'); if (pBio) pBio.innerText = "-";
+            const pTags = shadow.getElementById('ls-profile-v-tags'); if (pTags) pTags.innerHTML = "";
+            const pCreated = shadow.getElementById('ls-profile-v-created'); if (pCreated) pCreated.innerText = "-";
+            const pRooms = shadow.getElementById('ls-profile-v-rooms'); if (pRooms) pRooms.innerText = "-";
+            const pStatusText = shadow.getElementById('ls-profile-v-statustext'); if (pStatusText) pStatusText.innerText = "-";
+            const pBanner = shadow.getElementById('ls-profile-v-banner'); if (pBanner) pBanner.style.background = 'linear-gradient(135deg, #5b5cf6, #7c3aed)';
+            const pFavCont = shadow.getElementById('ls-profile-v-fav-container'); if (pFavCont) pFavCont.style.display = 'none';
+
             try {
                 const doc = await db.collection('users').doc(targetUsername).get();
-                if(doc.exists) {
+                if (doc.exists) {
                     const data = doc.data();
-                    shadow.getElementById('ls-profile-v-name').innerText = targetUsername;
+                    if (pName) pName.innerText = targetUsername;
                     const avatar = shadow.getElementById('ls-profile-v-avatar');
-                    
-                    if (data.avatar) {
-                        avatar.style.backgroundImage = `url(${data.avatar})`;
-                        avatar.style.backgroundColor = 'transparent';
-                        avatar.innerText = '';
-                    } else {
-                        avatar.style.backgroundImage = 'none';
-                        avatar.style.backgroundColor = data.color || '#5b5cf6';
-                        avatar.innerText = targetUsername.charAt(0).toUpperCase();
-                    }
-                    avatar.style.color = data.textColor || '#ffffff';
-                    
-                    if (data.banner) {
-                        shadow.getElementById('ls-profile-v-banner').style.background = `url(${data.banner}) center/cover`;
-                    } else {
-                        shadow.getElementById('ls-profile-v-banner').style.background = `linear-gradient(135deg, ${data.color || '#5b5cf6'}, #1e293b)`;
+
+                    if (avatar) {
+                        if (data.avatar) {
+                            avatar.style.backgroundImage = `url(${data.avatar})`;
+                            avatar.style.backgroundColor = 'transparent';
+                            avatar.innerText = '';
+                        } else {
+                            avatar.style.backgroundImage = 'none';
+                            avatar.style.backgroundColor = data.color || '#5b5cf6';
+                            avatar.innerText = targetUsername.charAt(0).toUpperCase();
+                        }
+                        avatar.style.color = data.textColor || '#ffffff';
                     }
 
-                    shadow.getElementById('ls-profile-v-bio').innerText = data.bio || 'Olá! Estou usando o LidySync.';
-                    
-                    const favContainer = shadow.getElementById('ls-profile-v-fav-container');
-                    if (data.fav) {
-                        favContainer.style.display = 'block';
-                        shadow.getElementById('ls-profile-v-fav').innerText = data.fav;
-                    } else {
-                        favContainer.style.display = 'none';
+                    if (data.banner && pBanner) {
+                        pBanner.style.background = `url(${data.banner}) center/cover`;
+                    } else if (pBanner) {
+                        pBanner.style.background = `linear-gradient(135deg, ${data.color || '#5b5cf6'}, #1e293b)`;
                     }
-                    
-                    const tContainer = shadow.getElementById('ls-profile-v-tags');
-                    if (data.tags && data.tags.length > 0) { tContainer.innerHTML = buildTagsHTML(currentRoomData && currentRoomData.createdBy === targetUsername, data); } 
-                    else { tContainer.innerHTML = `<span style="color:var(--text-muted); font-size:12px;">(Você ainda não tem tags.)</span>`; }
 
-                    if (data.createdAt) shadow.getElementById('ls-profile-v-created').innerText = data.createdAt.toDate().toLocaleDateString();
-                    shadow.getElementById('ls-profile-v-rooms').innerText = (data.hideChats && targetUsername !== myName) ? "Oculto" : (data.roomCount || 0);
+                    if (pBio) pBio.innerText = data.bio || 'Olá! Estou usando o LidySync.';
+
+                    if (data.fav && pFavCont) {
+                        pFavCont.style.display = 'block';
+                        const pFav = shadow.getElementById('ls-profile-v-fav');
+                        if (pFav) pFav.innerText = data.fav;
+                    } else if (pFavCont) {
+                        pFavCont.style.display = 'none';
+                    }
+
+                    if (data.tags && data.tags.length > 0 && pTags) { pTags.innerHTML = buildTagsHTML(currentRoomData && currentRoomData.createdBy === targetUsername, data); }
+                    else if (pTags) { pTags.innerHTML = `<span style="color:var(--text-muted); font-size:12px;">(Você ainda não tem tags.)</span>`; }
+
+                    if (data.createdAt && pCreated) pCreated.innerText = data.createdAt.toDate().toLocaleDateString();
+                    if (pRooms) pRooms.innerText = (data.hideChats && targetUsername !== myName) ? "Oculto" : (data.roomCount || 0);
 
                     const statusInd = shadow.getElementById('ls-profile-v-status');
                     const statusText = shadow.getElementById('ls-profile-v-statustext');
-                    if (data.lastSeen && (Date.now() - data.lastSeen.toMillis() < 300000)) { 
-                        statusInd.style.background = '#22c55e'; 
-                        statusText.innerText = data.watching ? `🟢 Online | Assistindo: ${data.watching}` : '🟢 Online'; 
-                    } else { 
-                        statusInd.style.background = '#94a3b8'; 
-                        statusText.innerText = '🔴 Offline'; 
+                    if (data.lastSeen && (Date.now() - data.lastSeen.toMillis() < 300000)) {
+                        if (statusInd) statusInd.style.background = '#22c55e';
+                        if (pStatusText) pStatusText.innerText = data.watching ? `🟢 Online | Assistindo: ${data.watching}` : '🟢 Online';
+                    } else {
+                        if (statusInd) statusInd.style.background = '#94a3b8';
+                        if (pStatusText) pStatusText.innerText = '🔴 Offline';
                     }
-                } else { shadow.getElementById('ls-profile-v-name').innerText = "Usuário não encontrado."; }
-            } catch(e) {}
+                } else { if (pName) pName.innerText = "Usuário não encontrado."; }
+            } catch (e) { }
         }
 
-        shadow.getElementById('ls-btn-open-my-profile').addEventListener('click', () => { openProfile(myName); });
-        
-        shadow.getElementById('ls-close-profile-modal').addEventListener('click', () => { 
-            profileOverlay.style.display = 'none'; 
-            shadow.getElementById('ls-profile-edit').style.display = 'none';
-            shadow.getElementById('ls-profile-view').style.display = 'flex';
+        safeAddEvt('ls-btn-open-my-profile', 'click', () => { openProfile(myName); });
+
+        safeAddEvt('ls-close-profile-modal', 'click', () => {
+            const profileOverlay = shadow.getElementById('ls-profile-overlay');
+            if (profileOverlay) profileOverlay.style.display = 'none';
+            const pe = shadow.getElementById('ls-profile-edit');
+            if (pe) pe.style.display = 'none';
+            const pv = shadow.getElementById('ls-profile-view');
+            if (pv) pv.style.display = 'flex';
         });
-        
-        shadow.getElementById('ls-btn-edit-profile').addEventListener('click', () => {
-            shadow.getElementById('ls-profile-view').style.display = 'none'; shadow.getElementById('ls-profile-edit').style.display = 'flex'; shadow.getElementById('ls-btn-edit-profile').style.display = 'none';
-            shadow.getElementById('ls-profile-e-color').value = myColor; shadow.getElementById('ls-profile-e-textcolor').value = myTextColor; shadow.getElementById('ls-profile-e-bio').value = myBio; shadow.getElementById('ls-profile-e-fav').value = myFav; shadow.getElementById('ls-profile-e-hiderooms').checked = myHideChats;
-            
+
+        safeAddEvt('ls-btn-edit-profile', 'click', () => {
+            const pv = shadow.getElementById('ls-profile-view'); if (pv) pv.style.display = 'none';
+            const pe = shadow.getElementById('ls-profile-edit'); if (pe) pe.style.display = 'flex';
+            const btnEdit = shadow.getElementById('ls-btn-edit-profile'); if (btnEdit) btnEdit.style.display = 'none';
+
+            const pColor = shadow.getElementById('ls-profile-e-color'); if (pColor) pColor.value = myColor;
+            const ptColor = shadow.getElementById('ls-profile-e-textcolor'); if (ptColor) ptColor.value = myTextColor;
+            const pBio = shadow.getElementById('ls-profile-e-bio'); if (pBio) pBio.value = myBio;
+            const pFav = shadow.getElementById('ls-profile-e-fav'); if (pFav) pFav.value = myFav;
+            const pHide = shadow.getElementById('ls-profile-e-hiderooms'); if (pHide) pHide.checked = myHideChats;
+
             tempAvatar = myAvatar;
             tempBanner = myBanner;
-            
+
             const avatar = shadow.getElementById('ls-profile-e-avatar');
-            if (tempAvatar) {
-                avatar.style.backgroundImage = `url(${tempAvatar})`;
-                avatar.style.backgroundColor = 'transparent';
-                avatar.innerText = '';
-            } else {
-                avatar.style.backgroundImage = 'none';
-                avatar.style.backgroundColor = myColor;
-                avatar.innerText = myName.charAt(0).toUpperCase();
+            if (avatar) {
+                if (tempAvatar) {
+                    avatar.style.backgroundImage = `url(${tempAvatar})`;
+                    avatar.style.backgroundColor = 'transparent';
+                    avatar.innerText = '';
+                } else {
+                    avatar.style.backgroundImage = 'none';
+                    avatar.style.backgroundColor = myColor;
+                    avatar.innerText = myName.charAt(0).toUpperCase();
+                }
+                avatar.style.color = myTextColor;
             }
-            avatar.style.color = myTextColor;
-        });
-        
-        shadow.getElementById('ls-btn-cancel-profile').addEventListener('click', () => {
-            shadow.getElementById('ls-profile-edit').style.display = 'none';
-            shadow.getElementById('ls-profile-view').style.display = 'flex';
-            shadow.getElementById('ls-btn-edit-profile').style.display = 'block';
         });
 
-        // Eventos modificados para ativar o novo Cropper
-        shadow.getElementById('ls-profile-e-avatar-file').addEventListener('change', (e) => {
+        safeAddEvt('ls-btn-cancel-profile', 'click', () => {
+            const pe = shadow.getElementById('ls-profile-edit'); if (pe) pe.style.display = 'none';
+            const pv = shadow.getElementById('ls-profile-view'); if (pv) pv.style.display = 'flex';
+            const btnEdit = shadow.getElementById('ls-btn-edit-profile'); if (btnEdit) btnEdit.style.display = 'block';
+        });
+
+        safeAddEvt('ls-profile-e-avatar-file', 'change', (e) => {
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = (event) => {
-                    cropImgObj.onload = () => openCropper('avatar');
+                    cropImgObj.onload = () => window.lsOpenCropper('avatar');
                     cropImgObj.src = event.target.result;
                 };
                 reader.readAsDataURL(file);
@@ -1409,51 +1432,73 @@
             e.target.value = '';
         });
 
-        shadow.getElementById('ls-profile-e-banner-file').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    cropImgObj.onload = () => openCropper('banner');
-                    cropImgObj.src = event.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-            e.target.value = '';
-        });
-
-        shadow.getElementById('ls-profile-e-avatar-clear').addEventListener('click', () => {
-            tempAvatar = '';
-            shadow.getElementById('ls-profile-e-avatar-file').value = '';
+        document.addEventListener('cropAvatarFinished', (e) => {
+            tempAvatar = e.detail;
             const av = shadow.getElementById('ls-profile-e-avatar');
-            av.style.backgroundImage = 'none';
-            av.style.backgroundColor = shadow.getElementById('ls-profile-e-color').value;
-            av.innerText = myName.charAt(0).toUpperCase();
+            if (av) {
+                av.style.backgroundImage = `url(${tempAvatar})`;
+                av.style.backgroundColor = 'transparent';
+                av.innerText = '';
+            }
         });
 
-        shadow.getElementById('ls-profile-e-banner-clear').addEventListener('click', () => {
+        safeAddEvt('ls-profile-e-avatar-clear', 'click', () => {
+            tempAvatar = '';
+            const fileInp = shadow.getElementById('ls-profile-e-avatar-file'); if (fileInp) fileInp.value = '';
+            const av = shadow.getElementById('ls-profile-e-avatar');
+            const pColor = shadow.getElementById('ls-profile-e-color');
+            if (av) {
+                av.style.backgroundImage = 'none';
+                av.style.backgroundColor = pColor ? pColor.value : myColor;
+                av.innerText = myName.charAt(0).toUpperCase();
+            }
+        });
+
+        safeAddEvt('ls-profile-e-banner-file', 'change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    cropImgObj.onload = () => window.lsOpenCropper('banner');
+                    cropImgObj.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+            e.target.value = '';
+        });
+
+        document.addEventListener('cropBannerFinished', (e) => {
+            tempBanner = e.detail;
+        });
+
+        safeAddEvt('ls-profile-e-banner-clear', 'click', () => {
             tempBanner = '';
-            shadow.getElementById('ls-profile-e-banner-file').value = '';
+            const fileInp = shadow.getElementById('ls-profile-e-banner-file'); if (fileInp) fileInp.value = '';
         });
 
-        shadow.getElementById('ls-profile-e-color').addEventListener('input', (e) => { 
-            if(!tempAvatar) shadow.getElementById('ls-profile-e-avatar').style.backgroundColor = e.target.value; 
+        safeAddEvt('ls-profile-e-color', 'input', (e) => {
+            if (!tempAvatar) { const av = shadow.getElementById('ls-profile-e-avatar'); if (av) av.style.backgroundColor = e.target.value; }
         });
-        shadow.getElementById('ls-profile-e-textcolor').addEventListener('input', (e) => { shadow.getElementById('ls-profile-e-avatar').style.color = e.target.value; });
+        safeAddEvt('ls-profile-e-textcolor', 'input', (e) => { const av = shadow.getElementById('ls-profile-e-avatar'); if (av) av.style.color = e.target.value; });
 
-        shadow.getElementById('ls-btn-save-profile').addEventListener('click', async () => {
-            myColor = shadow.getElementById('ls-profile-e-color').value; myTextColor = shadow.getElementById('ls-profile-e-textcolor').value; myBio = shadow.getElementById('ls-profile-e-bio').value.trim(); myHideChats = shadow.getElementById('ls-profile-e-hiderooms').checked;
-            myFav = shadow.getElementById('ls-profile-e-fav').value.trim();
+        safeAddEvt('ls-btn-save-profile', 'click', async () => {
+            const pColor = shadow.getElementById('ls-profile-e-color'); if (pColor) myColor = pColor.value;
+            const ptColor = shadow.getElementById('ls-profile-e-textcolor'); if (ptColor) myTextColor = ptColor.value;
+            const pBio = shadow.getElementById('ls-profile-e-bio'); if (pBio) myBio = pBio.value.trim();
+            const pHide = shadow.getElementById('ls-profile-e-hiderooms'); if (pHide) myHideChats = pHide.checked;
+            const pFav = shadow.getElementById('ls-profile-e-fav'); if (pFav) myFav = pFav.value.trim();
+
             myAvatar = tempAvatar; myBanner = tempBanner;
-            
+
             ls.setItem('ls_usercolor', myColor); ls.setItem('ls_usertextcolor', myTextColor); ls.setItem('ls_userbio', myBio); ls.setItem('ls_hidechats', myHideChats);
             ls.setItem('ls_userfav', myFav);
             ls.setItem('ls_useravatar', myAvatar); ls.setItem('ls_userbanner', myBanner);
-            
+
             await syncUserProfile(); openProfile(myName);
         });
 
         async function fetchAndRenderMembers(roomName, listEl) {
+            if (!listEl) return;
             listEl.innerHTML = '<span style="color:var(--text-muted); font-size:13px;">Carregando...</span>';
             try {
                 const rDoc = await db.collection('rooms').doc(roomName).get();
@@ -1464,12 +1509,12 @@
                     const now = Date.now();
                     const isAdmMode = (rData.createdBy === myName);
                     for (const p of rData.participants) {
-                        if (!userCache[p]) { const uDoc = await db.collection('users').doc(p).get(); if(uDoc.exists) userCache[p] = uDoc.data(); }
-                        const isAdm = (rData.createdBy === p); const uData = userCache[p] || {}; const isOnline = uData.lastSeen && (now - uData.lastSeen.toMillis() < 300000); 
-                        
+                        if (!userCache[p]) { const uDoc = await db.collection('users').doc(p).get(); if (uDoc.exists) userCache[p] = uDoc.data(); }
+                        const isAdm = (rData.createdBy === p); const uData = userCache[p] || {}; const isOnline = uData.lastSeen && (now - uData.lastSeen.toMillis() < 300000);
+
                         const bgStyle = uData.avatar ? `url(${uData.avatar})` : (uData.color || '#6366f1');
                         const avText = uData.avatar ? '' : p.charAt(0).toUpperCase();
-                        
+
                         const watchingTooltip = isOnline && uData.watching ? `\nAssistindo: ${uData.watching.replace(/"/g, '&quot;')}` : '';
 
                         const item = document.createElement('div'); item.className = 'ls-room-item'; item.style.cursor = 'pointer';
@@ -1478,7 +1523,7 @@
                             <div class="ls-room-avatar" style="width:36px; height:36px; font-size:14px; position:relative; background:${bgStyle}; color:${uData.textColor || '#fff'}">${avText}<div class="ls-online-dot" style="display: ${isOnline ? 'block' : 'none'};"></div></div>
                             <div class="ls-room-info" style="display:flex; align-items:center;"><span class="ls-room-name">${p}</span><div class="ls-tags-container" id="ls-member-tags-lobby-${p.replace(/\s/g, '')}"></div></div>
                         `;
-                        
+
                         if (isAdmMode && p !== myName) {
                             const kickBtn = document.createElement('button');
                             kickBtn.innerHTML = '❌';
@@ -1486,12 +1531,12 @@
                             kickBtn.style.cssText = 'background:none; border:none; cursor:pointer; padding:4px 8px; font-size:12px; margin-left:auto; z-index:10;';
                             kickBtn.addEventListener('click', async (e) => {
                                 e.stopPropagation();
-                                if(confirm(`Deseja realmente expulsar ${p} desta sala?`)) {
+                                if (confirm(`Deseja realmente expulsar ${p} desta sala?`)) {
                                     try {
                                         await db.collection('rooms').doc(roomName).update({ participants: firebase.firestore.FieldValue.arrayRemove(p) });
                                         sendSystemAction(`SYSTEM_KICKED:${p}`);
                                         fetchAndRenderMembers(roomName, listEl);
-                                    } catch(err) {}
+                                    } catch (err) { }
                                 }
                             });
                             item.appendChild(kickBtn);
@@ -1499,16 +1544,18 @@
 
                         item.addEventListener('click', () => { openProfile(p); });
                         listEl.appendChild(item);
-                        item.querySelector(`#ls-member-tags-lobby-${p.replace(/\s/g, '')}`).innerHTML = buildTagsHTML(isAdm, uData);
+                        const tagCont = item.querySelector(`#ls-member-tags-lobby-${p.replace(/\s/g, '')}`);
+                        if (tagCont) tagCont.innerHTML = buildTagsHTML(isAdm, uData);
                     }
                 } else { listEl.innerHTML = '<span style="color:var(--text-muted); font-size:13px;">Nenhum membro encontrado.</span>'; }
-            } catch(e) { listEl.innerHTML = '<span style="color:var(--text-muted); font-size:13px;">Erro ao carregar membros.</span>'; }
+            } catch (e) { listEl.innerHTML = '<span style="color:var(--text-muted); font-size:13px;">Erro ao carregar membros.</span>'; }
         }
 
         function renderSavedRooms() {
             const list = shadow.getElementById('ls-room-list');
+            if (!list) return;
             list.innerHTML = '';
-            if(savedRooms.length === 0) { list.innerHTML = '<div style="text-align:center; color:var(--text-muted); margin-top:40px; font-size:14px; line-height:1.5;">Nenhum chat salvo.<br>Clique no <b>+</b> abaixo para começar.</div>'; return; }
+            if (savedRooms.length === 0) { list.innerHTML = '<div style="text-align:center; color:var(--text-muted); margin-top:40px; font-size:14px; line-height:1.5;">Nenhum chat salvo.<br>Clique no <b>+</b> abaixo para começar.</div>'; return; }
             savedRooms.forEach((room, index) => {
                 const item = document.createElement('div'); item.className = 'ls-room-item'; const initial = room.name.charAt(0).toUpperCase();
                 let rawPass = room.rawPass || ''; let isMuted = mutedRooms.includes(room.name);
@@ -1532,28 +1579,31 @@
                 item.querySelector('.ls-room-info').addEventListener('click', () => autoJoinRoom(room.name, room.hash));
                 item.querySelector('.ls-room-avatar').addEventListener('click', () => autoJoinRoom(room.name, room.hash));
                 const optBtn = item.querySelector('.ls-room-options'); const dropMenu = item.querySelector(`#ls-drop-${index}`);
-                optBtn.addEventListener('click', (e) => { e.stopPropagation(); shadow.querySelectorAll('.ls-dropdown-menu').forEach(m => { if(m !== dropMenu) m.classList.remove('show'); }); dropMenu.classList.toggle('show'); });
+                if (optBtn && dropMenu) {
+                    optBtn.addEventListener('click', (e) => { e.stopPropagation(); shadow.querySelectorAll('.ls-dropdown-menu').forEach(m => { if (m !== dropMenu) m.classList.remove('show'); }); dropMenu.classList.toggle('show'); });
+                }
+
                 dropMenu.querySelectorAll('.ls-dropdown-item').forEach(btn => {
                     btn.addEventListener('click', async (e) => {
                         e.stopPropagation(); dropMenu.classList.remove('show');
-                        if (btn.dataset.action === 'members') { membersOverlay.style.display = 'flex'; fetchAndRenderMembers(btn.dataset.name, shadow.getElementById('ls-members-list')); } 
-                        else if (btn.dataset.action === 'mute') { const rName = btn.dataset.name; if(mutedRooms.includes(rName)) { mutedRooms = mutedRooms.filter(r => r !== rName); } else { mutedRooms.push(rName); } ls.setItem('ls_muted_rooms', JSON.stringify(mutedRooms)); renderSavedRooms(); } 
-                        else if (btn.dataset.action === 'share') { let passToShare = btn.dataset.rawpass; if (!passToShare) { passToShare = prompt("Qual a senha dessa sala para incluir no convite?") || "[Sua Senha]"; if (passToShare !== "[Sua Senha]") { room.rawPass = passToShare; ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); } } const link = `Vem assistir comigo no LidySync!\n🍿 Nome da Sala: ${btn.dataset.name}\n🔑 Senha: ${passToShare}\n\nCaso não tenha a extensão clique aqui para aprender a instalar: https://ofaceoff.github.io/LidySync/index.html`; navigator.clipboard.writeText(link); alert("Convite copiado!"); } 
-                        else if (btn.dataset.action === 'appearance') { settingsOverlay.style.display = 'flex'; shadow.getElementById('ls-config-autoplay').checked = myAutoPlay; } 
-                        else if(btn.dataset.action === 'remove') { savedRooms.splice(btn.dataset.index, 1); ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); await syncUserProfile(); renderSavedRooms(); startLobbyListeners(); }
-                        else if(btn.dataset.action === 'leave') {
-                            if(!confirm("Tem certeza que deseja sair definitivamente desta sala?")) return;
-                            try { await db.collection('rooms').doc(btn.dataset.name).collection('messages').add({ type: 'countdown', text: 'SYSTEM_LEFT_PERMANENTLY', sender: myName, deviceId: myDeviceId, color: myColor, roomKey: btn.dataset.name, timestamp: firebase.firestore.FieldValue.serverTimestamp(), deleted: false }); } catch(e){}
-                            try { await db.collection('rooms').doc(btn.dataset.name).update({ participants: firebase.firestore.FieldValue.arrayRemove(myName) }); } catch(e){}
+                        if (btn.dataset.action === 'members') { const mOv = shadow.getElementById('ls-members-overlay'); if (mOv) mOv.style.display = 'flex'; fetchAndRenderMembers(btn.dataset.name, shadow.getElementById('ls-members-list')); }
+                        else if (btn.dataset.action === 'mute') { const rName = btn.dataset.name; if (mutedRooms.includes(rName)) { mutedRooms = mutedRooms.filter(r => r !== rName); } else { mutedRooms.push(rName); } ls.setItem('ls_muted_rooms', JSON.stringify(mutedRooms)); renderSavedRooms(); }
+                        else if (btn.dataset.action === 'share') { let passToShare = btn.dataset.rawpass; if (!passToShare) { passToShare = prompt("Qual a senha dessa sala para incluir no convite?") || "[Sua Senha]"; if (passToShare !== "[Sua Senha]") { room.rawPass = passToShare; ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); } } const link = `Vem assistir comigo no LidySync!\n🍿 Nome da Sala: ${btn.dataset.name}\n🔑 Senha: ${passToShare}\n\nCaso não tenha a extensão clique aqui para aprender a instalar: https://ofaceoff.github.io/LidySync/index.html`; navigator.clipboard.writeText(link); alert("Convite copiado!"); }
+                        else if (btn.dataset.action === 'appearance') { const sOv = shadow.getElementById('ls-settings-overlay'); if (sOv) sOv.style.display = 'flex'; const aPl = shadow.getElementById('ls-config-autoplay'); if (aPl) aPl.checked = myAutoPlay; }
+                        else if (btn.dataset.action === 'remove') { savedRooms.splice(btn.dataset.index, 1); ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); await syncUserProfile(); renderSavedRooms(); startLobbyListeners(); }
+                        else if (btn.dataset.action === 'leave') {
+                            if (!confirm("Tem certeza que deseja sair definitivamente desta sala?")) return;
+                            try { await db.collection('rooms').doc(btn.dataset.name).collection('messages').add({ type: 'countdown', text: 'SYSTEM_LEFT_PERMANENTLY', sender: myName, deviceId: myDeviceId, color: myColor, roomKey: btn.dataset.name, timestamp: firebase.firestore.FieldValue.serverTimestamp(), deleted: false }); } catch (e) { }
+                            try { await db.collection('rooms').doc(btn.dataset.name).update({ participants: firebase.firestore.FieldValue.arrayRemove(myName) }); } catch (e) { }
                             savedRooms.splice(btn.dataset.index, 1); ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); await syncUserProfile(); renderSavedRooms(); startLobbyListeners();
                         }
-                        else if(btn.dataset.action === 'delete') { 
-                            if(!confirm("Encerrar e deletar a sala para todos?")) return; 
-                            try { await db.collection('rooms').doc(btn.dataset.name).delete(); } catch(e){} 
+                        else if (btn.dataset.action === 'delete') {
+                            if (!confirm("Encerrar e deletar a sala para todos?")) return;
+                            try { await db.collection('rooms').doc(btn.dataset.name).delete(); } catch (e) { }
                         }
                     });
                 });
-                
+
                 const delBtn = dropMenu.querySelector('#ls-menu-delete');
                 const leaveBtn = dropMenu.querySelector('#ls-menu-leave');
                 const delDiv = dropMenu.querySelector('#ls-menu-delete-divider');
@@ -1567,7 +1617,7 @@
                             if (leaveBtn) leaveBtn.style.display = 'none';
                         }
                     }
-                }).catch(()=>{});
+                }).catch(() => { });
 
                 list.appendChild(item);
             });
@@ -1583,7 +1633,7 @@
                             if (statusEl && !data.deleted) {
                                 let msgText = data.text;
                                 if (data.type === 'image') msgText = '📷 Imagem'; else if (data.type === 'gif') msgText = '🎞️ GIF'; else if (data.type === 'countdown') msgText = 'Ação do Sistema';
-                                
+
                                 if (data.text === 'SYSTEM_CREATED') msgText = 'Criou a sala';
                                 else if (data.text === 'SYSTEM_FIRST_JOIN') msgText = 'Entrou na sala';
                                 else if (data.text === 'SYSTEM_LEFT_PERMANENTLY') msgText = 'Saiu da sala';
@@ -1591,7 +1641,7 @@
                                 else if (data.text === 'SYSTEM_WENT_AWAY') msgText = 'Foi embora';
                                 else if (data.text === 'SYSTEM_PAUSE') msgText = 'Pausou a programação';
                                 else if (data.text && data.text.startsWith('SYSTEM_')) { msgText = (myHideSys && (data.text === 'SYSTEM_JOIN' || data.text === 'SYSTEM_LEAVE')) ? 'Mensagem de Sistema' : 'Ação do Sistema'; }
-                                
+
                                 statusEl.innerText = `${data.sender}: ${msgText}`;
                             } else if (statusEl && data.deleted) { statusEl.innerText = `${data.sender}: 🚫 Mensagem apagada`; }
 
@@ -1599,10 +1649,14 @@
                                 const lastRead = lastReadTimes[room.name] || 0; const msgTime = data.timestamp ? data.timestamp.toMillis() : Date.now();
                                 if (msgTime > lastRead && data.sender !== myName) {
                                     unreadEl.style.display = 'block';
-                                    if (!chatWindow.classList.contains('open') && !myIntegratedMode) {
-                                        badge.style.display = 'flex'; badge.innerText = '!';
-                                        if (myHideApp && myHideRevive) { fab.style.display = 'flex'; }
-                                        if(!mutedRooms.includes(room.name)) playNotificationSound();
+                                    const chatWindow = shadow.getElementById('ls-chat-window');
+                                    const badge = shadow.getElementById('ls-unread-badge');
+                                    const fab = shadow.getElementById('ls-fab');
+
+                                    if (chatWindow && !chatWindow.classList.contains('open') && !myIntegratedMode) {
+                                        if (badge) { badge.style.display = 'flex'; badge.innerText = '!'; }
+                                        if (myHideApp && myHideRevive && fab) { fab.style.display = 'flex'; }
+                                        if (!mutedRooms.includes(room.name)) playNotificationSound();
                                     }
                                 } else { unreadEl.style.display = 'none'; }
                             }
@@ -1616,160 +1670,190 @@
 
         function saveRoomToLocalList(name, hash, rawPass) {
             const exists = savedRooms.find(r => r.name === name);
-            if(!exists) { savedRooms.push({name, hash, rawPass}); ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); } 
+            if (!exists) { savedRooms.push({ name, hash, rawPass }); ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); }
             else if (rawPass && !exists.rawPass) { exists.rawPass = rawPass; ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); }
         }
 
         async function autoJoinRoom(roomName, savedHash) {
             try {
                 const doc = await db.collection('rooms').doc(roomName).get();
-                if(!doc.exists) { alert("Esta sala foi encerrada pelo dono."); savedRooms = savedRooms.filter(r => r.name !== roomName); ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); await syncUserProfile(); renderSavedRooms(); startLobbyListeners(); return; }
-                if(doc.data().password !== savedHash) { alert("A senha desta sala foi alterada. Por favor, adicione-a novamente pelo botão +"); return; }
-                
+                if (!doc.exists) { alert("Esta sala foi encerrada pelo dono."); savedRooms = savedRooms.filter(r => r.name !== roomName); ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); await syncUserProfile(); renderSavedRooms(); startLobbyListeners(); return; }
+                if (doc.data().password !== savedHash) { alert("A senha desta sala foi alterada. Por favor, adicione-a novamente pelo botão +"); return; }
+
                 const isNewMember = !doc.data().participants || !doc.data().participants.includes(myName);
-                
+
                 currentRoom = roomName; currentRoomKey = roomName; ls.setItem('ls_current_room', currentRoom); ls.setItem('ls_room_key', currentRoomKey);
-                await db.collection('rooms').doc(currentRoom).set({ participants: firebase.firestore.FieldValue.arrayUnion(myName) }, { merge: true }).catch(()=>{});
-                
+                await db.collection('rooms').doc(currentRoom).set({ participants: firebase.firestore.FieldValue.arrayUnion(myName) }, { merge: true }).catch(() => { });
+
                 if (isNewMember) sendSystemAction('SYSTEM_FIRST_JOIN');
-                
+
                 updateLastRead(currentRoom); checkScreenState();
-            } catch(e) {}
+            } catch (e) { }
         }
 
-        shadow.getElementById('ls-close-add-modal').addEventListener('click', () => { addRoomOverlay.style.display = 'none'; });
+        safeAddEvt('ls-close-add-modal', 'click', () => { const ov = shadow.getElementById('ls-add-room-overlay'); if (ov) ov.style.display = 'none'; });
 
-        const inputRoom = shadow.getElementById('ls-lobby-room');
-        const inputPass = shadow.getElementById('ls-lobby-pass');
-
-        shadow.getElementById('ls-create-room-btn').addEventListener('click', async () => {
+        safeAddEvt('ls-create-room-btn', 'click', async () => {
+            const inputRoom = shadow.getElementById('ls-lobby-room');
+            const inputPass = shadow.getElementById('ls-lobby-pass');
+            if (!inputRoom || !inputPass) return;
             const roomName = inputRoom.value.trim().toLowerCase();
             const roomPass = inputPass.value.trim();
-            if(!roomName || !roomPass) return alert("Preencha o nome e a senha!");
-            if(roomName.length > 80) return alert("O nome da sala deve ter no máximo 80 caracteres.");
-            if(roomPass.length < 4 || roomPass.length > 16) return alert("A senha deve ter entre 4 e 16 caracteres.");
+            if (!roomName || !roomPass) return alert("Preencha o nome e a senha!");
+            if (roomName.length > 80) return alert("O nome da sala deve ter no máximo 80 caracteres.");
+            if (roomPass.length < 4 || roomPass.length > 16) return alert("A senha deve ter entre 4 e 16 caracteres.");
 
             try {
                 const docRef = db.collection('rooms').doc(roomName);
                 const doc = await docRef.get();
-                if(doc.exists) return alert("Esta sala já existe! Clique em 'Entrar na Sala'.");
+                if (doc.exists) return alert("Esta sala já existe! Clique em 'Entrar na Sala'.");
                 const hashedPass = await hashPassword(roomPass);
-                
+
                 await docRef.set({ password: hashedPass, createdBy: myName, deviceId: myDeviceId, createdAt: firebase.firestore.FieldValue.serverTimestamp(), participants: [myName] });
-                
+
                 saveRoomToLocalList(roomName, hashedPass, roomPass);
                 currentRoom = roomName; currentRoomKey = roomName;
                 ls.setItem('ls_current_room', currentRoom); ls.setItem('ls_room_key', currentRoomKey);
-                
+
                 sendSystemAction('SYSTEM_CREATED'); updateLastRead(currentRoom); inputRoom.value = ''; inputPass.value = ''; checkScreenState();
-            } catch (e) {}
+            } catch (e) { }
         });
 
-        shadow.getElementById('ls-join-room-btn').addEventListener('click', async () => {
+        safeAddEvt('ls-join-room-btn', 'click', async () => {
+            const inputRoom = shadow.getElementById('ls-lobby-room');
+            const inputPass = shadow.getElementById('ls-lobby-pass');
+            if (!inputRoom || !inputPass) return;
             const roomName = inputRoom.value.trim().toLowerCase();
             const roomPass = inputPass.value.trim();
-            if(!roomName || !roomPass) return alert("Preencha o nome e a senha!");
+            if (!roomName || !roomPass) return alert("Preencha o nome e a senha!");
             try {
                 const docRef = db.collection('rooms').doc(roomName);
                 const doc = await docRef.get();
-                if(!doc.exists) return alert("Sala não encontrada.");
+                if (!doc.exists) return alert("Sala não encontrada.");
                 const hashedPass = await hashPassword(roomPass);
-                if(doc.data().password !== hashedPass) return alert("Senha incorreta!");
-                
+                if (doc.data().password !== hashedPass) return alert("Senha incorreta!");
+
                 const isNewMember = !doc.data().participants || !doc.data().participants.includes(myName);
-                
+
                 saveRoomToLocalList(roomName, hashedPass, roomPass);
                 currentRoom = roomName; currentRoomKey = roomName;
                 ls.setItem('ls_current_room', currentRoom); ls.setItem('ls_room_key', currentRoomKey);
-                
-                await db.collection('rooms').doc(currentRoom).set({ participants: firebase.firestore.FieldValue.arrayUnion(myName) }, { merge: true }).catch(()=>{});
-                
+
+                await db.collection('rooms').doc(currentRoom).set({ participants: firebase.firestore.FieldValue.arrayUnion(myName) }, { merge: true }).catch(() => { });
+
                 if (isNewMember) sendSystemAction('SYSTEM_FIRST_JOIN');
-                
+
                 updateLastRead(currentRoom); inputRoom.value = ''; inputPass.value = ''; checkScreenState();
-            } catch (e) {}
+            } catch (e) { }
         });
 
-        const chatMenuBtn = shadow.getElementById('ls-chat-menu-btn');
-        const chatDropdown = shadow.getElementById('ls-chat-dropdown');
-
-        chatMenuBtn.addEventListener('click', (e) => { e.stopPropagation(); chatDropdown.classList.toggle('show'); });
-        shadow.getElementById('ls-menu-theater').addEventListener('click', () => { 
-            chatDropdown.classList.remove('show'); 
-            myIntegratedMode = !myIntegratedMode; 
-            ls.setItem('ls_integrated', myIntegratedMode); 
-            checkScreenState(); 
+        safeAddEvt('ls-chat-menu-btn', 'click', (e) => {
+            e.stopPropagation();
+            const cd = shadow.getElementById('ls-chat-dropdown');
+            if (cd) cd.classList.toggle('show');
         });
-        shadow.getElementById('ls-menu-share').addEventListener('click', () => {
-            chatDropdown.classList.remove('show'); if(!currentRoom) return;
+
+        safeAddEvt('ls-menu-theater', 'click', () => {
+            const cd = shadow.getElementById('ls-chat-dropdown');
+            if (cd) cd.classList.remove('show');
+            myIntegratedMode = !myIntegratedMode;
+            ls.setItem('ls_integrated', myIntegratedMode);
+            checkScreenState();
+        });
+
+        safeAddEvt('ls-menu-share', 'click', () => {
+            const cd = shadow.getElementById('ls-chat-dropdown');
+            if (cd) cd.classList.remove('show');
+            if (!currentRoom) return;
             let passToShare = ""; const roomData = savedRooms.find(r => r.name === currentRoom);
-            if (roomData && roomData.rawPass) { passToShare = roomData.rawPass; } 
+            if (roomData && roomData.rawPass) { passToShare = roomData.rawPass; }
             else { passToShare = prompt("Qual a senha dessa sala para incluir no convite?") || "[Sua Senha]"; if (roomData && passToShare !== "[Sua Senha]") { roomData.rawPass = passToShare; ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); } }
             const link = `Vem assistir comigo no LidySync!\n🍿 Nome da Sala: ${currentRoom}\n🔑 Senha: ${passToShare}\n\nCaso não tenha a extensão clique aqui para aprender a instalar: https://ofaceoff.github.io/LidySync/index.html`;
             navigator.clipboard.writeText(link); alert("Convite copiado!");
         });
 
-        shadow.getElementById('ls-menu-settings').addEventListener('click', () => {
-            chatDropdown.classList.remove('show');
-            if (settingsOverlay.style.display === 'flex') { settingsOverlay.style.display = 'none'; } 
-            else { settingsOverlay.style.display = 'flex'; shadow.getElementById('ls-config-autoplay').checked = myAutoPlay; }
+        safeAddEvt('ls-menu-settings', 'click', () => {
+            const cd = shadow.getElementById('ls-chat-dropdown');
+            if (cd) cd.classList.remove('show');
+            const settingsOverlay = shadow.getElementById('ls-settings-overlay');
+            if (settingsOverlay) {
+                if (settingsOverlay.style.display === 'flex') { settingsOverlay.style.display = 'none'; }
+                else { settingsOverlay.style.display = 'flex'; const ap = shadow.getElementById('ls-config-autoplay'); if (ap) ap.checked = myAutoPlay; }
+            }
         });
 
-        shadow.getElementById('ls-close-settings-modal').addEventListener('click', () => { settingsOverlay.style.display = 'none'; editingRoomAppearance = null; });
-        shadow.getElementById('ls-menu-members').addEventListener('click', () => { chatDropdown.classList.remove('show'); membersOverlay.style.display = 'flex'; fetchAndRenderMembers(currentRoom, shadow.getElementById('ls-members-list')); });
-        shadow.getElementById('ls-close-members-modal').addEventListener('click', () => { membersOverlay.style.display = 'none'; });
+        safeAddEvt('ls-close-settings-modal', 'click', () => { const so = shadow.getElementById('ls-settings-overlay'); if (so) so.style.display = 'none'; editingRoomAppearance = null; });
 
-        shadow.getElementById('ls-menu-leave').addEventListener('click', async () => {
-            chatDropdown.classList.remove('show');
-            if(!confirm("Tem certeza que deseja sair definitivamente desta sala?")) return;
+        safeAddEvt('ls-menu-members', 'click', () => {
+            const cd = shadow.getElementById('ls-chat-dropdown');
+            if (cd) cd.classList.remove('show');
+            const mo = shadow.getElementById('ls-members-overlay');
+            if (mo) mo.style.display = 'flex';
+            fetchAndRenderMembers(currentRoom, shadow.getElementById('ls-members-list'));
+        });
+
+        safeAddEvt('ls-close-members-modal', 'click', () => { const mo = shadow.getElementById('ls-members-overlay'); if (mo) mo.style.display = 'none'; });
+
+        safeAddEvt('ls-menu-leave', 'click', async () => {
+            const cd = shadow.getElementById('ls-chat-dropdown');
+            if (cd) cd.classList.remove('show');
+            if (!confirm("Tem certeza que deseja sair definitivamente desta sala?")) return;
             sendSystemAction('SYSTEM_LEFT_PERMANENTLY');
-            try { await db.collection('rooms').doc(currentRoom).update({ participants: firebase.firestore.FieldValue.arrayRemove(myName) }); } catch(e){}
+            try { await db.collection('rooms').doc(currentRoom).update({ participants: firebase.firestore.FieldValue.arrayRemove(myName) }); } catch (e) { }
             savedRooms = savedRooms.filter(r => r.name !== currentRoom);
             ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms));
             if (isTyping && currentRoom) { clearTimeout(typingTimeout); isTyping = false; }
             stopChatListeners(); currentRoom = null; currentRoomKey = null; currentRoomData = null; ls.removeItem('ls_current_room'); ls.removeItem('ls_room_key'); checkScreenState();
         });
 
-        shadow.getElementById('ls-minimize-btn').addEventListener('click', () => {
-            if (myIntegratedMode) { alert("O Chat está no Modo Teatro. Desative essa opção no menu ou nas configurações para minimizar a janela."); return; }
-            chatWindow.classList.remove('open');
-            if (myHideApp) fab.style.display = 'none'; else fab.style.display = 'flex';
+        safeAddEvt('ls-minimize-btn', 'click', () => {
+            if (isCurrentlyIntegrated) { alert("O Chat está no Modo Teatro. Desative essa opção no menu ou nas configurações para minimizar a janela."); return; }
+            const cw = shadow.getElementById('ls-chat-window');
+            if (cw) cw.classList.remove('open');
+            const fab = shadow.getElementById('ls-fab');
+            if (myHideApp && fab) fab.style.display = 'none'; else if (fab) fab.style.display = 'flex';
             if (currentRoom) updateLastRead(currentRoom);
         });
 
-        shadow.getElementById('ls-close-btn').addEventListener('click', () => { 
-            if (myIntegratedMode) { alert("O Chat está no Modo Teatro. Desative essa opção no menu ou nas configurações para fechar o app."); return; }
-            chatWindow.classList.remove('open'); 
-            fab.style.display = 'none';
+        safeAddEvt('ls-close-btn', 'click', () => {
+            if (isCurrentlyIntegrated) { alert("O Chat está no Modo Teatro. Desative essa opção no menu ou nas configurações para fechar o app."); return; }
+            const cw = shadow.getElementById('ls-chat-window');
+            if (cw) cw.classList.remove('open');
+            const fab = shadow.getElementById('ls-fab');
+            if (fab) fab.style.display = 'none';
             if (currentRoom) updateLastRead(currentRoom);
         });
-        
-        shadow.getElementById('ls-menu-delete').addEventListener('click', async () => { 
-            chatDropdown.classList.remove('show'); 
+
+        safeAddEvt('ls-menu-delete', 'click', async () => {
+            const cd = shadow.getElementById('ls-chat-dropdown');
+            if (cd) cd.classList.remove('show');
             if (currentRoomData && currentRoomData.createdBy !== myName) return alert("Apenas o Host da sala pode encerrá-la.");
-            if(!confirm("Encerrar e deletar a sala para todos?")) return; 
-            try { await db.collection('rooms').doc(currentRoom).delete(); } catch(e){} 
+            if (!confirm("Encerrar e deletar a sala para todos?")) return;
+            try { await db.collection('rooms').doc(currentRoom).delete(); } catch (e) { }
         });
 
-        backBtn.addEventListener('click', () => { 
-            if (isTyping && currentRoom) { 
-                clearTimeout(typingTimeout); 
-                isTyping = false; 
-                db.collection('rooms').doc(currentRoom).update({ typing: firebase.firestore.FieldValue.arrayRemove(myName) }).catch(()=>{}); 
+        safeAddEvt('ls-back-btn', 'click', () => {
+            if (isTyping && currentRoom) {
+                clearTimeout(typingTimeout);
+                isTyping = false;
+                db.collection('rooms').doc(currentRoom).update({ typing: firebase.firestore.FieldValue.arrayRemove(myName) }).catch(() => { });
             }
-            stopChatListeners(); 
-            currentRoom = null; 
-            currentRoomKey = null; 
-            currentRoomData = null; 
-            ls.removeItem('ls_current_room'); 
-            ls.removeItem('ls_room_key'); 
-            checkScreenState(); 
+            stopChatListeners();
+            currentRoom = null;
+            currentRoomKey = null;
+            currentRoomData = null;
+            ls.removeItem('ls_current_room');
+            ls.removeItem('ls_room_key');
+            checkScreenState();
         });
 
         function startChatListeners() {
             if (!currentRoom) return;
-            stopChatListeners(); 
-            const roomJoinTime = Date.now(); isFirstSnapshot = true; messagesContainer.innerHTML = ''; userCache = {};
+            stopChatListeners();
+            const roomJoinTime = Date.now(); isFirstSnapshot = true;
+            const messagesContainer = shadow.getElementById('ls-messages');
+            if (messagesContainer) messagesContainer.innerHTML = '';
+            userCache = {};
             const roomRef = db.collection('rooms').doc(currentRoom); const messagesRef = roomRef.collection('messages');
 
             roomListener = roomRef.onSnapshot(doc => {
@@ -1777,10 +1861,10 @@
                     alert("A sala foi encerrada pelo criador."); stopChatListeners(); currentRoom = null; currentRoomKey = null; currentRoomData = null; ls.removeItem('ls_current_room'); ls.removeItem('ls_room_key'); savedRooms = savedRooms.filter(r => r.name !== doc.id); ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); checkScreenState();
                 } else {
                     const newData = doc.data();
-                    
+
                     if (newData.participants && !newData.participants.includes(myName)) {
                         alert("Você não faz mais parte desta sala (Saiu ou foi expulso).");
-                        stopChatListeners(); currentRoom = null; currentRoomKey = null; currentRoomData = null; ls.removeItem('ls_current_room'); ls.removeItem('ls_room_key'); 
+                        stopChatListeners(); currentRoom = null; currentRoomKey = null; currentRoomData = null; ls.removeItem('ls_current_room'); ls.removeItem('ls_room_key');
                         savedRooms = savedRooms.filter(r => r.name !== doc.id); ls.setItem('ls_saved_rooms', JSON.stringify(savedRooms)); checkScreenState();
                         return;
                     }
@@ -1793,7 +1877,7 @@
                                 v.currentTime = newData.playbackTime;
                             }
                             if (newData.playbackState === 'playing' && v.paused) {
-                                v.play().catch(()=>{});
+                                v.play().catch(() => { });
                             } else if (newData.playbackState === 'paused' && !v.paused) {
                                 v.pause();
                             }
@@ -1817,7 +1901,7 @@
                     }
 
                     if (currentRoomData.participants) { currentRoomData.participants.forEach(p => { if (!userCache[p]) { db.collection('users').doc(p).get().then(u => { if (u.exists) userCache[p] = u.data(); }); } }); }
-                    
+
                     const typingEl = shadow.getElementById('ls-typing-indicator');
                     if (currentRoomData.typing && Array.isArray(currentRoomData.typing) && typingEl) {
                         const typers = currentRoomData.typing.filter(u => u !== myName);
@@ -1840,9 +1924,11 @@
             });
 
             messagesListener = messagesRef.orderBy('timestamp', 'asc').limitToLast(50).onSnapshot((snapshot) => {
+                const messagesContainer = shadow.getElementById('ls-messages');
+                if (!messagesContainer) return;
                 messagesContainer.innerHTML = '';
                 let currentUnread = 0; const lastRead = lastReadTimes[currentRoom] || 0; const myCleanName = myName.replace(/\s/g, '').toLowerCase();
-                
+
                 let lastSender = null;
                 let lastMsgType = null;
                 let lastTimestamp = 0;
@@ -1858,11 +1944,11 @@
                     }
 
                     const container = document.createElement('div');
-                    
+
                     if (data.type === 'countdown') {
-                        if (data.deleted) return; 
+                        if (data.deleted) return;
                         lastSender = null; lastMsgType = 'system'; lastTimestamp = msgTimeMs;
-                        
+
                         if (data.text === 'SYSTEM_CREATED') {
                             container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg" style="background:transparent!important; box-shadow:none; border:none; padding:4px;">✨ <b>${data.sender}</b> criou a sala <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
@@ -1880,11 +1966,11 @@
                             container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg" style="background:transparent!important; box-shadow:none; border:none; padding:4px; opacity:0.6;">🚶 <b>${data.sender}</b> foi embora <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
                         } else if (data.text === 'SYSTEM_JOIN') {
-                            if (myHideSys) return; 
+                            if (myHideSys) return;
                             container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg" style="background:transparent!important; box-shadow:none; border:none; padding:4px;">👋 <b>${data.sender}</b> entrou na sala <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
                         } else if (data.text === 'SYSTEM_LEAVE') {
-                            if (myHideSys) return; 
+                            if (myHideSys) return;
                             container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg" style="background:transparent!important; box-shadow:none; border:none; padding:4px; opacity:0.6;">🚪 <b>${data.sender}</b> saiu <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
                         } else if (data.text === 'SYSTEM_PAUSE') {
@@ -1900,18 +1986,18 @@
                     } else if (data.type === 'text' || data.type === 'image' || data.type === 'gif') {
                         container.className = `ls-message-container ${isMe ? 'sent' : 'received'}`;
                         if (isSameSender) container.style.marginTop = '-8px';
-                        
+
                         const senderRow = document.createElement('div'); senderRow.className = 'ls-sender-row';
-                        
+
                         if (!isSameSender) {
                             const nameLabel = document.createElement('span'); nameLabel.className = 'ls-sender-name'; nameLabel.innerText = data.sender; nameLabel.onclick = () => openProfile(data.sender); senderRow.appendChild(nameLabel);
                             const tagsContainer = document.createElement('span'); tagsContainer.className = 'ls-tags-container';
                             tagsContainer.innerHTML = buildTagsHTML(isAdm, userCache[data.sender]);
                             senderRow.appendChild(tagsContainer);
                         }
-                        
+
                         const timeLabel = document.createElement('span'); timeLabel.className = 'ls-msg-time'; timeLabel.innerText = formatTime(data.timestamp); senderRow.appendChild(timeLabel);
-                        
+
                         if (!data.deleted) {
                             const actionBtn = document.createElement('span'); actionBtn.className = 'ls-msg-action'; actionBtn.innerText = '↩️'; actionBtn.title = "Responder";
                             actionBtn.onclick = () => { replyTarget = { sender: data.sender, text: data.type === 'text' ? data.text : (data.type === 'image' ? 'Imagem' : 'GIF') }; shadow.getElementById('ls-reply-bar-text').innerHTML = `Respondendo <b>${data.sender}</b>: <span style="opacity:0.8;">${replyTarget.text.substring(0, 30)}...</span>`; shadow.getElementById('ls-reply-bar').style.display = 'block'; input.focus(); };
@@ -1920,82 +2006,86 @@
 
                         if (isMe && !data.deleted) {
                             const delBtn = document.createElement('span'); delBtn.className = 'ls-msg-action'; delBtn.innerText = '🗑️'; delBtn.title = "Apagar";
-                            delBtn.onclick = async () => { try { await messagesRef.doc(docId).set({ deleted: true }, { merge: true }); } catch (e) {} };
+                            delBtn.onclick = async () => { try { await messagesRef.doc(docId).set({ deleted: true }, { merge: true }); } catch (e) { } };
                             senderRow.appendChild(delBtn);
                         }
-                        
+
                         const msgBubble = document.createElement('div'); msgBubble.className = 'ls-message';
                         if (data.type === 'image' || data.type === 'gif') msgBubble.style.padding = '4px';
 
-                        if(data.textColor) { msgBubble.style.color = data.textColor; } else if (isMe) { msgBubble.style.color = '#ffffff'; }
+                        if (data.textColor) { msgBubble.style.color = data.textColor; } else if (isMe) { msgBubble.style.color = '#ffffff'; }
 
                         if (data.deleted) {
                             msgBubble.classList.add('deleted-msg'); msgBubble.innerText = (data.type === 'text') ? "🚫 Mensagem apagada" : "🚫 Imagem apagada";
                         } else {
                             let replyHTML = '';
                             let formattedText = '';
-                            
-                            if (data.type === 'image' || data.type === 'gif') {
-                                 if (data.url && data.url.includes('|-REPLY-|')) {
-                                     const parts = data.url.split('|-REPLY-|');
-                                     replyHTML = `<div style="background: rgba(0,0,0,0.2); border-left: 3px solid currentColor; padding: 4px 8px; margin-bottom: 6px; border-radius: 4px; font-size: 11px; opacity: 0.8;"><b>${escapeHTML(parts[0])}</b><br>${escapeHTML(parts[1])}</div>`;
-                                     msgBubble.innerHTML = `${replyHTML}<img src="${parts[2]}">`;
-                                 } else { msgBubble.innerHTML = `<img src="${data.url}">`; }
-                            } else {
-                                 formattedText = linkify(data.text);
-                                 const replyMatch = formattedText.match(/^\[REPLY:(.*?)\|(.*?)\] /);
-                                 if (replyMatch) {
-                                     const blockquote = `<div style="background: rgba(0,0,0,0.2); border-left: 3px solid currentColor; padding: 4px 8px; margin-bottom: 6px; border-radius: 4px; font-size: 11px; opacity: 0.8;"><b>${replyMatch[1]}</b><br>${replyMatch[2]}</div>`;
-                                     formattedText = formattedText.replace(replyMatch[0], blockquote);
-                                 }
-                                 
-                                 const timeRegex = /\b(\d{1,2}:)?([0-5]?\d):([0-5]\d)\b/g;
-                                 formattedText = formattedText.replace(timeRegex, (match) => {
-                                     const parts = match.split(':').map(Number);
-                                     let secs = 0;
-                                     if (parts.length === 3) secs = parts[0] * 3600 + parts[1] * 60 + parts[2];
-                                     else if (parts.length === 2) secs = parts[0] * 60 + parts[1];
-                                     return `<span class="ls-timecode" data-time="${secs}" style="color: var(--highlight); text-decoration: underline; cursor: pointer; font-weight: bold;" title="Pular para ${match}">${match}</span>`;
-                                 });
 
-                                 formattedText = formattedText.replace(/(^|\s)@([a-zA-Z0-9_]+)/g, (match, space, nameMatch) => {
-                                     if (nameMatch.toLowerCase() === myCleanName) return `${space}<span style="background: var(--fab-bg); color: var(--fab-color); padding: 2px 6px; border-radius: 8px; font-weight: bold; box-shadow: 0 0 10px rgba(99,102,241,0.5);">@${nameMatch}</span>`;
-                                     else return `${space}<span style="color: #06b6d4; font-weight: bold;">@${nameMatch}</span>`;
-                                 });
-                                 msgBubble.innerHTML = formattedText;
+                            if (data.type === 'image' || data.type === 'gif') {
+                                if (data.url && data.url.includes('|-REPLY-|')) {
+                                    const parts = data.url.split('|-REPLY-|');
+                                    replyHTML = `<div style="background: rgba(0,0,0,0.2); border-left: 3px solid currentColor; padding: 4px 8px; margin-bottom: 6px; border-radius: 4px; font-size: 11px; opacity: 0.8;"><b>${escapeHTML(parts[0])}</b><br>${escapeHTML(parts[1])}</div>`;
+                                    msgBubble.innerHTML = `${replyHTML}<img src="${parts[2]}">`;
+                                } else { msgBubble.innerHTML = `<img src="${data.url}">`; }
+                            } else {
+                                formattedText = linkify(data.text);
+                                const replyMatch = formattedText.match(/^\[REPLY:(.*?)\|(.*?)\] /);
+                                if (replyMatch) {
+                                    const blockquote = `<div style="background: rgba(0,0,0,0.2); border-left: 3px solid currentColor; padding: 4px 8px; margin-bottom: 6px; border-radius: 4px; font-size: 11px; opacity: 0.8;"><b>${replyMatch[1]}</b><br>${replyMatch[2]}</div>`;
+                                    formattedText = formattedText.replace(replyMatch[0], blockquote);
+                                }
+
+                                const timeRegex = /\b(\d{1,2}:)?([0-5]?\d):([0-5]\d)\b/g;
+                                formattedText = formattedText.replace(timeRegex, (match) => {
+                                    const parts = match.split(':').map(Number);
+                                    let secs = 0;
+                                    if (parts.length === 3) secs = parts[0] * 3600 + parts[1] * 60 + parts[2];
+                                    else if (parts.length === 2) secs = parts[0] * 60 + parts[1];
+                                    return `<span class="ls-timecode" data-time="${secs}" style="color: var(--highlight); text-decoration: underline; cursor: pointer; font-weight: bold;" title="Pular para ${match}">${match}</span>`;
+                                });
+
+                                formattedText = formattedText.replace(/(^|\s)@([a-zA-Z0-9_]+)/g, (match, space, nameMatch) => {
+                                    if (nameMatch.toLowerCase() === myCleanName) return `${space}<span style="background: var(--fab-bg); color: var(--fab-color); padding: 2px 6px; border-radius: 8px; font-weight: bold; box-shadow: 0 0 10px rgba(99,102,241,0.5);">@${nameMatch}</span>`;
+                                    else return `${space}<span style="color: #06b6d4; font-weight: bold;">@${nameMatch}</span>`;
+                                });
+                                msgBubble.innerHTML = formattedText;
                             }
-                            if(isMe) { msgBubble.style.background = data.color || '#5b5cf6'; }
+                            if (isMe) { msgBubble.style.background = data.color || '#5b5cf6'; }
                         }
-                        
+
                         msgBubble.querySelectorAll('img').forEach(img => {
                             img.addEventListener('click', () => {
-                                viewerImg.src = img.src;
-                                imageViewer.style.display = 'flex';
-                                setTimeout(() => imageViewer.classList.add('show'), 10);
+                                const viewerImg = shadow.getElementById('ls-viewer-img');
+                                const imageViewer = shadow.getElementById('ls-image-viewer');
+                                if (viewerImg && imageViewer) {
+                                    viewerImg.src = img.src;
+                                    imageViewer.style.display = 'flex';
+                                    setTimeout(() => imageViewer.classList.add('show'), 10);
+                                }
                             });
                         });
-                        
+
                         msgBubble.querySelectorAll('.ls-timecode').forEach(el => {
                             el.addEventListener('click', () => {
                                 const t = parseFloat(el.getAttribute('data-time'));
                                 const v = document.querySelector('video');
-                                if (v) { v.currentTime = t; v.play().catch(()=>{}); }
+                                if (v) { v.currentTime = t; v.play().catch(() => { }); }
                             });
                         });
-                        
+
                         container.appendChild(senderRow); container.appendChild(msgBubble);
-                        
+
                         lastSender = data.sender;
                         lastMsgType = 'user';
                         lastTimestamp = msgTimeMs;
                     }
-                    
+
                     if (data.type === 'party') {
                         lastSender = null; lastMsgType = 'system'; lastTimestamp = msgTimeMs;
                         if (msgTimeMs > roomJoinTime) {
                             const partyOverlay = shadow.getElementById('ls-party-overlay');
                             const ball = shadow.getElementById('ls-disco-ball');
-                            if (partyOverlay) {
+                            if (partyOverlay && ball) {
                                 clearTimeout(lsPartyTimeout);
                                 partyOverlay.style.display = 'flex';
                                 partyOverlay.classList.add('party-active');
@@ -2012,7 +2102,7 @@
                         if (msgTimeMs > roomJoinTime) {
                             const partyOverlay = shadow.getElementById('ls-party-overlay');
                             const ball = shadow.getElementById('ls-disco-ball');
-                            if (partyOverlay) {
+                            if (partyOverlay && ball) {
                                 clearTimeout(lsPartyTimeout);
                                 partyOverlay.style.display = 'none';
                                 partyOverlay.classList.remove('party-active');
@@ -2034,99 +2124,143 @@
                                 else if (data.text === 'SYSTEM_PAUSE' && myAutoPlay) document.querySelectorAll('video').forEach(v => v.pause());
                             }
                             if (data.sender !== myName && data.type !== 'party' && data.type !== 'stopparty') {
-                                if (!chatWindow.classList.contains('open') && !myIntegratedMode) {
-                                    if(!mutedRooms.includes(currentRoom)) playNotificationSound();
-                                    unreadCount++; badge.style.display = 'flex'; badge.innerText = unreadCount > 5 ? '5+' : unreadCount;
-                                    if (myHideApp && myHideRevive) { fab.style.display = 'flex'; }
-                                } else { if(!mutedRooms.includes(currentRoom)) playReceiveSound(); }
+                                const chatWindow = shadow.getElementById('ls-chat-window');
+                                const badge = shadow.getElementById('ls-unread-badge');
+                                const fab = shadow.getElementById('ls-fab');
+                                if (chatWindow && !chatWindow.classList.contains('open') && !myIntegratedMode) {
+                                    if (!mutedRooms.includes(currentRoom)) playNotificationSound();
+                                    unreadCount++; if (badge) { badge.style.display = 'flex'; badge.innerText = unreadCount > 5 ? '5+' : unreadCount; }
+                                    if (myHideApp && myHideRevive && fab) fab.style.display = 'flex';
+                                } else { if (!mutedRooms.includes(currentRoom)) playReceiveSound(); }
                             }
                         }
                     }
                 });
 
-                if (chatWindow.classList.contains('open')) { updateLastRead(currentRoom); unreadCount = 0; badge.style.display = 'none'; } 
-                else if (currentUnread > 0 && !myIntegratedMode) { badge.style.display = 'flex'; badge.innerText = currentUnread > 5 ? '5+' : currentUnread; if (myHideApp && myHideRevive) fab.style.display = 'flex'; }
+                const chatWindow = shadow.getElementById('ls-chat-window');
+                const badge = shadow.getElementById('ls-unread-badge');
+                const fab = shadow.getElementById('ls-fab');
+
+                if (chatWindow && chatWindow.classList.contains('open')) { updateLastRead(currentRoom); unreadCount = 0; if (badge) badge.style.display = 'none'; }
+                else if (currentUnread > 0 && !myIntegratedMode) { if (badge) { badge.style.display = 'flex'; badge.innerText = currentUnread > 5 ? '5+' : currentUnread; } if (myHideApp && myHideRevive && fab) fab.style.display = 'flex'; }
                 scrollToBottom(); isFirstSnapshot = false;
             });
         }
 
         function stopChatListeners() { if (roomListener) roomListener(); if (messagesListener) messagesListener(); roomListener = null; messagesListener = null; }
 
-        shadow.getElementById('ls-save-config-btn').addEventListener('click', async () => {
-            const aPlay = shadow.getElementById('ls-config-autoplay').checked;
-            myAutoPlay = aPlay;
-            ls.setItem('ls_autoplay', myAutoPlay);
-            settingsOverlay.style.display = 'none';
+        safeAddEvt('ls-save-config-btn', 'click', async () => {
+            const cb = shadow.getElementById('ls-config-autoplay');
+            if (cb) {
+                myAutoPlay = cb.checked;
+                ls.setItem('ls_autoplay', myAutoPlay);
+            }
+            const ov = shadow.getElementById('ls-settings-overlay');
+            if (ov) ov.style.display = 'none';
             editingRoomAppearance = null;
         });
 
-        const scrollToBottom = () => { messagesContainer.scrollTop = messagesContainer.scrollHeight; };
-        
-        fab.addEventListener('click', () => { chatWindow.classList.add('open'); fab.style.display = 'none'; unreadCount = 0; badge.style.display = 'none'; if (currentRoom) updateLastRead(currentRoom); checkScreenState(); });
+        const scrollToBottom = () => { const mc = shadow.getElementById('ls-messages'); if (mc) mc.scrollTop = mc.scrollHeight; };
 
-        const minimizeBtnObj = shadow.getElementById('ls-minimize-btn');
-        minimizeBtnObj.addEventListener('click', () => {
-            if (myIntegratedMode) { alert("O Chat está no Modo Teatro. Desative essa opção no menu ou nas configurações para minimizar a janela."); return; }
-            chatWindow.classList.remove('open');
-            if (myHideApp) fab.style.display = 'none'; else fab.style.display = 'flex';
+        safeAddEvt('ls-fab', 'click', () => {
+            const cw = shadow.getElementById('ls-chat-window'); if (cw) cw.classList.add('open');
+            const fb = shadow.getElementById('ls-fab'); if (fb) fb.style.display = 'none';
+            unreadCount = 0;
+            const bd = shadow.getElementById('ls-unread-badge'); if (bd) bd.style.display = 'none';
             if (currentRoom) updateLastRead(currentRoom);
         });
 
-        const closeBtnObj = shadow.getElementById('ls-close-btn');
-        closeBtnObj.addEventListener('click', () => { 
-            if (myIntegratedMode) { alert("O Chat está no Modo Teatro. Desative essa opção no menu ou nas configurações para fechar o app."); return; }
-            chatWindow.classList.remove('open'); 
-            fab.style.display = 'none';
+        safeAddEvt('ls-minimize-btn', 'click', () => {
+            if (isCurrentlyIntegrated) { alert("O Chat está no Modo Teatro. Desative essa opção no menu ou nas configurações para minimizar a janela."); return; }
+            const cw = shadow.getElementById('ls-chat-window');
+            if (cw) cw.classList.remove('open');
+            const fab = shadow.getElementById('ls-fab');
+            if (myHideApp && fab) fab.style.display = 'none'; else if (fab) fab.style.display = 'flex';
             if (currentRoom) updateLastRead(currentRoom);
         });
 
-        shadow.getElementById('ls-reply-bar-close').addEventListener('click', () => { replyTarget = null; shadow.getElementById('ls-reply-bar').style.display = 'none'; });
-
-        const btnPlus = shadow.getElementById('ls-btn-plus'); const btnEmoji = shadow.getElementById('ls-btn-emoji'); const emojiPanel = shadow.getElementById('ls-emoji-panel'); const plusPanel = shadow.getElementById('ls-plus-panel');
-        btnEmoji.addEventListener('click', () => { emojiPanel.style.display = emojiPanel.style.display === 'flex' ? 'none' : 'flex'; plusPanel.style.display = 'none'; });
-        btnPlus.addEventListener('click', () => { plusPanel.style.display = plusPanel.style.display === 'flex' ? 'none' : 'flex'; emojiPanel.style.display = 'none'; });
-        shadow.querySelectorAll('.ls-emoji-item').forEach(item => { item.addEventListener('click', (e) => { input.value += e.target.innerText; emojiPanel.style.display = 'none'; input.focus(); }); });
-
-        input.addEventListener('keydown', (e) => {
-            if (isMentioning && mentionPanel.style.display === 'flex') {
-                const items = mentionPanel.querySelectorAll('.ls-mention-item');
-                if (e.key === 'ArrowDown') {
-                    e.preventDefault(); items[activeMentionIndex].classList.remove('active'); activeMentionIndex = (activeMentionIndex + 1) % items.length; items[activeMentionIndex].classList.add('active'); items[activeMentionIndex].scrollIntoView({block: 'nearest'});
-                } else if (e.key === 'ArrowUp') {
-                    e.preventDefault(); items[activeMentionIndex].classList.remove('active'); activeMentionIndex = (activeMentionIndex - 1 + items.length) % items.length; items[activeMentionIndex].classList.add('active'); items[activeMentionIndex].scrollIntoView({block: 'nearest'});
-                } else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); insertMention(mentionMatches[activeMentionIndex]); } 
-                else if (e.key === 'Escape') { mentionPanel.style.display = 'none'; isMentioning = false; }
-            } else if (e.key === 'Enter') { sendMessage(); }
+        safeAddEvt('ls-close-btn', 'click', () => {
+            if (isCurrentlyIntegrated) { alert("O Chat está no Modo Teatro. Desative essa opção no menu ou nas configurações para fechar o app."); return; }
+            const cw = shadow.getElementById('ls-chat-window');
+            if (cw) cw.classList.remove('open');
+            const fab = shadow.getElementById('ls-fab');
+            if (fab) fab.style.display = 'none';
+            if (currentRoom) updateLastRead(currentRoom);
         });
 
-        input.addEventListener('focus', () => { emojiPanel.style.display = 'none'; plusPanel.style.display = 'none'; });
+        safeAddEvt('ls-reply-bar-close', 'click', () => { replyTarget = null; const rb = shadow.getElementById('ls-reply-bar'); if (rb) rb.style.display = 'none'; });
 
-        input.addEventListener('paste', (e) => {
-            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-            for (let index in items) {
-                const item = items[index];
-                if (item.kind === 'file' && item.type.indexOf('image/') === 0) {
-                    const blob = item.getAsFile(); const reader = new FileReader();
-                    reader.onload = async (event) => { compressImage(event.target.result, async (compressedUrl) => { await sendImageMsg(compressedUrl); }); };
-                    reader.readAsDataURL(blob);
+        safeAddEvt('ls-btn-emoji', 'click', () => {
+            const ep = shadow.getElementById('ls-emoji-panel');
+            const pp = shadow.getElementById('ls-plus-panel');
+            if (ep) ep.style.display = ep.style.display === 'flex' ? 'none' : 'flex';
+            if (pp) pp.style.display = 'none';
+        });
+
+        safeAddEvt('ls-btn-plus', 'click', () => {
+            const pp = shadow.getElementById('ls-plus-panel');
+            const ep = shadow.getElementById('ls-emoji-panel');
+            if (pp) pp.style.display = pp.style.display === 'flex' ? 'none' : 'flex';
+            if (ep) ep.style.display = 'none';
+        });
+
+        shadow.querySelectorAll('.ls-emoji-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                const inp = shadow.getElementById('ls-input');
+                if (inp) { inp.value += e.target.innerText; inp.focus(); }
+                const ep = shadow.getElementById('ls-emoji-panel'); if (ep) ep.style.display = 'none';
+            });
+        });
+
+        if (input) {
+            input.addEventListener('keydown', (e) => {
+                const mentionPanel = shadow.getElementById('ls-mention-panel');
+                if (isMentioning && mentionPanel && mentionPanel.style.display === 'flex') {
+                    const items = mentionPanel.querySelectorAll('.ls-mention-item');
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault(); items[activeMentionIndex].classList.remove('active'); activeMentionIndex = (activeMentionIndex + 1) % items.length; items[activeMentionIndex].classList.add('active'); items[activeMentionIndex].scrollIntoView({ block: 'nearest' });
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault(); items[activeMentionIndex].classList.remove('active'); activeMentionIndex = (activeMentionIndex - 1 + items.length) % items.length; items[activeMentionIndex].classList.add('active'); items[activeMentionIndex].scrollIntoView({ block: 'nearest' });
+                    } else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); insertMention(mentionMatches[activeMentionIndex]); }
+                    else if (e.key === 'Escape') { mentionPanel.style.display = 'none'; isMentioning = false; }
+                } else if (e.key === 'Enter') { sendMessage(); }
+            });
+
+            input.addEventListener('focus', () => {
+                const emojiPanel = shadow.getElementById('ls-emoji-panel');
+                const plusPanel = shadow.getElementById('ls-plus-panel');
+                if (emojiPanel) emojiPanel.style.display = 'none';
+                if (plusPanel) plusPanel.style.display = 'none';
+            });
+
+            input.addEventListener('paste', (e) => {
+                const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+                for (let index in items) {
+                    const item = items[index];
+                    if (item.kind === 'file' && item.type.indexOf('image/') === 0) {
+                        const blob = item.getAsFile(); const reader = new FileReader();
+                        reader.onload = async (event) => { compressImage(event.target.result, async (compressedUrl) => { await sendImageMsg(compressedUrl); }); };
+                        reader.readAsDataURL(blob);
+                    }
                 }
-            }
-        });
+            });
+        }
 
         const countdownOverlay = shadow.getElementById('ls-countdown-overlay'); const countdownNumber = shadow.getElementById('ls-countdown-number');
         function runVisualCountdown(senderName) {
+            if (!countdownOverlay || !countdownNumber) return;
             countdownOverlay.style.display = 'flex'; shadow.getElementById('ls-countdown-text').innerText = `${senderName} vai dar play...`;
-            let count = 3; countdownNumber.innerText = count; countdownNumber.style.color = "var(--highlight)"; 
+            let count = 3; countdownNumber.innerText = count; countdownNumber.style.color = "var(--highlight)";
             const timer = setInterval(() => {
                 count--;
-                if (count > 0) { countdownNumber.innerText = count; } 
-                else if (count === 0) { countdownNumber.innerText = "PLAY!"; countdownNumber.style.color = "#10b981"; if (myAutoPlay) { try { const video = document.querySelector('video'); if (video) video.play(); } catch (e) {} } } 
+                if (count > 0) { countdownNumber.innerText = count; }
+                else if (count === 0) { countdownNumber.innerText = "PLAY!"; countdownNumber.style.color = "#10b981"; if (myAutoPlay) { try { const video = document.querySelector('video'); if (video) video.play(); } catch (e) { } } }
                 else { clearInterval(timer); countdownOverlay.style.display = 'none'; }
             }, 1000);
         }
 
-        shadow.getElementById('btn-action-sharetime').addEventListener('click', () => {
-            plusPanel.style.display = 'none';
+        safeAddEvt('btn-action-sharetime', 'click', () => {
+            const pp = shadow.getElementById('ls-plus-panel'); if (pp) pp.style.display = 'none';
             const v = document.querySelector('video');
             if (v) {
                 const s = Math.floor(v.currentTime);
@@ -2134,22 +2268,22 @@
                 const mins = Math.floor((s % 3600) / 60);
                 const secs = s % 60;
                 const timeStr = hrs > 0 ? `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}` : `${mins}:${secs.toString().padStart(2, '0')}`;
-                input.value += (input.value ? ' ' : '') + timeStr + ' ';
-                input.focus();
+                const inp = shadow.getElementById('ls-input');
+                if (inp) { inp.value += (inp.value ? ' ' : '') + timeStr + ' '; inp.focus(); }
             } else {
                 alert("Nenhum vídeo encontrado para copiar o tempo.");
             }
         });
 
-        shadow.getElementById('btn-action-sync').addEventListener('click', () => {
-            plusPanel.style.display = 'none';
+        safeAddEvt('btn-action-sync', 'click', () => {
+            const pp = shadow.getElementById('ls-plus-panel'); if (pp) pp.style.display = 'none';
             if (!currentRoomData || typeof currentRoomData.playbackTime === 'undefined') return alert("O anfitrião ainda não reproduziu ou pausou o vídeo para sincronizar.");
             const v = document.querySelector('video');
             if (v) {
                 isRemoteAction = true;
                 v.currentTime = currentRoomData.playbackTime;
-                if(currentRoomData.playbackState === 'playing') {
-                    v.play().catch(()=>{});
+                if (currentRoomData.playbackState === 'playing') {
+                    v.play().catch(() => { });
                 } else {
                     v.pause();
                 }
@@ -2160,62 +2294,68 @@
             }
         });
 
-        shadow.getElementById('btn-action-countdown').addEventListener('click', async () => { 
-            plusPanel.style.display = 'none'; 
+        safeAddEvt('btn-action-countdown', 'click', async () => {
+            const pp = shadow.getElementById('ls-plus-panel'); if (pp) pp.style.display = 'none';
             if (checkFlood()) return;
-            sendSystemAction('iniciou a programação!'); 
-        });
-        
-        shadow.getElementById('btn-action-pause').addEventListener('click', async () => { 
-            plusPanel.style.display = 'none'; 
-            if (checkFlood()) return;
-            sendSystemAction('SYSTEM_PAUSE'); 
+            sendSystemAction('iniciou a programação!');
         });
 
-        shadow.getElementById('btn-action-gif').addEventListener('click', async () => {
-            plusPanel.style.display = 'none'; const gifUrl = prompt("Cole o link do GIF:"); if(!gifUrl || !currentRoom) return alert("Sessão inválida.");
+        safeAddEvt('btn-action-pause', 'click', async () => {
+            const pp = shadow.getElementById('ls-plus-panel'); if (pp) pp.style.display = 'none';
+            if (checkFlood()) return;
+            sendSystemAction('SYSTEM_PAUSE');
+        });
+
+        safeAddEvt('btn-action-gif', 'click', async () => {
+            const pp = shadow.getElementById('ls-plus-panel'); if (pp) pp.style.display = 'none';
+            const gifUrl = prompt("Cole o link do GIF:"); if (!gifUrl || !currentRoom) return; if (!currentRoomKey) return alert("Sessão inválida.");
             if (checkFlood()) return;
             let finalUrl = gifUrl;
-            if (replyTarget) { finalUrl = `${replyTarget.sender}|-REPLY-|${replyTarget.text}|-REPLY-|${gifUrl}`; replyTarget = null; shadow.getElementById('ls-reply-bar').style.display = 'none'; }
-            try { await db.collection('rooms').doc(currentRoom).collection('messages').add({ type: 'gif', url: finalUrl, sender: myName, deviceId: myDeviceId, color: myColor, roomKey: currentRoomKey, timestamp: firebase.firestore.FieldValue.serverTimestamp(), deleted: false }); updateLastRead(currentRoom); playSendSound(); } catch (e) {}
+            if (replyTarget) { finalUrl = `${replyTarget.sender}|-REPLY-|${replyTarget.text}|-REPLY-|${gifUrl}`; replyTarget = null; const rb = shadow.getElementById('ls-reply-bar'); if (rb) rb.style.display = 'none'; }
+            try { await db.collection('rooms').doc(currentRoom).collection('messages').add({ type: 'gif', url: finalUrl, sender: myName, deviceId: myDeviceId, color: myColor, roomKey: currentRoomKey, timestamp: firebase.firestore.FieldValue.serverTimestamp(), deleted: false }); updateLastRead(currentRoom); playSendSound(); } catch (e) { }
         });
 
-        shadow.getElementById('btn-action-camera').addEventListener('click', async () => {
-            plusPanel.style.display = 'none'; shadow.getElementById('ls-camera-overlay').style.display = 'flex';
-            try { localStream = await navigator.mediaDevices.getUserMedia({ video: true }); shadow.getElementById('ls-camera-video').srcObject = localStream; } catch(e) { alert("Erro ao acessar a câmera."); shadow.getElementById('ls-camera-overlay').style.display = 'none'; }
+        safeAddEvt('btn-action-camera', 'click', async () => {
+            const pp = shadow.getElementById('ls-plus-panel'); if (pp) pp.style.display = 'none';
+            const co = shadow.getElementById('ls-camera-overlay'); if (co) co.style.display = 'flex';
+            try { localStream = await navigator.mediaDevices.getUserMedia({ video: true }); const cv = shadow.getElementById('ls-camera-video'); if (cv) cv.srcObject = localStream; } catch (e) { alert("Erro ao acessar a câmera."); if (co) co.style.display = 'none'; }
         });
 
-        shadow.getElementById('ls-close-camera').addEventListener('click', () => { if(localStream) localStream.getTracks().forEach(t => t.stop()); shadow.getElementById('ls-camera-overlay').style.display = 'none'; });
+        safeAddEvt('ls-close-camera', 'click', () => { if (localStream) localStream.getTracks().forEach(t => t.stop()); const co = shadow.getElementById('ls-camera-overlay'); if (co) co.style.display = 'none'; });
 
-        shadow.getElementById('ls-capture-btn').addEventListener('click', async () => {
+        safeAddEvt('ls-capture-btn', 'click', async () => {
             const video = shadow.getElementById('ls-camera-video'); const canvas = document.createElement('canvas'); canvas.width = video.videoWidth; canvas.height = video.videoHeight;
             canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height); const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-            if(localStream) localStream.getTracks().forEach(t => t.stop()); shadow.getElementById('ls-camera-overlay').style.display = 'none'; await sendImageMsg(dataUrl);
+            if (localStream) localStream.getTracks().forEach(t => t.stop()); const co = shadow.getElementById('ls-camera-overlay'); if (co) co.style.display = 'none'; await sendImageMsg(dataUrl);
         });
 
         async function sendImageMsg(dataUrl) {
             if (!myName || !currentRoom || !currentRoomKey) return;
             if (checkFlood()) return;
             let finalUrl = dataUrl;
-            if (replyTarget) { finalUrl = `${replyTarget.sender}|-REPLY-|${replyTarget.text}|-REPLY-|${dataUrl}`; replyTarget = null; shadow.getElementById('ls-reply-bar').style.display = 'none'; }
-            try { await db.collection('rooms').doc(currentRoom).collection('messages').add({ type: 'image', url: finalUrl, sender: myName, deviceId: myDeviceId, color: myColor, roomKey: currentRoomKey, timestamp: firebase.firestore.FieldValue.serverTimestamp(), deleted: false }); updateLastRead(currentRoom); playSendSound(); } catch (e) {}
+            if (replyTarget) { finalUrl = `${replyTarget.sender}|-REPLY-|${replyTarget.text}|-REPLY-|${dataUrl}`; replyTarget = null; const rb = shadow.getElementById('ls-reply-bar'); if (rb) rb.style.display = 'none'; }
+            try { await db.collection('rooms').doc(currentRoom).collection('messages').add({ type: 'image', url: finalUrl, sender: myName, deviceId: myDeviceId, color: myColor, roomKey: currentRoomKey, timestamp: firebase.firestore.FieldValue.serverTimestamp(), deleted: false }); updateLastRead(currentRoom); playSendSound(); } catch (e) { }
         }
 
         async function sendMessage() {
-            const rawText = input.value.trim();
+            const inp = shadow.getElementById('ls-input');
+            if (!inp) return;
+            const rawText = inp.value.trim();
             if (!rawText || !myName || !currentRoom) return;
             if (rawText.length > 150) return alert("Mensagem muito longa (máximo 150 caracteres).");
             if (!currentRoomKey) return alert("Sessão inválida.");
             if (checkFlood()) return;
 
             if (rawText.startsWith('/')) {
-                input.value = '';
+                inp.value = '';
                 const parts = rawText.split(' ');
                 const cmd = parts[0].toLowerCase();
 
                 const myUserDoc = await db.collection('users').doc(myName).get();
                 const myTags = myUserDoc.exists ? (myUserDoc.data().tags || []) : [];
                 const isOwnerOrDev = myTags.includes('OWNER') || myTags.includes('DEV');
+
+                const mc = shadow.getElementById('ls-messages');
 
                 if (cmd === '/timestamp') {
                     const roomInfo = await db.collection('rooms').doc(currentRoom).get();
@@ -2225,112 +2365,112 @@
                         const container = document.createElement('div');
                         container.className = 'ls-message-container system-msg-container';
                         container.innerHTML = `<div class="ls-message system-msg">⏱️ <b>Sala Criada por:</b> ${creator}<br><b>Data:</b> ${created}</div>`;
-                        messagesContainer.appendChild(container);
+                        if (mc) mc.appendChild(container);
                         scrollToBottom();
                     }
                     return;
                 }
 
                 if (cmd === '/party1' && isOwnerOrDev) {
-                    try { await db.collection('rooms').doc(currentRoom).collection('messages').add({ type: 'party', text: 'iniciou uma festa!', sender: myName, deviceId: myDeviceId, color: myColor, roomKey: currentRoomKey, timestamp: firebase.firestore.FieldValue.serverTimestamp(), deleted: false }); updateLastRead(currentRoom); } catch (e) {}
+                    try { await db.collection('rooms').doc(currentRoom).collection('messages').add({ type: 'party', text: 'iniciou uma festa!', sender: myName, deviceId: myDeviceId, color: myColor, roomKey: currentRoomKey, timestamp: firebase.firestore.FieldValue.serverTimestamp(), deleted: false }); updateLastRead(currentRoom); } catch (e) { }
                     return;
                 }
-                
+
                 if (cmd === '/stopparty1' && isOwnerOrDev) {
-                    try { await db.collection('rooms').doc(currentRoom).collection('messages').add({ type: 'stopparty', text: 'parou a festa!', sender: myName, deviceId: myDeviceId, color: myColor, roomKey: currentRoomKey, timestamp: firebase.firestore.FieldValue.serverTimestamp(), deleted: false }); updateLastRead(currentRoom); } catch (e) {}
+                    try { await db.collection('rooms').doc(currentRoom).collection('messages').add({ type: 'stopparty', text: 'parou a festa!', sender: myName, deviceId: myDeviceId, color: myColor, roomKey: currentRoomKey, timestamp: firebase.firestore.FieldValue.serverTimestamp(), deleted: false }); updateLastRead(currentRoom); } catch (e) { }
                     return;
                 }
 
                 const container = document.createElement('div');
                 container.className = 'ls-message-container system-msg-container';
                 container.innerHTML = `<div class="ls-message system-msg" style="color:#ef4444;">⚠️ Comando não reconhecido ou você não tem permissão.</div>`;
-                messagesContainer.appendChild(container);
+                if (mc) mc.appendChild(container);
                 scrollToBottom();
                 return;
             }
 
             let finalText = rawText;
-            if (replyTarget) { finalText = `[REPLY:${replyTarget.sender}|${replyTarget.text}] ${rawText}`; replyTarget = null; shadow.getElementById('ls-reply-bar').style.display = 'none'; }
-            
-            input.value = '';
-            
+            if (replyTarget) { finalText = `[REPLY:${replyTarget.sender}|${replyTarget.text}] ${rawText}`; replyTarget = null; const rb = shadow.getElementById('ls-reply-bar'); if (rb) rb.style.display = 'none'; }
+
+            inp.value = '';
+
             if (isTyping) {
                 clearTimeout(typingTimeout);
                 isTyping = false;
-                db.collection('rooms').doc(currentRoom).update({ typing: firebase.firestore.FieldValue.arrayRemove(myName) }).catch(()=>{});
+                db.collection('rooms').doc(currentRoom).update({ typing: firebase.firestore.FieldValue.arrayRemove(myName) }).catch(() => { });
             }
 
-            try { await db.collection('rooms').doc(currentRoom).collection('messages').add({ type: 'text', text: finalText, sender: myName, deviceId: myDeviceId, color: myColor, textColor: myTextColor, roomKey: currentRoomKey, timestamp: firebase.firestore.FieldValue.serverTimestamp(), deleted: false }); updateLastRead(currentRoom); playSendSound(); } catch (e) {}
+            try { await db.collection('rooms').doc(currentRoom).collection('messages').add({ type: 'text', text: finalText, sender: myName, deviceId: myDeviceId, color: myColor, textColor: myTextColor, roomKey: currentRoomKey, timestamp: firebase.firestore.FieldValue.serverTimestamp(), deleted: false }); updateLastRead(currentRoom); playSendSound(); } catch (e) { }
         }
 
-        shadow.getElementById('ls-send-btn').addEventListener('click', sendMessage);
+        safeAddEvt('ls-send-btn', 'click', sendMessage);
 
-        const fabAddBtn = shadow.getElementById('ls-fab-add');
-        if (fabAddBtn) {
-            fabAddBtn.addEventListener('click', () => {
-                addRoomOverlay.style.display = 'flex';
-            });
-        }
+        safeAddEvt('ls-fab-add', 'click', () => { const ov = shadow.getElementById('ls-add-room-overlay'); if (ov) ov.style.display = 'flex'; });
 
-        if (lobbySettingsBtn) {
-            lobbySettingsBtn.addEventListener('click', () => {
-                lobbySettingsOverlay.style.display = 'flex';
-                shadow.getElementById('ls-app-theme').value = ls.getItem('ls_theme') || '';
-                shadow.getElementById('ls-app-sound').checked = ls.getItem('ls_sound') !== 'false';
-                shadow.getElementById('ls-app-inchatsound').checked = myInChatSound;
-                shadow.getElementById('ls-app-hidesys').checked = myHideSys;
-                shadow.getElementById('ls-app-hide').checked = myHideApp;
-                shadow.getElementById('ls-app-revive').checked = myHideRevive;
-                shadow.getElementById('ls-app-integrated').checked = myIntegratedMode;
-            });
-        }
+        safeAddEvt('ls-lobby-settings-btn', 'click', () => {
+            const ov = shadow.getElementById('ls-lobby-settings-overlay'); if (ov) ov.style.display = 'flex';
+            const theme = shadow.getElementById('ls-app-theme'); if (theme) theme.value = ls.getItem('ls_theme') || '';
+            const snd = shadow.getElementById('ls-app-sound'); if (snd) snd.checked = ls.getItem('ls_sound') !== 'false';
+            const inchatsnd = shadow.getElementById('ls-app-inchatsound'); if (inchatsnd) inchatsnd.checked = myInChatSound;
+            const hidesys = shadow.getElementById('ls-app-hidesys'); if (hidesys) hidesys.checked = myHideSys;
+            const hideapp = shadow.getElementById('ls-app-hide'); if (hideapp) hideapp.checked = myHideApp;
+            const hiderevive = shadow.getElementById('ls-app-revive'); if (hiderevive) hiderevive.checked = myHideRevive;
+            const integrated = shadow.getElementById('ls-app-integrated'); if (integrated) integrated.checked = myIntegratedMode;
+        });
 
-        const closeLobbyModal = shadow.getElementById('ls-close-lobby-modal');
-        if (closeLobbyModal) {
-            closeLobbyModal.addEventListener('click', () => {
-                lobbySettingsOverlay.style.display = 'none';
-            });
-        }
+        safeAddEvt('ls-close-lobby-modal', 'click', () => { const ov = shadow.getElementById('ls-close-lobby-modal'); if (ov) ov.closest('.ls-modal-overlay').style.display = 'none'; });
 
-        const saveLobbyConfigBtn = shadow.getElementById('ls-save-lobby-config-btn');
-        if (saveLobbyConfigBtn) {
-            saveLobbyConfigBtn.addEventListener('click', () => {
-                const theme = shadow.getElementById('ls-app-theme').value;
-                const sound = shadow.getElementById('ls-app-sound').checked;
-                myInChatSound = shadow.getElementById('ls-app-inchatsound').checked;
-                myHideSys = shadow.getElementById('ls-app-hidesys').checked;
-                myHideApp = shadow.getElementById('ls-app-hide').checked;
-                myHideRevive = shadow.getElementById('ls-app-revive').checked;
-                myIntegratedMode = shadow.getElementById('ls-app-integrated').checked;
+        safeAddEvt('ls-save-lobby-config-btn', 'click', () => {
+            const theme = shadow.getElementById('ls-app-theme');
+            const snd = shadow.getElementById('ls-app-sound');
+            const inchatsnd = shadow.getElementById('ls-app-inchatsound');
+            const hidesys = shadow.getElementById('ls-app-hidesys');
+            const hideapp = shadow.getElementById('ls-app-hide');
+            const hiderevive = shadow.getElementById('ls-app-revive');
+            const integrated = shadow.getElementById('ls-app-integrated');
 
-                ls.setItem('ls_theme', theme);
-                ls.setItem('ls_sound', sound);
-                ls.setItem('ls_inchat_sounds', myInChatSound);
-                ls.setItem('ls_hide_sys', myHideSys);
-                ls.setItem('ls_hide_app', myHideApp);
-                ls.setItem('ls_hide_revive', myHideRevive);
-                ls.setItem('ls_integrated', myIntegratedMode);
+            if (theme) ls.setItem('ls_theme', theme.value);
+            if (snd) ls.setItem('ls_sound', snd.checked);
+            if (inchatsnd) { myInChatSound = inchatsnd.checked; ls.setItem('ls_inchat_sounds', myInChatSound); }
+            if (hidesys) { myHideSys = hidesys.checked; ls.setItem('ls_hide_sys', myHideSys); }
+            if (hideapp) { myHideApp = hideapp.checked; ls.setItem('ls_hide_app', myHideApp); }
+            if (hiderevive) { myHideRevive = hiderevive.checked; ls.setItem('ls_hide_revive', myHideRevive); }
+            if (integrated) { myIntegratedMode = integrated.checked; ls.setItem('ls_integrated', myIntegratedMode); }
 
-                shadow.getElementById('ls-wrapper').className = theme;
-                lobbySettingsOverlay.style.display = 'none';
-                checkScreenState();
-            });
-        }
+            const wrap = shadow.getElementById('ls-wrapper');
+            if (theme && wrap) wrap.className = theme.value;
+            const ov = shadow.getElementById('ls-lobby-settings-overlay');
+            if (ov) ov.style.display = 'none';
+            checkScreenState();
+        });
 
-        const wipeDataBtn = shadow.getElementById('ls-wipe-data-btn');
-        if (wipeDataBtn) {
-            wipeDataBtn.addEventListener('click', () => {
-                if(confirm("Tem certeza que deseja desconectar e apagar todos os dados locais do LidySync?")) {
-                    ls.clear();
-                    sessionStorage.clear();
-                    location.reload();
+        safeAddEvt('ls-logout-btn', 'click', () => {
+            if (confirm("Tem certeza que deseja sair da sua conta?")) {
+                ls.clear();
+                sessionStorage.clear();
+                location.reload();
+            }
+        });
+
+        safeAddEvt('ls-wipe-data-btn', 'click', async () => {
+            if (confirm("Tem certeza que deseja apagar sua conta? Ela será desativada e você não poderá mais acessá-la.")) {
+                if (myName) {
+                    try {
+                        await db.collection('users').doc(myName).update({
+                            tags: firebase.firestore.FieldValue.arrayUnion('DELETED')
+                        });
+                    } catch (e) { }
                 }
-            });
-        }
-        
-        if (myHideApp) fab.style.display = 'none';
+                ls.clear();
+                sessionStorage.clear();
+                location.reload();
+            }
+        });
+
+        const fabElement = shadow.getElementById('ls-fab');
+        if (myHideApp && fabElement) fabElement.style.display = 'none';
         checkScreenState();
-        
+
         const checkUrlChange = () => {
             if (window.location.href !== lastUrl) {
                 lastUrl = window.location.href;
@@ -2339,13 +2479,13 @@
         };
 
         const originalPushState = history.pushState;
-        history.pushState = function() {
+        history.pushState = function () {
             originalPushState.apply(this, arguments);
             setTimeout(checkUrlChange, 50);
         };
 
         const originalReplaceState = history.replaceState;
-        history.replaceState = function() {
+        history.replaceState = function () {
             originalReplaceState.apply(this, arguments);
             setTimeout(checkUrlChange, 50);
         };
@@ -2353,29 +2493,16 @@
         window.addEventListener('popstate', () => {
             setTimeout(checkUrlChange, 50);
         });
-        
+
         setInterval(checkUrlChange, 1000);
-        
+
         setInterval(() => {
             if (!myName) return;
-            const now = Date.now();
-            const currentTitle = document.title || "LidySync";
-            const titleChanged = currentTitle !== lastDocumentTitle;
-            const needsPing = now - lastPingTime > 120000; 
-
-            if ((titleChanged || needsPing) && document.visibilityState === 'visible') {
-                lastDocumentTitle = currentTitle;
-                lastPingTime = now;
-                db.collection('users').doc(myName).update({ 
-                    watching: currentTitle, 
-                    lastSeen: firebase.firestore.FieldValue.serverTimestamp() 
-                }).catch(()=>{});
-            }
 
             if (currentRoom && currentRoomData && currentRoomData.createdBy === myName) {
                 const v = document.querySelector('video');
                 if (v && !v.paused) {
-                    db.collection('rooms').doc(currentRoom).update({ playbackTime: v.currentTime }).catch(()=>{});
+                    db.collection('rooms').doc(currentRoom).update({ playbackTime: v.currentTime }).catch(() => { });
                 }
             }
         }, 5000);
@@ -2411,33 +2538,50 @@
         if (!cropperFrame) return;
 
         const updateCropImg = () => {
-            if(cropperImg) cropperImg.style.transform = `translate(${cropX}px, ${cropY}px) scale(${cropScale})`;
+            let mWidth = currentCropType === 'avatar' ? 200 : 300;
+            let mHeight = currentCropType === 'avatar' ? 200 : 108;
+            let mLeft = currentCropType === 'avatar' ? 50 : 0;
+            let mTop = currentCropType === 'avatar' ? 50 : 96;
+            let imgW = cropImgObj.width * cropScale;
+            let imgH = cropImgObj.height * cropScale;
+            let minX = mLeft + mWidth - imgW;
+            let maxX = mLeft;
+            let minY = mTop + mHeight - imgH;
+            let maxY = mTop;
+
+            if (cropX > maxX) cropX = maxX;
+            if (cropX < minX) cropX = minX;
+            if (cropY > maxY) cropY = maxY;
+            if (cropY < minY) cropY = minY;
+
+            if (cropperImg) cropperImg.style.transform = `translate(${cropX}px, ${cropY}px) scale(${cropScale})`;
         };
 
-        window.lsOpenCropper = function(type) {
+        window.lsOpenCropper = function (type) {
             currentCropType = type;
-            if(cropperImg) cropperImg.src = cropImgObj.src;
-            
+            if (cropperImg) cropperImg.src = cropImgObj.src;
+
+            let minScale = 1;
             if (type === 'avatar') {
-                if(cropperMask) cropperMask.className = 'ls-mask-avatar';
-                cropScale = Math.max(200 / cropImgObj.width, 200 / cropImgObj.height);
-                cropX = 150 - (cropImgObj.width * cropScale) / 2;
-                cropY = 150 - (cropImgObj.height * cropScale) / 2;
+                if (cropperMask) cropperMask.className = 'ls-mask-avatar';
+                minScale = Math.max(200 / cropImgObj.width, 200 / cropImgObj.height);
             } else {
-                if(cropperMask) cropperMask.className = 'ls-mask-banner';
-                cropScale = Math.max(300 / cropImgObj.width, 108 / cropImgObj.height);
-                cropX = 150 - (cropImgObj.width * cropScale) / 2;
-                cropY = 150 - (cropImgObj.height * cropScale) / 2;
+                if (cropperMask) cropperMask.className = 'ls-mask-banner';
+                minScale = Math.max(300 / cropImgObj.width, 108 / cropImgObj.height);
             }
-            
-            if(cropperZoom) {
-                cropperZoom.min = cropScale * 0.2;
-                cropperZoom.max = cropScale * 5;
+            cropScale = minScale;
+
+            if (cropperZoom) {
+                cropperZoom.min = minScale;
+                cropperZoom.max = minScale * 5;
                 cropperZoom.value = cropScale;
             }
-            
+
+            cropX = 150 - (cropImgObj.width * cropScale) / 2;
+            cropY = 150 - (cropImgObj.height * cropScale) / 2;
+
             updateCropImg();
-            if(cropperOverlay) cropperOverlay.style.display = 'flex';
+            if (cropperOverlay) cropperOverlay.style.display = 'flex';
         };
 
         cropperFrame.addEventListener('mousedown', (e) => {
@@ -2447,7 +2591,7 @@
             cropperFrame.style.cursor = 'grabbing';
         });
         window.addEventListener('mousemove', (e) => {
-            if(!isDraggingCrop) return;
+            if (!isDraggingCrop) return;
             cropX = e.clientX - startCropX;
             cropY = e.clientY - startCropY;
             updateCropImg();
@@ -2458,15 +2602,15 @@
         });
 
         cropperFrame.addEventListener('touchstart', (e) => {
-            if(e.touches.length === 1) {
+            if (e.touches.length === 1) {
                 isDraggingCrop = true;
                 startCropX = e.touches[0].clientX - cropX;
                 startCropY = e.touches[0].clientY - cropY;
             }
         });
         window.addEventListener('touchmove', (e) => {
-            if(!isDraggingCrop) return;
-            if(e.touches.length === 1) {
+            if (!isDraggingCrop) return;
+            if (e.touches.length === 1) {
                 cropX = e.touches[0].clientX - startCropX;
                 cropY = e.touches[0].clientY - startCropY;
                 updateCropImg();
@@ -2474,7 +2618,7 @@
         });
         window.addEventListener('touchend', () => { isDraggingCrop = false; });
 
-        if(cropperZoom) {
+        if (cropperZoom) {
             cropperZoom.addEventListener('input', (e) => {
                 const newScale = parseFloat(e.target.value);
                 const maskCx = 150; const maskCy = 150;
@@ -2484,18 +2628,18 @@
                 updateCropImg();
             });
         }
-        if(btnZoomIn) btnZoomIn.addEventListener('click', () => { if(cropperZoom) { cropperZoom.value = parseFloat(cropperZoom.value) + 0.1; cropperZoom.dispatchEvent(new Event('input')); }});
-        if(btnZoomOut) btnZoomOut.addEventListener('click', () => { if(cropperZoom) { cropperZoom.value = parseFloat(cropperZoom.value) - 0.1; cropperZoom.dispatchEvent(new Event('input')); }});
+        if (btnZoomIn) btnZoomIn.addEventListener('click', () => { if (cropperZoom) { cropperZoom.value = parseFloat(cropperZoom.value) + 0.1; cropperZoom.dispatchEvent(new Event('input')); } });
+        if (btnZoomOut) btnZoomOut.addEventListener('click', () => { if (cropperZoom) { cropperZoom.value = parseFloat(cropperZoom.value) - 0.1; cropperZoom.dispatchEvent(new Event('input')); } });
 
-        if(cropperCancelBtn) cropperCancelBtn.addEventListener('click', () => {
-            if(cropperOverlay) cropperOverlay.style.display = 'none';
+        if (cropperCancelBtn) cropperCancelBtn.addEventListener('click', () => {
+            if (cropperOverlay) cropperOverlay.style.display = 'none';
         });
 
-        if(cropperSaveBtn) cropperSaveBtn.addEventListener('click', () => {
+        if (cropperSaveBtn) cropperSaveBtn.addEventListener('click', () => {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             let mWidth, mHeight, mLeft, mTop, outWidth, outHeight;
-            
+
             if (currentCropType === 'avatar') {
                 mWidth = 200; mHeight = 200; mLeft = 50; mTop = 50;
                 outWidth = 400; outHeight = 400;
@@ -2503,21 +2647,23 @@
                 mWidth = 300; mHeight = 108; mLeft = 0; mTop = 96;
                 outWidth = 720; outHeight = 260;
             }
-            
+
             canvas.width = outWidth;
             canvas.height = outHeight;
-            
+
             const ratioX = outWidth / mWidth;
             const ratioY = outHeight / mHeight;
-            
+
             const drawX = (cropX - mLeft) * ratioX;
             const drawY = (cropY - mTop) * ratioY;
             const drawW = cropImgObj.width * cropScale * ratioX;
             const drawH = cropImgObj.height * cropScale * ratioY;
-            
+
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, outWidth, outHeight);
             ctx.drawImage(cropImgObj, drawX, drawY, drawW, drawH);
             const finalUrl = canvas.toDataURL('image/jpeg', 0.85);
-            
+
             if (currentCropType === 'avatar') {
                 const event = new CustomEvent('cropAvatarFinished', { detail: finalUrl });
                 document.dispatchEvent(event);
@@ -2525,8 +2671,8 @@
                 const event = new CustomEvent('cropBannerFinished', { detail: finalUrl });
                 document.dispatchEvent(event);
             }
-            
-            if(cropperOverlay) cropperOverlay.style.display = 'none';
+
+            if (cropperOverlay) cropperOverlay.style.display = 'none';
         });
     };
 
@@ -2535,11 +2681,11 @@
         if (host && host.shadowRoot && host.shadowRoot.getElementById('ls-cropper-frame')) {
             clearInterval(checkShadowDOM);
             initCropperEvents(host.shadowRoot);
-            
+
             document.addEventListener('cropAvatarFinished', (e) => {
                 const finalUrl = e.detail;
                 const avClear = host.shadowRoot.getElementById('ls-profile-e-avatar-clear');
-                if(avClear) {
+                if (avClear) {
                 }
             });
         }
