@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      92.0
+// @version      93.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/refs/heads/main/docs/assets/img/favicon.ico
@@ -407,6 +407,9 @@
             #ls-disco-ball { font-size: 80px; position: absolute; top: -100px; transition: top 1s ease-out; animation: spin 2s linear infinite; }
             #ls-disco-ball.drop { top: 20px; }
             @keyframes spin { 100% { transform: rotate(360deg); } }
+
+            .ls-mask-avatar { width: 200px; height: 200px; border-radius: 50%; top: 50px; left: 50px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7); position: absolute; pointer-events: none; border: 2px solid var(--highlight); box-sizing: border-box; }
+            .ls-mask-banner { width: 300px; height: 108px; border-radius: 8px; top: 96px; left: 0; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7); position: absolute; pointer-events: none; border: 2px solid var(--highlight); box-sizing: border-box; }
             
             :root { --ls-chat-width: 350px; }
             html.ls-integrated-active { margin-right: var(--ls-chat-width) !important; width: calc(100% - var(--ls-chat-width)) !important; }
@@ -523,7 +526,7 @@
                         </div>
                         <div class="ls-config-section" style="margin-top:auto;"><button class="ls-btn-danger" id="ls-wipe-data-btn">Desconectar e Apagar Dados</button></div>
                         <button class="ls-btn-primary" id="ls-save-lobby-config-btn" style="margin-top: 0;">Salvar Alterações</button>
-                        <div style="text-align: center; margin-top: 8px; color: var(--text-muted); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Versão Atual - 92.0</div>
+                        <div style="text-align: center; margin-top: 8px; color: var(--text-muted); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Versão Atual - 93.0</div>
                     </div>
                 </div>
 
@@ -587,6 +590,25 @@
                                 <button class="ls-btn-secondary" id="ls-btn-cancel-profile">Cancelar</button>
                                 <button class="ls-btn-primary" id="ls-btn-save-profile" style="margin-top:0;">Salvar Perfil</button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="ls-cropper-overlay" class="ls-modal-overlay-card" style="z-index: 400; display: none;">
+                    <div class="ls-profile-card" style="padding: 20px; align-items: center; max-width: 340px; background: var(--bg-surface);">
+                        <div style="font-size: 18px; font-weight: 800; color: var(--text-primary); margin-bottom: 15px;">Ajustar Imagem</div>
+                        <div id="ls-cropper-frame" style="width: 300px; height: 300px; position: relative; overflow: hidden; background: #000; border-radius: 12px; cursor: grab; touch-action: none;">
+                            <img id="ls-cropper-img" style="position: absolute; top: 0; left: 0; transform-origin: top left; pointer-events: none;" />
+                            <div id="ls-cropper-mask"></div>
+                        </div>
+                        <div style="width: 100%; margin-top: 15px; display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 16px; cursor: pointer;" id="ls-crop-zoom-out">➖</span>
+                            <input type="range" id="ls-cropper-zoom" min="0.1" max="3" step="0.01" value="1" style="flex: 1; accent-color: var(--highlight);" />
+                            <span style="font-size: 16px; cursor: pointer;" id="ls-crop-zoom-in">➕</span>
+                        </div>
+                        <div style="display: flex; gap: 10px; width: 100%; margin-top: 20px;">
+                            <button class="ls-btn-secondary" id="ls-cropper-cancel">Cancelar</button>
+                            <button class="ls-btn-primary" id="ls-cropper-save" style="margin-top: 0;">Cortar e Salvar</button>
                         </div>
                     </div>
                 </div>
@@ -686,6 +708,141 @@
         shadow.appendChild(style);
         shadow.appendChild(wrapper);
         target.appendChild(host);
+
+        // VARIAVEIS DO CROPPER
+        let cropImgObj = new Image();
+        let cropX = 0, cropY = 0, cropScale = 1;
+        let isDraggingCrop = false, startCropX = 0, startCropY = 0;
+        let currentCropType = 'avatar'; // 'avatar' ou 'banner'
+
+        const cropperOverlay = shadow.getElementById('ls-cropper-overlay');
+        const cropperFrame = shadow.getElementById('ls-cropper-frame');
+        const cropperImg = shadow.getElementById('ls-cropper-img');
+        const cropperMask = shadow.getElementById('ls-cropper-mask');
+        const cropperZoom = shadow.getElementById('ls-cropper-zoom');
+        const cropperSaveBtn = shadow.getElementById('ls-cropper-save');
+        const cropperCancelBtn = shadow.getElementById('ls-cropper-cancel');
+
+        function updateCropImg() {
+            cropperImg.style.transform = `translate(${cropX}px, ${cropY}px) scale(${cropScale})`;
+        }
+
+        function openCropper(type) {
+            currentCropType = type;
+            cropperImg.src = cropImgObj.src;
+            
+            if (type === 'avatar') {
+                cropperMask.className = 'ls-mask-avatar';
+                cropScale = Math.max(200 / cropImgObj.width, 200 / cropImgObj.height);
+                cropX = 150 - (cropImgObj.width * cropScale) / 2;
+                cropY = 150 - (cropImgObj.height * cropScale) / 2;
+            } else {
+                cropperMask.className = 'ls-mask-banner';
+                cropScale = Math.max(300 / cropImgObj.width, 108 / cropImgObj.height);
+                cropX = 150 - (cropImgObj.width * cropScale) / 2;
+                cropY = 150 - (cropImgObj.height * cropScale) / 2;
+            }
+            
+            cropperZoom.min = cropScale * 0.5;
+            cropperZoom.max = cropScale * 5;
+            cropperZoom.value = cropScale;
+            
+            updateCropImg();
+            cropperOverlay.style.display = 'flex';
+        }
+
+        // EVENTOS DO CROPPER
+        cropperFrame.addEventListener('mousedown', (e) => {
+            isDraggingCrop = true;
+            startCropX = e.clientX - cropX;
+            startCropY = e.clientY - cropY;
+            cropperFrame.style.cursor = 'grabbing';
+        });
+        window.addEventListener('mousemove', (e) => {
+            if(!isDraggingCrop) return;
+            cropX = e.clientX - startCropX;
+            cropY = e.clientY - startCropY;
+            updateCropImg();
+        });
+        window.addEventListener('mouseup', () => {
+            isDraggingCrop = false;
+            cropperFrame.style.cursor = 'grab';
+        });
+
+        // Toque (Mobile) no Cropper
+        cropperFrame.addEventListener('touchstart', (e) => {
+            if(e.touches.length === 1) {
+                isDraggingCrop = true;
+                startCropX = e.touches[0].clientX - cropX;
+                startCropY = e.touches[0].clientY - cropY;
+            }
+        });
+        window.addEventListener('touchmove', (e) => {
+            if(!isDraggingCrop) return;
+            if(e.touches.length === 1) {
+                cropX = e.touches[0].clientX - startCropX;
+                cropY = e.touches[0].clientY - startCropY;
+                updateCropImg();
+            }
+        });
+        window.addEventListener('touchend', () => { isDraggingCrop = false; });
+
+        cropperZoom.addEventListener('input', (e) => {
+            const newScale = parseFloat(e.target.value);
+            const maskCx = 150;
+            const maskCy = 150;
+            cropX = maskCx - (maskCx - cropX) * (newScale / cropScale);
+            cropY = maskCy - (maskCy - cropY) * (newScale / cropScale);
+            cropScale = newScale;
+            updateCropImg();
+        });
+
+        shadow.getElementById('ls-crop-zoom-in').addEventListener('click', () => { cropperZoom.value = parseFloat(cropperZoom.value) + 0.1; cropperZoom.dispatchEvent(new Event('input')); });
+        shadow.getElementById('ls-crop-zoom-out').addEventListener('click', () => { cropperZoom.value = parseFloat(cropperZoom.value) - 0.1; cropperZoom.dispatchEvent(new Event('input')); });
+
+        cropperCancelBtn.addEventListener('click', () => {
+            cropperOverlay.style.display = 'none';
+        });
+
+        cropperSaveBtn.addEventListener('click', () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            let mWidth, mHeight, mLeft, mTop, outWidth, outHeight;
+            
+            if (currentCropType === 'avatar') {
+                mWidth = 200; mHeight = 200; mLeft = 50; mTop = 50;
+                outWidth = 400; outHeight = 400;
+            } else {
+                mWidth = 300; mHeight = 108; mLeft = 0; mTop = 96;
+                outWidth = 720; outHeight = 260;
+            }
+            
+            canvas.width = outWidth;
+            canvas.height = outHeight;
+            
+            const ratioX = outWidth / mWidth;
+            const ratioY = outHeight / mHeight;
+            
+            const drawX = (cropX - mLeft) * ratioX;
+            const drawY = (cropY - mTop) * ratioY;
+            const drawW = cropImgObj.width * cropScale * ratioX;
+            const drawH = cropImgObj.height * cropScale * ratioY;
+            
+            ctx.drawImage(cropImgObj, drawX, drawY, drawW, drawH);
+            const finalUrl = canvas.toDataURL('image/jpeg', 0.85);
+            
+            if (currentCropType === 'avatar') {
+                tempAvatar = finalUrl;
+                const av = shadow.getElementById('ls-profile-e-avatar');
+                av.style.backgroundImage = `url(${finalUrl})`;
+                av.style.backgroundColor = 'transparent';
+                av.innerText = '';
+            } else {
+                tempBanner = finalUrl;
+            }
+            
+            cropperOverlay.style.display = 'none';
+        });
 
         const fab = shadow.getElementById('ls-fab');
         const badge = shadow.getElementById('ls-unread-badge');
@@ -1238,21 +1395,31 @@
             shadow.getElementById('ls-btn-edit-profile').style.display = 'block';
         });
 
+        // Eventos modificados para ativar o novo Cropper
         shadow.getElementById('ls-profile-e-avatar-file').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = (event) => {
-                    compressImage(event.target.result, (compressed) => {
-                        tempAvatar = compressed;
-                        const av = shadow.getElementById('ls-profile-e-avatar');
-                        av.style.backgroundImage = `url(${compressed})`;
-                        av.style.backgroundColor = 'transparent';
-                        av.innerText = '';
-                    });
+                    cropImgObj.onload = () => openCropper('avatar');
+                    cropImgObj.src = event.target.result;
                 };
                 reader.readAsDataURL(file);
             }
+            e.target.value = '';
+        });
+
+        shadow.getElementById('ls-profile-e-banner-file').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    cropImgObj.onload = () => openCropper('banner');
+                    cropImgObj.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+            e.target.value = '';
         });
 
         shadow.getElementById('ls-profile-e-avatar-clear').addEventListener('click', () => {
@@ -1262,19 +1429,6 @@
             av.style.backgroundImage = 'none';
             av.style.backgroundColor = shadow.getElementById('ls-profile-e-color').value;
             av.innerText = myName.charAt(0).toUpperCase();
-        });
-
-        shadow.getElementById('ls-profile-e-banner-file').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    compressImage(event.target.result, (compressed) => {
-                        tempBanner = compressed;
-                    });
-                };
-                reader.readAsDataURL(file);
-            }
         });
 
         shadow.getElementById('ls-profile-e-banner-clear').addEventListener('click', () => {
@@ -2019,7 +2173,7 @@
         });
 
         shadow.getElementById('btn-action-gif').addEventListener('click', async () => {
-            plusPanel.style.display = 'none'; const gifUrl = prompt("Cole o link do GIF:"); if(!gifUrl || !currentRoom) return; if(!currentRoomKey) return alert("Sessão inválida.");
+            plusPanel.style.display = 'none'; const gifUrl = prompt("Cole o link do GIF:"); if(!gifUrl || !currentRoom) return alert("Sessão inválida.");
             if (checkFlood()) return;
             let finalUrl = gifUrl;
             if (replyTarget) { finalUrl = `${replyTarget.sender}|-REPLY-|${replyTarget.text}|-REPLY-|${gifUrl}`; replyTarget = null; shadow.getElementById('ls-reply-bar').style.display = 'none'; }
@@ -2237,5 +2391,158 @@
         injectUI();
     }
     tryInject();
+
+    let cropImgObj = new Image();
+    let cropX = 0, cropY = 0, cropScale = 1;
+    let isDraggingCrop = false, startCropX = 0, startCropY = 0;
+    let currentCropType = 'avatar';
+
+    const initCropperEvents = (shadow) => {
+        const cropperOverlay = shadow.getElementById('ls-cropper-overlay');
+        const cropperFrame = shadow.getElementById('ls-cropper-frame');
+        const cropperImg = shadow.getElementById('ls-cropper-img');
+        const cropperMask = shadow.getElementById('ls-cropper-mask');
+        const cropperZoom = shadow.getElementById('ls-cropper-zoom');
+        const cropperSaveBtn = shadow.getElementById('ls-cropper-save');
+        const cropperCancelBtn = shadow.getElementById('ls-cropper-cancel');
+        const btnZoomIn = shadow.getElementById('ls-crop-zoom-in');
+        const btnZoomOut = shadow.getElementById('ls-crop-zoom-out');
+
+        if (!cropperFrame) return;
+
+        const updateCropImg = () => {
+            if(cropperImg) cropperImg.style.transform = `translate(${cropX}px, ${cropY}px) scale(${cropScale})`;
+        };
+
+        window.lsOpenCropper = function(type) {
+            currentCropType = type;
+            if(cropperImg) cropperImg.src = cropImgObj.src;
+            
+            if (type === 'avatar') {
+                if(cropperMask) cropperMask.className = 'ls-mask-avatar';
+                cropScale = Math.max(200 / cropImgObj.width, 200 / cropImgObj.height);
+                cropX = 150 - (cropImgObj.width * cropScale) / 2;
+                cropY = 150 - (cropImgObj.height * cropScale) / 2;
+            } else {
+                if(cropperMask) cropperMask.className = 'ls-mask-banner';
+                cropScale = Math.max(300 / cropImgObj.width, 108 / cropImgObj.height);
+                cropX = 150 - (cropImgObj.width * cropScale) / 2;
+                cropY = 150 - (cropImgObj.height * cropScale) / 2;
+            }
+            
+            if(cropperZoom) {
+                cropperZoom.min = cropScale * 0.2;
+                cropperZoom.max = cropScale * 5;
+                cropperZoom.value = cropScale;
+            }
+            
+            updateCropImg();
+            if(cropperOverlay) cropperOverlay.style.display = 'flex';
+        };
+
+        cropperFrame.addEventListener('mousedown', (e) => {
+            isDraggingCrop = true;
+            startCropX = e.clientX - cropX;
+            startCropY = e.clientY - cropY;
+            cropperFrame.style.cursor = 'grabbing';
+        });
+        window.addEventListener('mousemove', (e) => {
+            if(!isDraggingCrop) return;
+            cropX = e.clientX - startCropX;
+            cropY = e.clientY - startCropY;
+            updateCropImg();
+        });
+        window.addEventListener('mouseup', () => {
+            isDraggingCrop = false;
+            cropperFrame.style.cursor = 'grab';
+        });
+
+        cropperFrame.addEventListener('touchstart', (e) => {
+            if(e.touches.length === 1) {
+                isDraggingCrop = true;
+                startCropX = e.touches[0].clientX - cropX;
+                startCropY = e.touches[0].clientY - cropY;
+            }
+        });
+        window.addEventListener('touchmove', (e) => {
+            if(!isDraggingCrop) return;
+            if(e.touches.length === 1) {
+                cropX = e.touches[0].clientX - startCropX;
+                cropY = e.touches[0].clientY - startCropY;
+                updateCropImg();
+            }
+        });
+        window.addEventListener('touchend', () => { isDraggingCrop = false; });
+
+        if(cropperZoom) {
+            cropperZoom.addEventListener('input', (e) => {
+                const newScale = parseFloat(e.target.value);
+                const maskCx = 150; const maskCy = 150;
+                cropX = maskCx - (maskCx - cropX) * (newScale / cropScale);
+                cropY = maskCy - (maskCy - cropY) * (newScale / cropScale);
+                cropScale = newScale;
+                updateCropImg();
+            });
+        }
+        if(btnZoomIn) btnZoomIn.addEventListener('click', () => { if(cropperZoom) { cropperZoom.value = parseFloat(cropperZoom.value) + 0.1; cropperZoom.dispatchEvent(new Event('input')); }});
+        if(btnZoomOut) btnZoomOut.addEventListener('click', () => { if(cropperZoom) { cropperZoom.value = parseFloat(cropperZoom.value) - 0.1; cropperZoom.dispatchEvent(new Event('input')); }});
+
+        if(cropperCancelBtn) cropperCancelBtn.addEventListener('click', () => {
+            if(cropperOverlay) cropperOverlay.style.display = 'none';
+        });
+
+        if(cropperSaveBtn) cropperSaveBtn.addEventListener('click', () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            let mWidth, mHeight, mLeft, mTop, outWidth, outHeight;
+            
+            if (currentCropType === 'avatar') {
+                mWidth = 200; mHeight = 200; mLeft = 50; mTop = 50;
+                outWidth = 400; outHeight = 400;
+            } else {
+                mWidth = 300; mHeight = 108; mLeft = 0; mTop = 96;
+                outWidth = 720; outHeight = 260;
+            }
+            
+            canvas.width = outWidth;
+            canvas.height = outHeight;
+            
+            const ratioX = outWidth / mWidth;
+            const ratioY = outHeight / mHeight;
+            
+            const drawX = (cropX - mLeft) * ratioX;
+            const drawY = (cropY - mTop) * ratioY;
+            const drawW = cropImgObj.width * cropScale * ratioX;
+            const drawH = cropImgObj.height * cropScale * ratioY;
+            
+            ctx.drawImage(cropImgObj, drawX, drawY, drawW, drawH);
+            const finalUrl = canvas.toDataURL('image/jpeg', 0.85);
+            
+            if (currentCropType === 'avatar') {
+                const event = new CustomEvent('cropAvatarFinished', { detail: finalUrl });
+                document.dispatchEvent(event);
+            } else {
+                const event = new CustomEvent('cropBannerFinished', { detail: finalUrl });
+                document.dispatchEvent(event);
+            }
+            
+            if(cropperOverlay) cropperOverlay.style.display = 'none';
+        });
+    };
+
+    const checkShadowDOM = setInterval(() => {
+        const host = document.getElementById('lidysync-host');
+        if (host && host.shadowRoot && host.shadowRoot.getElementById('ls-cropper-frame')) {
+            clearInterval(checkShadowDOM);
+            initCropperEvents(host.shadowRoot);
+            
+            document.addEventListener('cropAvatarFinished', (e) => {
+                const finalUrl = e.detail;
+                const avClear = host.shadowRoot.getElementById('ls-profile-e-avatar-clear');
+                if(avClear) {
+                }
+            });
+        }
+    }, 500);
 
 })();
