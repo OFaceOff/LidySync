@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         LidySync Loader
-// @version      3.4
+// @version      3.5
 // @description  LidySync Loader
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/refs/heads/main/docs/assets/img/favicon.ico
@@ -37,7 +37,7 @@
 
     const SCRIPT_URL = "https://raw.githubusercontent.com/OFaceOff/LidySync/main/lidysync.user.js";
     const LOADER_URL = "https://raw.githubusercontent.com/OFaceOff/LidySync/main/lidysync.loader.user.js";
-    const CURRENT_VERSION = "3.4";
+    const CURRENT_VERSION = "3.5";
 
     function logError(contexto, erroTecnico) {
         const hora = new Date().toLocaleTimeString();
@@ -125,11 +125,12 @@
                             <strong style="color: #fff !important; font-size: 14px !important;">Atualização Disponível! 🚀</strong><br>
                             <span style="color:#94a3b8 !important; font-size: 12px !important;">LidySync Loader: ${CURRENT_VERSION} → ${githubVersion}</span><br>
                             <div style="margin-top: 10px !important; font-size: 11.5px !important; color: #cbd5e1 !important;">
-                                Ao abrir a nova aba clique em <strong style="color: #38bdf8 !important; background: rgba(56, 189, 248, 0.15) !important; padding: 2px 5px !important; border-radius: 4px !important; border: 1px solid rgba(56, 189, 248, 0.3) !important;">SOBRESCREVER</strong>
+                                Ao abrir a nova aba clique em <strong style="color: #38bdf8 !important; background: rgba(56, 189, 248, 0.15) !important; padding: 2px 5px !important; border-radius: 4px !important; border: 1px solid rgba(56, 189, 248, 0.3) !important;">ATUALIZAR</strong>
+                                <span style="display: block !important; margin-top: 6px !important; font-size: 11px !important; color: #94a3b8 !important;">Após atualizar, <strong style="color: #e2e8f0 !important;">recarregue esta página (F5)</strong>.</span>
                             </div>
                         </div>
                         <a href="${LOADER_URL}" target="_blank" style="display: block !important; text-align: center !important; background: #0284c7 !important; color: #fff !important; padding: 10px 0 !important; border-radius: 8px !important; text-decoration: none !important; font-weight: bold !important; font-size: 13px !important; transition: background 0.2s !important; box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;" onmouseover="this.style.background='#0369a1'" onmouseout="this.style.background='#0284c7'">Clique aqui para Atualizar</a>
-                    `, false, 0);
+                    `, false, 0); 
                 }
             }
         } catch (e) {
@@ -160,17 +161,17 @@
     async function loadFirebase() {
         if (window.firebase) return;
         const libs = [
-            "https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js",
-            "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js",
+            "https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js", 
+            "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js", 
             "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"
         ];
-
+        
         for (const lib of libs) {
             await new Promise((resolve, reject) => {
-                const s = document.createElement("script");
+                const s = document.createElement("script"); 
                 s.src = lib;
                 s.onload = resolve;
-                s.onerror = () => reject(new Error("FIREBASE_ERROR"));
+                s.onerror = () => reject(new Error("FIREBASE_ERROR")); 
                 document.head.appendChild(s);
             });
         }
@@ -185,7 +186,7 @@
                 if (!text || text.length < 50) throw new Error("EMPTY");
                 return text;
             } catch (err) {
-                if (i === attempts) throw new Error("GITHUB_ERROR");
+                if (i === attempts) throw new Error("GITHUB_ERROR"); 
                 await new Promise(r => setTimeout(r, 1000 * i));
             }
         }
@@ -194,8 +195,8 @@
     try {
         checkSuccessUpdate();
         checkForLoaderUpdates();
-        await loadFirebase();
-        const code = await fetchWithRetry(SCRIPT_URL);
+        await loadFirebase(); 
+        const code = await fetchWithRetry(SCRIPT_URL); 
         (new Function(code))();
     } catch (err) {
         logError("Falha Crítica", err);
