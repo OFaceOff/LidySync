@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      1.5.0
+// @version      1.5.1
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/refs/heads/main/docs/assets/img/favicon.ico
@@ -412,6 +412,11 @@
             .ls-mention-item { padding: 8px 16px; color: var(--text-primary); font-size: 13px; cursor: pointer; font-weight: 500; }
             .ls-mention-item:hover, .ls-mention-item.active { background-color: rgba(128,128,128,0.15); color: var(--highlight); }
 
+            #ls-command-panel { position: absolute; bottom: 60px; left: 16px; background-color: var(--bg-overlay); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); display: none; flex-direction: column; min-width: 240px; max-height: 180px; overflow-y: auto; z-index: 50; padding: 4px 0; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+            .ls-command-item { padding: 8px 16px; color: var(--text-primary); font-size: 13px; cursor: pointer; font-weight: 500; display: flex; flex-direction: column; gap: 2px; border-radius: 4px; }
+            .ls-command-item span { font-size: 10px; color: var(--text-muted); font-weight: normal; }
+            .ls-command-item:hover, .ls-command-item.active { background-color: rgba(128,128,128,0.15); color: var(--highlight); }
+
             .ls-message-container { display: flex; flex-direction: column; max-width: 85%; position: relative; }
             .ls-message-container.sent { align-self: flex-end; align-items: flex-end; }
             .ls-message-container.received { align-self: flex-start; align-items: flex-start; }
@@ -619,7 +624,7 @@
                             <button class="ls-btn-danger" id="ls-wipe-data-btn" style="margin-top: 0;">Apagar Conta e Desconectar</button>
                         </div>
                         <button class="ls-btn-primary" id="ls-save-lobby-config-btn" style="margin-top: 0;">Salvar Alterações</button>
-                        <div style="text-align: center; margin-top: 8px; color: var(--text-muted); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Versão Atual - 1.5.0</div>
+                        <div style="text-align: center; margin-top: 8px; color: var(--text-muted); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Versão Atual - 1.5.1</div>
                     </div>
                 </div>
 
@@ -820,6 +825,7 @@
                     <div id="ls-reply-bar"><span id="ls-reply-bar-text"></span><button id="ls-reply-bar-close">✕</button></div>
                     <div id="ls-countdown-overlay"><div id="ls-countdown-number">3</div><div id="ls-countdown-text">Preparando...</div></div>
                     <div id="ls-mention-panel"></div>
+                    <div id="ls-command-panel"></div>
                     <div id="ls-emoji-panel" class="ls-popup-panel">${emojis.map(e => `<span class="ls-emoji-item">${e}</span>`).join('')}</div>
                     <div id="ls-plus-panel" class="ls-popup-panel">
                         <div class="ls-action-item" id="btn-action-mastersync" style="display:none; color: #10b981;">👑 Iniciar Sincronização do Anfitrião</div>
@@ -879,6 +885,7 @@
         let myBio = ls.getItem('ls_userbio') || '';
         let myFav = ls.getItem('ls_userfav') || '';
         let myHideChats = ls.getItem('ls_hidechats') === 'true';
+        let myTags = [];
         let currentRoom = ls.getItem('ls_current_room');
         let currentRoomKey = ls.getItem('ls_room_key');
 
@@ -913,6 +920,8 @@
         let isTyping = false;
         let typingTimeout = null;
         let lsPartyTimeout = null;
+        let activePollDocId = null;
+        let activePollSender = null;
 
         let floodCount = 0;
         let isFlooding = false;
@@ -1130,6 +1139,16 @@
 
         const mentionPanel = shadow.getElementById('ls-mention-panel');
         let isMentioning = false; let activeMentionIndex = 0; let mentionMatches = [];
+        let isCommanding = false; let activeCommandIndex = 0; let commandMatches = [];
+        const availableCommands = [
+            { cmd: '/timestamp', desc: 'Data de criação da sala', req: [] },
+            { cmd: '/poll', desc: 'Cria uma enquete interativa', req: [] },
+            { cmd: '/endpoll', desc: 'Encerra a enquete ativa', req: [] },
+            { cmd: '/givehost', desc: 'Passa o Host para outro membro', req: ['HOST'] },
+            { cmd: '/anuncio', desc: 'Aviso global na tela de todos', req: ['MOD', 'DEV', 'OWNER'] },
+            { cmd: '/party1', desc: 'Inicia uma festa', req: ['DEV', 'OWNER'] },
+            { cmd: '/stopparty1', desc: 'Para a festa', req: ['DEV', 'OWNER'] }
+        ];
 
         const input = shadow.getElementById('ls-input');
         if (input) {
@@ -1148,11 +1167,16 @@
 
                 const val = input.value; const cursorPos = input.selectionStart;
                 const textBeforeCursor = val.substring(0, cursorPos);
-                const match = textBeforeCursor.match(/(?:^|\s)@([^@\n]*)$/);
-                const mentionPanel = shadow.getElementById('ls-mention-panel');
 
-                if (match && currentRoomData && currentRoomData.participants) {
-                    const searchStr = match[1].toLowerCase();
+                const mentionMatch = textBeforeCursor.match(/(?:^|\s)@([^@\n]*)$/);
+                const cmdMatch = textBeforeCursor.match(/(?:^|\s)\/([^\s]*)$/);
+
+                const mentionPanel = shadow.getElementById('ls-mention-panel');
+                const commandPanel = shadow.getElementById('ls-command-panel');
+
+                if (mentionMatch && currentRoomData && currentRoomData.participants) {
+                    if (commandPanel) commandPanel.style.display = 'none'; isCommanding = false;
+                    const searchStr = mentionMatch[1].toLowerCase();
                     if (searchStr.length > 20) { if (mentionPanel) mentionPanel.style.display = 'none'; isMentioning = false; return; }
                     mentionMatches = currentRoomData.participants.filter(p => p.toLowerCase().includes(searchStr));
 
@@ -1167,11 +1191,45 @@
                         });
                         mentionPanel.style.display = 'flex';
                     } else { if (mentionPanel) mentionPanel.style.display = 'none'; isMentioning = false; }
-                } else { if (mentionPanel) mentionPanel.style.display = 'none'; isMentioning = false; }
+                } else if (cmdMatch) {
+                    if (mentionPanel) mentionPanel.style.display = 'none'; isMentioning = false;
+                    const searchStr = cmdMatch[1].toLowerCase();
+                    const isHost = currentRoomData && currentRoomData.createdBy === myName;
+
+                    commandMatches = availableCommands.filter(c => {
+                        const isDevOrOwner = myTags.includes('DEV') || myTags.includes('OWNER');
+                        if (isDevOrOwner) return c.cmd.toLowerCase().includes('/' + searchStr);
+
+                        if (c.req.includes('HOST') && !isHost) return false;
+                        if (c.req.length > 0 && !c.req.includes('HOST')) {
+                            const hasPerm = c.req.some(r => myTags.includes(r));
+                            if (!hasPerm) return false;
+                        }
+                        return c.cmd.toLowerCase().includes('/' + searchStr);
+                    });
+
+                    if (commandMatches.length > 0 && commandPanel) {
+                        isCommanding = true; commandPanel.innerHTML = ''; activeCommandIndex = 0;
+                        commandMatches.forEach((c, index) => {
+                            const div = document.createElement('div');
+                            div.className = 'ls-command-item' + (index === 0 ? ' active' : '');
+                            div.innerHTML = `<div>${c.cmd}</div><span>${c.desc}</span>`;
+                            div.onmousedown = (ev) => { ev.preventDefault(); insertCommand(c.cmd); };
+                            commandPanel.appendChild(div);
+                        });
+                        commandPanel.style.display = 'flex';
+                    } else { if (commandPanel) commandPanel.style.display = 'none'; isCommanding = false; }
+                } else {
+                    if (mentionPanel) mentionPanel.style.display = 'none'; isMentioning = false;
+                    if (commandPanel) commandPanel.style.display = 'none'; isCommanding = false;
+                }
             });
 
             input.addEventListener('blur', () => {
-                setTimeout(() => { const mentionPanel = shadow.getElementById('ls-mention-panel'); if (mentionPanel) mentionPanel.style.display = 'none'; isMentioning = false; }, 150);
+                setTimeout(() => {
+                    const mentionPanel = shadow.getElementById('ls-mention-panel'); if (mentionPanel) mentionPanel.style.display = 'none'; isMentioning = false;
+                    const commandPanel = shadow.getElementById('ls-command-panel'); if (commandPanel) commandPanel.style.display = 'none'; isCommanding = false;
+                }, 150);
                 if (isTyping && currentRoom) {
                     clearTimeout(typingTimeout);
                     isTyping = false;
@@ -1181,6 +1239,8 @@
 
             input.addEventListener('keydown', (e) => {
                 const mentionPanel = shadow.getElementById('ls-mention-panel');
+                const commandPanel = shadow.getElementById('ls-command-panel');
+
                 if (isMentioning && mentionPanel && mentionPanel.style.display === 'flex') {
                     const items = mentionPanel.querySelectorAll('.ls-mention-item');
                     if (e.key === 'ArrowDown') {
@@ -1189,6 +1249,14 @@
                         e.preventDefault(); items[activeMentionIndex].classList.remove('active'); activeMentionIndex = (activeMentionIndex - 1 + items.length) % items.length; items[activeMentionIndex].classList.add('active'); items[activeMentionIndex].scrollIntoView({ block: 'nearest' });
                     } else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); insertMention(mentionMatches[activeMentionIndex]); }
                     else if (e.key === 'Escape') { mentionPanel.style.display = 'none'; isMentioning = false; }
+                } else if (isCommanding && commandPanel && commandPanel.style.display === 'flex') {
+                    const items = commandPanel.querySelectorAll('.ls-command-item');
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault(); items[activeCommandIndex].classList.remove('active'); activeCommandIndex = (activeCommandIndex + 1) % items.length; items[activeCommandIndex].classList.add('active'); items[activeCommandIndex].scrollIntoView({ block: 'nearest' });
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault(); items[activeCommandIndex].classList.remove('active'); activeCommandIndex = (activeCommandIndex - 1 + items.length) % items.length; items[activeCommandIndex].classList.add('active'); items[activeCommandIndex].scrollIntoView({ block: 'nearest' });
+                    } else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); insertCommand(commandMatches[activeCommandIndex].cmd); }
+                    else if (e.key === 'Escape') { commandPanel.style.display = 'none'; isCommanding = false; }
                 } else if (e.key === 'Enter') { sendMessage(); }
             });
 
@@ -1224,6 +1292,19 @@
             const mentionPanel = shadow.getElementById('ls-mention-panel');
             if (mentionPanel) mentionPanel.style.display = 'none';
             isMentioning = false;
+        }
+
+        function insertCommand(cmdStr) {
+            const val = input.value; const cursorPos = input.selectionStart;
+            const textBeforeCursor = val.substring(0, cursorPos);
+            const textAfterCursor = val.substring(cursorPos);
+            const lastSlashPos = textBeforeCursor.lastIndexOf('/');
+            const newTextBefore = textBeforeCursor.substring(0, lastSlashPos) + `${cmdStr} `;
+            input.value = newTextBefore + textAfterCursor;
+            input.focus(); input.selectionStart = input.selectionEnd = newTextBefore.length;
+            const commandPanel = shadow.getElementById('ls-command-panel');
+            if (commandPanel) commandPanel.style.display = 'none';
+            isCommanding = false;
         }
 
         const header = shadow.getElementById('ls-header');
@@ -1371,6 +1452,7 @@
                 userProfileUnsubscribe = userRef.onSnapshot(snap => {
                     if (snap.exists) {
                         const data = snap.data();
+                        myTags = data.tags || [];
                         if (data.isBanned) { alert("⚠️ Acesso Negado: Você foi banido. Motivo: " + (data.banReason || "Violação das regras.")); ls.clear(); sessionStorage.clear(); location.reload(); }
                         if (data.username && data.username !== myName) { alert(`⚠️ Moderação: Seu nome foi alterado pelo administrador para "${data.username}".`); ls.setItem('ls_username', data.username); location.reload(); }
                     }
@@ -2085,6 +2167,7 @@
             const ep = shadow.getElementById('ls-emoji-panel'); if (ep) ep.style.display = 'none';
             const pp = shadow.getElementById('ls-plus-panel'); if (pp) pp.style.display = 'none';
             const mp = shadow.getElementById('ls-mention-panel'); if (mp) mp.style.display = 'none';
+            const cp = shadow.getElementById('ls-command-panel'); if (cp) cp.style.display = 'none';
             const rb = shadow.getElementById('ls-reply-bar'); if (rb) rb.style.display = 'none';
             replyTarget = null;
 
@@ -2184,6 +2267,9 @@
                 let lastMsgType = null;
                 let lastTimestamp = 0;
 
+                activePollDocId = null;
+                activePollSender = null;
+
                 snapshot.forEach((doc) => {
                     const data = doc.data(); const docId = doc.id; const isMe = data.sender === myName; const isAdm = currentRoomData && currentRoomData.createdBy === data.sender;
                     const msgTimeMs = data.timestamp ? data.timestamp.toMillis() : Date.now();
@@ -2270,6 +2356,10 @@
                             msgBubble.classList.add('deleted-msg'); msgBubble.innerText = "🚫 Enquete apagada";
                         } else {
                             const isExpired = Date.now() > data.expiresAt;
+                            if (!isExpired) {
+                                activePollDocId = docId;
+                                activePollSender = data.sender;
+                            }
                             const hasVoted = data.voters && data.voters.includes(myName);
                             const totalVotes = data.voters ? data.voters.length : 0;
 
@@ -2633,40 +2723,6 @@
             });
         });
 
-        if (input) {
-            input.addEventListener('keydown', (e) => {
-                const mentionPanel = shadow.getElementById('ls-mention-panel');
-                if (isMentioning && mentionPanel && mentionPanel.style.display === 'flex') {
-                    const items = mentionPanel.querySelectorAll('.ls-mention-item');
-                    if (e.key === 'ArrowDown') {
-                        e.preventDefault(); items[activeMentionIndex].classList.remove('active'); activeMentionIndex = (activeMentionIndex + 1) % items.length; items[activeMentionIndex].classList.add('active'); items[activeMentionIndex].scrollIntoView({ block: 'nearest' });
-                    } else if (e.key === 'ArrowUp') {
-                        e.preventDefault(); items[activeMentionIndex].classList.remove('active'); activeMentionIndex = (activeMentionIndex - 1 + items.length) % items.length; items[activeMentionIndex].classList.add('active'); items[activeMentionIndex].scrollIntoView({ block: 'nearest' });
-                    } else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); insertMention(mentionMatches[activeMentionIndex]); }
-                    else if (e.key === 'Escape') { mentionPanel.style.display = 'none'; isMentioning = false; }
-                } else if (e.key === 'Enter') { sendMessage(); }
-            });
-
-            input.addEventListener('focus', () => {
-                const emojiPanel = shadow.getElementById('ls-emoji-panel');
-                const plusPanel = shadow.getElementById('ls-plus-panel');
-                if (emojiPanel) emojiPanel.style.display = 'none';
-                if (plusPanel) plusPanel.style.display = 'none';
-            });
-
-            input.addEventListener('paste', (e) => {
-                const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-                for (let index in items) {
-                    const item = items[index];
-                    if (item.kind === 'file' && item.type.indexOf('image/') === 0) {
-                        const blob = item.getAsFile(); const reader = new FileReader();
-                        reader.onload = async (event) => { compressImage(event.target.result, async (compressedUrl) => { await sendImageMsg(compressedUrl); }); };
-                        reader.readAsDataURL(blob);
-                    }
-                }
-            });
-        }
-
         const countdownOverlay = shadow.getElementById('ls-countdown-overlay'); const countdownNumber = shadow.getElementById('ls-countdown-number');
         function runVisualCountdown(senderName) {
             if (!countdownOverlay || !countdownNumber) return;
@@ -2793,21 +2849,7 @@
                     return;
                 }
 
-                if (cmd === '/anuncio') {
-                    if (isOwnerOrDev || isMod) {
-                        const ov = shadow.getElementById('ls-announcement-create-overlay');
-                        if (ov) ov.style.display = 'flex';
-                    } else {
-                        const container = document.createElement('div');
-                        container.className = 'ls-message-container system-msg-container';
-                        container.innerHTML = `<div class="ls-message system-msg" style="color:#ef4444;">⚠️ Apenas Moderadores e Desenvolvedores podem criar anúncios.</div>`;
-                        if (mc) mc.appendChild(container);
-                        scrollToBottom();
-                    }
-                    return;
-                }
-
-                if (cmd === '/pool' || cmd === '/poll') {
+                if (cmd === '/poll') {
                     const lastPollTime = parseInt(ls.getItem('ls_last_poll_time') || '0');
                     if (Date.now() - lastPollTime < 3600000) {
                         const remaining = Math.ceil((3600000 - (Date.now() - lastPollTime)) / 60000);
@@ -2823,15 +2865,36 @@
                     return;
                 }
 
+                if (cmd === '/endpoll') {
+                    if (activePollDocId) {
+                        if (activePollSender === myName || isOwnerOrDev || isMod || (currentRoomData && currentRoomData.createdBy === myName)) {
+                            try { await messagesRef.doc(activePollDocId).update({ expiresAt: Date.now() }); } catch (e) { }
+                        } else {
+                            const container = document.createElement('div');
+                            container.className = 'ls-message-container system-msg-container';
+                            container.innerHTML = `<div class="ls-message system-msg" style="color:#ef4444;">⚠️ Apenas o criador da enquete ou o administrador podem encerrá-la.</div>`;
+                            if (mc) mc.appendChild(container);
+                            scrollToBottom();
+                        }
+                    } else {
+                        const container = document.createElement('div');
+                        container.className = 'ls-message-container system-msg-container';
+                        container.innerHTML = `<div class="ls-message system-msg" style="color:#ef4444;">⚠️ Nenhuma enquete ativa no momento.</div>`;
+                        if (mc) mc.appendChild(container);
+                        scrollToBottom();
+                    }
+                    return;
+                }
+
                 if (cmd === '/givehost') {
-                    if (currentRoomData && currentRoomData.createdBy === myName) {
+                    if ((currentRoomData && currentRoomData.createdBy === myName) || isOwnerOrDev) {
                         const mo = shadow.getElementById('ls-members-overlay');
                         if (mo) mo.style.display = 'flex';
                         fetchAndRenderMembers(currentRoom, shadow.getElementById('ls-members-list'));
                     } else {
                         const container = document.createElement('div');
                         container.className = 'ls-message-container system-msg-container';
-                        container.innerHTML = `<div class="ls-message system-msg" style="color:#ef4444;">⚠️ Apenas o anfitrião pode usar este comando.</div>`;
+                        container.innerHTML = `<div class="ls-message system-msg" style="color:#ef4444;">⚠️ Apenas o anfitrião ou a equipe de desenvolvimento podem usar este comando.</div>`;
                         if (mc) mc.appendChild(container);
                         scrollToBottom();
                     }
