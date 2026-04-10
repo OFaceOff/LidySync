@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      1.3.2
+// @version      1.5.0
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/refs/heads/main/docs/assets/img/favicon.ico
@@ -95,39 +95,57 @@
             osc.stop(sharedAudioCtx.currentTime + 1.2); osc2.stop(sharedAudioCtx.currentTime + 1.2);
         } catch (e) { }
     }
-    function playPartyBeatTick(beat) {
+
+    function playPartyBeatTick(step) {
         try {
             if (!sharedAudioCtx) sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if (sharedAudioCtx.state === 'suspended') sharedAudioCtx.resume();
             let t = sharedAudioCtx.currentTime;
-            let osc = sharedAudioCtx.createOscillator();
-            let gain = sharedAudioCtx.createGain();
-            osc.connect(gain); gain.connect(sharedAudioCtx.destination);
-            osc.frequency.setValueAtTime(150, t); osc.frequency.exponentialRampToValueAtTime(0.01, t + 0.1);
-            gain.gain.setValueAtTime(0.4, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
-            osc.start(t); osc.stop(t + 0.1);
-            let notes = [261.63, 329.63, 392.00, 523.25, 659.25];
-            let note = notes[beat % notes.length];
-            if (Math.random() > 0.2) {
-                let oscM = sharedAudioCtx.createOscillator();
-                let gainM = sharedAudioCtx.createGain();
-                oscM.type = 'square';
-                oscM.connect(gainM); gainM.connect(sharedAudioCtx.destination);
-                oscM.frequency.setValueAtTime(note, t);
-                gainM.gain.setValueAtTime(0.05, t); gainM.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
-                oscM.start(t); oscM.stop(t + 0.2);
+
+            if (step % 4 === 0) {
+                let kick = sharedAudioCtx.createOscillator();
+                let kickGain = sharedAudioCtx.createGain();
+                kick.connect(kickGain); kickGain.connect(sharedAudioCtx.destination);
+                kick.frequency.setValueAtTime(150, t); kick.frequency.exponentialRampToValueAtTime(0.01, t + 0.5);
+                kickGain.gain.setValueAtTime(0.6, t); kickGain.gain.exponentialRampToValueAtTime(0.01, t + 0.5);
+                kick.start(t); kick.stop(t + 0.5);
+            }
+
+            if (step % 4 === 2) {
+                let hat = sharedAudioCtx.createOscillator();
+                let hatGain = sharedAudioCtx.createGain();
+                hat.type = 'square';
+                hat.connect(hatGain); hatGain.connect(sharedAudioCtx.destination);
+                hat.frequency.setValueAtTime(8000, t);
+                hatGain.gain.setValueAtTime(0.05, t); hatGain.gain.exponentialRampToValueAtTime(0.01, t + 0.05);
+                hat.start(t); hat.stop(t + 0.05);
+            }
+
+            let notes = [220.00, 220.00, 261.63, 293.66, 329.63, 329.63, 293.66, 261.63];
+            let note = notes[step % notes.length];
+            if (step % 2 === 0 || Math.random() > 0.4) {
+                let synth = sharedAudioCtx.createOscillator();
+                let synthGain = sharedAudioCtx.createGain();
+                synth.type = 'sawtooth';
+                synth.connect(synthGain); synthGain.connect(sharedAudioCtx.destination);
+                let freq = (Math.random() > 0.8) ? note * 2 : note;
+                synth.frequency.setValueAtTime(freq, t);
+                synthGain.gain.setValueAtTime(0.12, t); synthGain.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
+                synth.start(t); synth.stop(t + 0.2);
             }
         } catch (e) { }
     }
+
     function startPartyMusic() {
         if (ls.getItem('ls_sound') === 'false') return;
         stopPartyMusic(); playPartyHorn();
-        let beats = 0;
+        let step = 0;
         partyMusicInterval = setInterval(() => {
-            if (beats >= 28) { clearInterval(partyMusicInterval); return; }
-            playPartyBeatTick(beats); beats++;
-        }, 350);
+            if (step >= 80) { clearInterval(partyMusicInterval); return; }
+            playPartyBeatTick(step); step++;
+        }, 125);
     }
+
     function stopPartyMusic() {
         if (partyMusicInterval) clearInterval(partyMusicInterval);
     }
@@ -212,142 +230,142 @@
 
         style.textContent = `
             * { box-sizing: border-box; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
-            #ls-wrapper { 
-                --bg-base: #020617; 
-                --bg-surface: #0f172a; 
+            #ls-wrapper {
+                --bg-base: #020617;
+                --bg-surface: #0f172a;
                 --bg-elevated: #1e293b;
-                --bg-overlay: rgba(2, 6, 23, 0.85); 
-                --bg-modal: #0f172a; 
-                --text-primary: #f9fafb; 
+                --bg-overlay: rgba(2, 6, 23, 0.85);
+                --bg-modal: #0f172a;
+                --text-primary: #f9fafb;
                 --text-secondary: #94a3b8;
-                --text-muted: #64748b; 
-                --border-color: rgba(255,255,255,0.06); 
-                --glass-blur: blur(16px); 
-                --received-msg: #1e293b; 
+                --text-muted: #64748b;
+                --border-color: rgba(255,255,255,0.06);
+                --glass-blur: blur(16px);
+                --received-msg: #1e293b;
                 --highlight: #06b6d4;
-                --fab-bg: linear-gradient(135deg, #5b5cf6, #7c3aed); 
-                --fab-color: #ffffff; 
-                --fab-shadow: 0 8px 25px rgba(91, 92, 246, 0.4); 
-                --btn-primary-bg: linear-gradient(135deg, #5b5cf6, #7c3aed); 
-                --btn-primary-color: #ffffff; 
+                --fab-bg: linear-gradient(135deg, #5b5cf6, #7c3aed);
+                --fab-color: #ffffff;
+                --fab-shadow: 0 8px 25px rgba(91, 92, 246, 0.4);
+                --btn-primary-bg: linear-gradient(135deg, #5b5cf6, #7c3aed);
+                --btn-primary-color: #ffffff;
                 --btn-primary-shadow: rgba(91, 92, 246, 0.4);
-                --btn-secondary-bg: #1e293b; 
-                pointer-events: auto; display: flex; flex-direction: column; align-items: flex-end; position: relative; 
+                --btn-secondary-bg: #1e293b;
+                pointer-events: auto; display: flex; flex-direction: column; align-items: flex-end; position: relative;
             }
-            
-            #ls-wrapper.theme-light { 
-                --bg-base: #f8fafc; 
-                --bg-surface: #ffffff; 
+
+            #ls-wrapper.theme-light {
+                --bg-base: #f8fafc;
+                --bg-surface: #ffffff;
                 --bg-elevated: #f1f5f9;
-                --bg-overlay: rgba(248, 250, 252, 0.85); 
-                --bg-modal: #ffffff; 
-                --text-primary: #020617; 
+                --bg-overlay: rgba(248, 250, 252, 0.85);
+                --bg-modal: #ffffff;
+                --text-primary: #020617;
                 --text-secondary: #475569;
-                --text-muted: #64748b; 
-                --border-color: #e2e8f0; 
-                --received-msg: #f1f5f9; 
-                --fab-bg: linear-gradient(135deg, #5b5cf6, #7c3aed); 
-                --fab-color: #ffffff; 
-                --fab-shadow: 0 8px 25px rgba(91, 92, 246, 0.3); 
-                --btn-primary-bg: linear-gradient(135deg, #5b5cf6, #7c3aed); 
+                --text-muted: #64748b;
+                --border-color: #e2e8f0;
+                --received-msg: #f1f5f9;
+                --fab-bg: linear-gradient(135deg, #5b5cf6, #7c3aed);
+                --fab-color: #ffffff;
+                --fab-shadow: 0 8px 25px rgba(91, 92, 246, 0.3);
+                --btn-primary-bg: linear-gradient(135deg, #5b5cf6, #7c3aed);
                 --btn-primary-shadow: rgba(91, 92, 246, 0.3);
-                --btn-secondary-bg: #f1f5f9; 
+                --btn-secondary-bg: #f1f5f9;
             }
-            
-            #ls-wrapper.theme-glass { 
-                --bg-base: rgba(2, 6, 23, 0.50); 
-                --bg-surface: rgba(15, 23, 42, 0.65); 
+
+            #ls-wrapper.theme-glass {
+                --bg-base: rgba(2, 6, 23, 0.50);
+                --bg-surface: rgba(15, 23, 42, 0.65);
                 --bg-elevated: rgba(30, 41, 59, 0.75);
-                --bg-overlay: rgba(2, 6, 23, 0.85); 
-                --bg-modal: rgba(15, 23, 42, 0.95); 
-                --border-color: rgba(255,255,255,0.15); 
-                --glass-blur: blur(20px); 
-                --received-msg: rgba(255, 255, 255, 0.15); 
-                --fab-bg: rgba(255, 255, 255, 0.15); 
-                --fab-color: #ffffff; 
-                --fab-shadow: 0 8px 25px rgba(0, 0, 0, 0.4); 
-                --btn-primary-bg: rgba(255, 255, 255, 0.2); 
-                --btn-primary-color: #ffffff; 
+                --bg-overlay: rgba(2, 6, 23, 0.85);
+                --bg-modal: rgba(15, 23, 42, 0.95);
+                --border-color: rgba(255,255,255,0.15);
+                --glass-blur: blur(20px);
+                --received-msg: rgba(255, 255, 255, 0.15);
+                --fab-bg: rgba(255, 255, 255, 0.15);
+                --fab-color: #ffffff;
+                --fab-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+                --btn-primary-bg: rgba(255, 255, 255, 0.2);
+                --btn-primary-color: #ffffff;
                 --btn-primary-shadow: rgba(0, 0, 0, 0.3);
-                --btn-secondary-bg: rgba(0, 0, 0, 0.3); 
+                --btn-secondary-bg: rgba(0, 0, 0, 0.3);
                 text-shadow: 0 1px 4px rgba(0,0,0,0.9);
             }
-            #ls-wrapper.theme-glass input, #ls-wrapper.theme-glass textarea, #ls-wrapper.theme-glass select { 
-                text-shadow: none; 
+            #ls-wrapper.theme-glass input, #ls-wrapper.theme-glass textarea, #ls-wrapper.theme-glass select {
+                text-shadow: none;
             }
-            #ls-wrapper.theme-glass .ls-message { 
-                text-shadow: 0 1px 2px rgba(0,0,0,0.8); 
+            #ls-wrapper.theme-glass .ls-message {
+                text-shadow: 0 1px 2px rgba(0,0,0,0.8);
             }
-            #ls-wrapper.theme-glass #ls-main-logo { 
-                text-shadow: none; 
+            #ls-wrapper.theme-glass #ls-main-logo {
+                text-shadow: none;
             }
-            
-            ::-webkit-scrollbar { width: 6px; } 
+
+            ::-webkit-scrollbar { width: 6px; }
             ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 6px; opacity: 0.5; transition: 0.2s; }
             ::-webkit-scrollbar-thumb:hover { background: var(--highlight); }
 
             #ls-fab { width: 60px; height: 60px; background: var(--fab-bg); color: var(--fab-color); border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: var(--fab-shadow); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s; position: relative; }
-            #ls-fab:hover { transform: scale(1.08); box-shadow: 0 12px 30px rgba(0,0,0,0.4); } 
+            #ls-fab:hover { transform: scale(1.08); box-shadow: 0 12px 30px rgba(0,0,0,0.4); }
             #ls-fab svg { stroke: currentColor; } #ls-fab svg polygon { fill: currentColor; stroke: currentColor; }
-            
+
             #ls-unread-badge { position: absolute; top: -4px; right: -4px; background: #ef4444; color: white; font-size: 12px; font-weight: 800; border-radius: 50%; min-width: 22px; height: 22px; display: none; align-items: center; justify-content: center; border: 2px solid var(--bg-base); z-index: 10; padding: 0 4px; }
-            
+
             #ls-chat-window { width: 350px; height: 580px; background-color: var(--bg-base); border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.4); display: none; flex-direction: column; margin-bottom: 15px; overflow: hidden; border: 1px solid var(--border-color); position: relative; backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); transition: background-color 0.3s, backdrop-filter 0.3s; resize: both; min-width: 300px; min-height: 400px; max-width: 90vw; max-height: 90vh; }
             #ls-chat-window.open { display: flex; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
             #ls-chat-window.integrated { position: absolute !important; top: 0 !important; right: 0 !important; bottom: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; max-height: 100vh !important; border-radius: 0 !important; margin: 0 !important; border: none !important; border-left: 1px solid var(--border-color) !important; resize: none !important; box-shadow: -5px 0 25px rgba(0,0,0,0.4) !important; }
             #ls-chat-window.integrated #ls-close-btn, #ls-chat-window.integrated #ls-minimize-btn { display: none !important; } #ls-chat-window.integrated #ls-header { cursor: default !important; }
-            
+
             @keyframes slideUp { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
-            
+
             #ls-header { background-color: var(--bg-overlay); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); color: var(--text-primary); padding: 16px; display: flex; justify-content: space-between; align-items: center; font-size: 15px; font-weight: 600; z-index: 10; border-bottom: 1px solid var(--border-color); cursor: grab; }
-            #ls-header:active { cursor: grabbing; } 
-            
+            #ls-header:active { cursor: grabbing; }
+
             #ls-header-text { transition: color 0.2s; }
             #ls-header-text.clickable { cursor: pointer; }
             #ls-header-text.clickable:hover { color: var(--highlight); }
 
-            .ls-header-btns { display: flex; gap: 8px; align-items: center; cursor: default; } 
-            .ls-header-btn { cursor: pointer; color: var(--text-muted); font-size: 18px; background: none; border: none; transition: all 0.2s; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px;} 
+            .ls-header-btns { display: flex; gap: 8px; align-items: center; cursor: default; }
+            .ls-header-btn { cursor: pointer; color: var(--text-muted); font-size: 18px; background: none; border: none; transition: all 0.2s; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px;}
             .ls-header-btn:hover { color: var(--highlight); background: rgba(128,128,128,0.1); }
-            
-            .ls-dropdown-container { position: relative; } 
-            .ls-dropdown-menu { position: absolute; right: 0; top: calc(100% + 5px); background-color: var(--bg-overlay); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); display: none; flex-direction: column; min-width: 200px; z-index: 50; overflow: hidden; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); } 
-            .ls-dropdown-menu.show { display: flex; animation: fadeIn 0.15s ease-out; } 
-            @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } } 
-            .ls-dropdown-item { padding: 12px 16px; color: var(--text-primary); font-size: 13.5px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; background: none; border: none; text-align: left; width: 100%; font-weight: 500; } 
-            .ls-dropdown-item:hover { background-color: rgba(128,128,128,0.1); color: var(--highlight); } 
+
+            .ls-dropdown-container { position: relative; }
+            .ls-dropdown-menu { position: absolute; right: 0; top: calc(100% + 5px); background-color: var(--bg-overlay); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); display: none; flex-direction: column; min-width: 200px; z-index: 50; overflow: hidden; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+            .ls-dropdown-menu.show { display: flex; animation: fadeIn 0.15s ease-out; }
+            @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+            .ls-dropdown-item { padding: 12px 16px; color: var(--text-primary); font-size: 13.5px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; background: none; border: none; text-align: left; width: 100%; font-weight: 500; }
+            .ls-dropdown-item:hover { background-color: rgba(128,128,128,0.1); color: var(--highlight); }
             .ls-dropdown-item.danger:hover { color: #ef4444; background-color: rgba(239, 68, 68, 0.1); }
-            
+
             .ls-screen { flex: 1; display: none; flex-direction: column; padding: 20px; background-color: transparent; gap: 16px; position: relative; overflow-y: auto;}
-            
-            #ls-room-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; padding-bottom: 70px; } 
-            .ls-room-item { display: flex; align-items: center; padding: 12px; background: rgba(128,128,128,0.05); border: 1px solid var(--border-color); border-radius: 12px; cursor: pointer; transition: 0.2s; position: relative; } 
-            .ls-room-item:hover { background: rgba(128,128,128,0.1); border-color: var(--highlight); } 
-            .ls-room-avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #5b5cf6, #7c3aed); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; color: white; margin-right: 12px; flex-shrink: 0; position: relative; background-size: cover !important; background-position: center !important; } 
-            .ls-online-dot { position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; background: #22c55e; border-radius: 50%; border: 2px solid var(--bg-surface); display: none; } 
-            .ls-room-info { flex: 1; overflow: hidden; } 
-            .ls-room-name { color: var(--text-primary); font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px; } 
-            .ls-room-status { color: var(--text-muted); font-size: 12px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } 
-            .ls-room-unread { width: 10px; height: 10px; background: #ef4444; border-radius: 50%; display: none; margin-left: 8px; flex-shrink: 0; } 
-            .ls-room-options { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: 0.2s; margin-left: 4px; } 
+
+            #ls-room-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; padding-bottom: 70px; }
+            .ls-room-item { display: flex; align-items: center; padding: 12px; background: rgba(128,128,128,0.05); border: 1px solid var(--border-color); border-radius: 12px; cursor: pointer; transition: 0.2s; position: relative; }
+            .ls-room-item:hover { background: rgba(128,128,128,0.1); border-color: var(--highlight); }
+            .ls-room-avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #5b5cf6, #7c3aed); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; color: white; margin-right: 12px; flex-shrink: 0; position: relative; background-size: cover !important; background-position: center !important; }
+            .ls-online-dot { position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; background: #22c55e; border-radius: 50%; border: 2px solid var(--bg-surface); display: none; }
+            .ls-room-info { flex: 1; overflow: hidden; }
+            .ls-room-name { color: var(--text-primary); font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px; }
+            .ls-room-status { color: var(--text-muted); font-size: 12px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .ls-room-unread { width: 10px; height: 10px; background: #ef4444; border-radius: 50%; display: none; margin-left: 8px; flex-shrink: 0; }
+            .ls-room-options { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: 0.2s; margin-left: 4px; }
             .ls-room-options:hover { background: rgba(128,128,128,0.1); color: var(--highlight); }
-            
-            .ls-tags-container { display: inline-flex; gap: 4px; align-items: center; vertical-align: middle; flex-wrap: wrap; } 
-            .ls-tag { font-size: 8px; font-weight: 800; padding: 2px 5px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; cursor: help; } 
-            .ls-tag-host { background-color: #ef4444; color: #ffffff; } 
-            .ls-tag-dev { background-color: #ff5a08 !important; color: #000000 !important; } 
-            .ls-tag-owner { background-color: #5b21b6; color: #ffffff; } 
-            .ls-tag-mod { background-color: #3b82f6; color: #ffffff; } 
-            .ls-tag-linda { background-color: #fbcfe8; color: #be185d; } 
+
+            .ls-tags-container { display: inline-flex; gap: 4px; align-items: center; vertical-align: middle; flex-wrap: wrap; }
+            .ls-tag { font-size: 8px; font-weight: 800; padding: 2px 5px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; cursor: help; }
+            .ls-tag-host { background-color: #ef4444; color: #ffffff; }
+            .ls-tag-dev { background-color: #ff5a08 !important; color: #000000 !important; }
+            .ls-tag-owner { background-color: #5b21b6; color: #ffffff; }
+            .ls-tag-mod { background-color: #3b82f6; color: #ffffff; }
+            .ls-tag-linda { background-color: #fbcfe8; color: #be185d; }
             .ls-tag-generic { background-color: rgba(128,128,128,0.2); color: inherit; }
             .ls-tag-vip { background-color: #d6ac60 !important; color: #000000 !important; border: none !important; font-weight: 900 !important; text-shadow: none !important; }
             .ls-tag-verified { background-color: #0ea5e9 !important; color: #ffffff !important; border-radius: 50% !important; width: 14px !important; height: 14px !important; display: inline-flex !important; justify-content: center; align-items: center; padding: 0 !important; font-size: 9px !important; border: 1px solid #ffffff; box-shadow: 0 0 4px rgba(14, 165, 233, 0.6); }
-            
-            #ls-fab-add { position: absolute; bottom: 20px; right: 20px; width: 50px; height: 50px; background: var(--fab-bg); color: var(--fab-color); border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: var(--fab-shadow); font-size: 24px; transition: 0.2s; z-index: 20; border: none; backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); } 
+
+            #ls-fab-add { position: absolute; bottom: 20px; right: 20px; width: 50px; height: 50px; background: var(--fab-bg); color: var(--fab-color); border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: var(--fab-shadow); font-size: 24px; transition: 0.2s; z-index: 20; border: none; backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); }
             #ls-fab-add:hover { transform: scale(1.1); box-shadow: 0 12px 30px rgba(0,0,0,0.4); }
-            
+
             .ls-modal-overlay { position: absolute; top: 54px; left: 0; width: 100%; height: calc(100% - 54px); background-color: var(--bg-modal); z-index: 30; display: none; flex-direction: column; overflow-y: auto; overflow-x: hidden; }
-            
+
             .ls-modal-overlay-card { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(2, 6, 23, 0.75); z-index: 70; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
             .ls-profile-card { background: var(--bg-surface); width: 90%; max-width: 360px; border-radius: 20px; border: 1px solid var(--border-color); display: flex; flex-direction: column; position: relative; box-shadow: 0 25px 50px rgba(0,0,0,0.6); max-height: 90%; overflow: hidden; }
             #ls-close-profile-modal { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 20; font-size: 16px; transition: 0.2s; backdrop-filter: blur(4px); }
@@ -364,97 +382,97 @@
 
             .ls-modal-content { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
             .ls-label { color: var(--text-muted); font-size: 12px; font-weight: 600; margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
-            .ls-input-wrapper { position: relative; width: 100%; display: flex; align-items: center; } 
-            .ls-input-text, .ls-select, .ls-textarea, .ls-input-file { background-color: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; color: var(--text-primary); outline: none; font-size: 14px; width: 100%; transition: all 0.2s; } 
-            .ls-input-text:focus, .ls-select:focus, .ls-textarea:focus { border-color: var(--highlight); box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15); } 
-            .ls-textarea { resize: vertical; min-height: 80px; } 
-            .ls-pass-toggle { position: absolute; right: 12px; background: none; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; padding: 4px; border-radius: 4px; transition: 0.2s; } 
+            .ls-input-wrapper { position: relative; width: 100%; display: flex; align-items: center; }
+            .ls-input-text, .ls-select, .ls-textarea, .ls-input-file { background-color: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; color: var(--text-primary); outline: none; font-size: 14px; width: 100%; transition: all 0.2s; }
+            .ls-input-text:focus, .ls-select:focus, .ls-textarea:focus { border-color: var(--highlight); box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15); }
+            .ls-textarea { resize: vertical; min-height: 80px; }
+            .ls-pass-toggle { position: absolute; right: 12px; background: none; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; padding: 4px; border-radius: 4px; transition: 0.2s; }
             .ls-pass-toggle:hover { color: var(--highlight); background: rgba(128,128,128,0.1); }
-            .ls-input-color { width: 100%; height: 42px; border: none; border-radius: 10px; cursor: pointer; background: none; padding: 0; } 
-            .ls-input-color::-webkit-color-swatch-wrapper { padding: 0; } 
+            .ls-input-color { width: 100%; height: 42px; border: none; border-radius: 10px; cursor: pointer; background: none; padding: 0; }
+            .ls-input-color::-webkit-color-swatch-wrapper { padding: 0; }
             .ls-input-color::-webkit-color-swatch { border: 1px solid var(--border-color); border-radius: 10px; }
             .ls-checkbox-group { display: flex; align-items: flex-start; gap: 10px; color: var(--text-primary); font-size: 13.5px; margin-top: 5px; cursor: pointer; line-height: 1.5; }
-            
-            .ls-btn-primary { background: var(--btn-primary-bg); color: var(--btn-primary-color); border: none; border-radius: 10px; padding: 14px; font-weight: 600; cursor: pointer; margin-top: 10px; transition: all 0.2s; width: 100%; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); } 
-            .ls-btn-primary:hover { transform: translateY(-1px); filter: brightness(1.08); box-shadow: 0 6px 16px var(--btn-primary-shadow); } 
-            .ls-btn-secondary { background-color: var(--btn-secondary-bg); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; width: 100%; font-size: 14px; } 
-            .ls-btn-secondary:hover { filter: brightness(1.08); border-color: var(--highlight); color: var(--highlight); } 
-            .ls-btn-danger { background-color: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 10px; padding: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; width: 100%; font-size: 14px; } 
+
+            .ls-btn-primary { background: var(--btn-primary-bg); color: var(--btn-primary-color); border: none; border-radius: 10px; padding: 14px; font-weight: 600; cursor: pointer; margin-top: 10px; transition: all 0.2s; width: 100%; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+            .ls-btn-primary:hover { transform: translateY(-1px); filter: brightness(1.08); box-shadow: 0 6px 16px var(--btn-primary-shadow); }
+            .ls-btn-secondary { background-color: var(--btn-secondary-bg); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; width: 100%; font-size: 14px; }
+            .ls-btn-secondary:hover { filter: brightness(1.08); border-color: var(--highlight); color: var(--highlight); }
+            .ls-btn-danger { background-color: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 10px; padding: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; width: 100%; font-size: 14px; }
             .ls-btn-danger:hover { background-color: #ef4444; color: white; }
-            
+
             .ls-config-section { background: rgba(128,128,128,0.05); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 8px;}
-            
-            #ls-chat-area { flex: 1; display: none; flex-direction: column; overflow: hidden; position: relative; } 
+
+            #ls-chat-area { flex: 1; display: none; flex-direction: column; overflow: hidden; position: relative; }
             #ls-messages { flex: 1; padding: 20px 16px 8px; overflow-y: auto; background-color: transparent; display: flex; flex-direction: column; gap: 14px; }
-            #ls-reply-bar { display: none; background: var(--bg-elevated); padding: 8px 12px; border-left: 3px solid var(--highlight); margin: 0 16px 10px; border-radius: 4px; font-size: 12px; color: var(--text-muted); position: relative; border: 1px solid var(--border-color); } 
+            #ls-reply-bar { display: none; background: var(--bg-elevated); padding: 8px 12px; border-left: 3px solid var(--highlight); margin: 0 16px 10px; border-radius: 4px; font-size: 12px; color: var(--text-muted); position: relative; border: 1px solid var(--border-color); }
             #ls-reply-bar-close { position: absolute; right: 8px; top: 8px; cursor: pointer; font-size: 14px; color: inherit; border: none; background: none; transition: 0.2s; }
             #ls-reply-bar-close:hover { color: var(--highlight); }
-            
-            #ls-mention-panel { position: absolute; bottom: 60px; left: 16px; background-color: var(--bg-overlay); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); display: none; flex-direction: column; min-width: 150px; max-height: 180px; overflow-y: auto; z-index: 50; padding: 4px 0; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); } 
-            .ls-mention-item { padding: 8px 16px; color: var(--text-primary); font-size: 13px; cursor: pointer; font-weight: 500; } 
+
+            #ls-mention-panel { position: absolute; bottom: 60px; left: 16px; background-color: var(--bg-overlay); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); display: none; flex-direction: column; min-width: 150px; max-height: 180px; overflow-y: auto; z-index: 50; padding: 4px 0; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+            .ls-mention-item { padding: 8px 16px; color: var(--text-primary); font-size: 13px; cursor: pointer; font-weight: 500; }
             .ls-mention-item:hover, .ls-mention-item.active { background-color: rgba(128,128,128,0.15); color: var(--highlight); }
-            
-            .ls-message-container { display: flex; flex-direction: column; max-width: 85%; position: relative; } 
-            .ls-message-container.sent { align-self: flex-end; align-items: flex-end; } 
+
+            .ls-message-container { display: flex; flex-direction: column; max-width: 85%; position: relative; }
+            .ls-message-container.sent { align-self: flex-end; align-items: flex-end; }
             .ls-message-container.received { align-self: flex-start; align-items: flex-start; }
-            
-            .ls-sender-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; padding: 0 4px; } 
-            .ls-sender-name { font-size: 11px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.3px; cursor: pointer; transition: 0.2s; } 
-            .ls-sender-name:hover { text-decoration: underline; color: var(--highlight); } 
+
+            .ls-sender-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; padding: 0 4px; }
+            .ls-sender-name { font-size: 11px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.3px; cursor: pointer; transition: 0.2s; }
+            .ls-sender-name:hover { text-decoration: underline; color: var(--highlight); }
             .ls-msg-time { font-size: 9px; color: var(--text-muted); opacity: 0.7; font-weight: normal; margin-left: 4px; }
-            
-            .ls-msg-action { display: none; cursor: pointer; font-size: 13px; filter: grayscale(100%); transition: 0.2s; opacity: 0.6; margin: 0 2px; } 
-            .ls-msg-action:hover { filter: grayscale(0%); opacity: 1; transform: scale(1.1); } 
+
+            .ls-msg-action { display: none; cursor: pointer; font-size: 13px; filter: grayscale(100%); transition: 0.2s; opacity: 0.6; margin: 0 2px; }
+            .ls-msg-action:hover { filter: grayscale(0%); opacity: 1; transform: scale(1.1); }
             .ls-message-container:hover .ls-msg-action { display: inline-block; }
-            
-            .ls-message { padding: 10px 14px; font-size: 14px; line-height: 1.45; color: #ffffff; word-wrap: break-word; word-break: break-word; white-space: pre-wrap; overflow-wrap: anywhere; box-shadow: 0 2px 8px rgba(0,0,0,0.15); max-width: 100%; overflow-x: hidden; } 
-            .ls-message img { max-width: 100%; border-radius: 8px; display: block; margin-top: 4px; cursor: pointer; transition: transform 0.2s; } 
+
+            .ls-message { padding: 10px 14px; font-size: 14px; line-height: 1.45; color: #ffffff; word-wrap: break-word; word-break: break-word; white-space: pre-wrap; overflow-wrap: anywhere; box-shadow: 0 2px 8px rgba(0,0,0,0.15); max-width: 100%; overflow-x: hidden; }
+            .ls-message img { max-width: 100%; border-radius: 8px; display: block; margin-top: 4px; cursor: pointer; transition: transform 0.2s; }
             .ls-message img:hover { transform: scale(1.02); opacity: 0.9; }
-            
-            .ls-message-container.system-msg-container { max-width: 95%; align-self: center; margin: 6px 0; } 
-            .ls-message.system-msg { background: rgba(128, 128, 128, 0.1) !important; color: var(--text-muted); text-align: center; font-weight: 500; border-radius: 12px !important; font-size: 12px; border: 1px solid rgba(128, 128, 128, 0.2); box-shadow: none; padding: 6px 12px; } 
+
+            .ls-message-container.system-msg-container { max-width: 95%; align-self: center; margin: 6px 0; }
+            .ls-message.system-msg { background: rgba(128, 128, 128, 0.1) !important; color: var(--text-muted); text-align: center; font-weight: 500; border-radius: 12px !important; font-size: 12px; border: 1px solid rgba(128, 128, 128, 0.2); box-shadow: none; padding: 6px 12px; }
             .ls-message.deleted-msg { background-color: transparent !important; color: var(--text-muted); font-style: italic; border: 1px solid var(--border-color); border-radius: 12px !important; font-size: 13px; box-shadow: none; }
-            
-            .sent .ls-message:not(.deleted-msg) { border-radius: 14px 14px 4px 14px; } 
+
+            .sent .ls-message:not(.deleted-msg) { border-radius: 14px 14px 4px 14px; }
             .received .ls-message:not(.deleted-msg) { border-radius: 14px 14px 14px 4px; background-color: var(--received-msg) !important; border: 1px solid var(--border-color); }
-            
-            #ls-input-area { display: flex; padding: 12px 16px; background-color: var(--bg-overlay); gap: 10px; align-items: center; position: relative; flex-wrap: nowrap; border-top: 1px solid var(--border-color); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); } 
-            .ls-icon-btn { flex-shrink: 0; background: none; border: none; color: var(--text-muted); font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; transition: all 0.2s; border-radius: 8px; } 
+
+            #ls-input-area { display: flex; padding: 12px 16px; background-color: var(--bg-overlay); gap: 10px; align-items: center; position: relative; flex-wrap: nowrap; border-top: 1px solid var(--border-color); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+            .ls-icon-btn { flex-shrink: 0; background: none; border: none; color: var(--text-muted); font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; transition: all 0.2s; border-radius: 8px; }
             .ls-icon-btn:hover { color: var(--highlight); background: rgba(128,128,128,0.1); transform: scale(1.05); }
-            
-            #ls-input { flex-grow: 1; min-width: 0; background-color: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 20px; padding: 10px 16px; color: var(--text-primary); outline: none; font-size: 14px; transition: 0.2s; } 
+
+            #ls-input { flex-grow: 1; min-width: 0; background-color: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 20px; padding: 10px 16px; color: var(--text-primary); outline: none; font-size: 14px; transition: 0.2s; }
             #ls-input:focus { border-color: var(--highlight); }
-            
-            #ls-send-btn { flex-shrink: 0; background: var(--btn-primary-bg); color: var(--btn-primary-color); border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); transition: all 0.2s; } 
+
+            #ls-send-btn { flex-shrink: 0; background: var(--btn-primary-bg); color: var(--btn-primary-color); border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); transition: all 0.2s; }
             #ls-send-btn:hover { transform: scale(1.05); filter: brightness(1.1); box-shadow: 0 4px 12px var(--btn-primary-shadow);}
-            
-            .ls-popup-panel { position: absolute; bottom: 70px; background-color: var(--bg-overlay); border-radius: 16px; padding: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); display: none; z-index: 20; border: 1px solid var(--border-color); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); } 
-            #ls-emoji-panel { left: 16px; width: 280px; display: flex; flex-wrap: wrap; gap: 6px; padding: 12px; } 
-            .ls-emoji-item { font-size: 20px; cursor: pointer; text-align: center; border-radius: 8px; transition: 0.1s; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; } 
+
+            .ls-popup-panel { position: absolute; bottom: 70px; background-color: var(--bg-overlay); border-radius: 16px; padding: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); display: none; z-index: 20; border: 1px solid var(--border-color); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+            #ls-emoji-panel { left: 16px; width: 280px; display: flex; flex-wrap: wrap; gap: 6px; padding: 12px; }
+            .ls-emoji-item { font-size: 20px; cursor: pointer; text-align: center; border-radius: 8px; transition: 0.1s; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; }
             .ls-emoji-item:hover { background-color: rgba(128,128,128,0.1); transform: scale(1.1); }
-            
-            #ls-plus-panel { left: 16px; width: 280px; flex-direction: column; gap: 4px; } 
-            .ls-action-item { color: var(--text-primary); padding: 12px; cursor: pointer; font-size: 14px; border-radius: 10px; display: flex; align-items: center; gap: 10px; font-weight: 500; transition: 0.2s; } 
+
+            #ls-plus-panel { left: 16px; width: 280px; flex-direction: column; gap: 4px; }
+            .ls-action-item { color: var(--text-primary); padding: 12px; cursor: pointer; font-size: 14px; border-radius: 10px; display: flex; align-items: center; gap: 10px; font-weight: 500; transition: 0.2s; }
             .ls-action-item:hover { background: rgba(128,128,128,0.1); color: var(--highlight); }
-            
-            #ls-countdown-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(2, 6, 23, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 100; display: none; flex-direction: column; justify-content: center; align-items: center; } 
-            #ls-countdown-number { font-size: 110px; font-weight: 700; color: var(--highlight); text-shadow: 0 0 40px rgba(6, 182, 212, 0.5); animation: pop 1s infinite; letter-spacing: -2px; } 
-            #ls-countdown-text { color: var(--text-secondary); font-size: 16px; margin-top: 15px; font-weight: 500; letter-spacing: 0.5px;} 
+
+            #ls-countdown-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(2, 6, 23, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 100; display: none; flex-direction: column; justify-content: center; align-items: center; }
+            #ls-countdown-number { font-size: 110px; font-weight: 700; color: var(--highlight); text-shadow: 0 0 40px rgba(6, 182, 212, 0.5); animation: pop 1s infinite; letter-spacing: -2px; }
+            #ls-countdown-text { color: var(--text-secondary); font-size: 16px; margin-top: 15px; font-weight: 500; letter-spacing: 0.5px;}
             @keyframes pop { 0% { transform: scale(0.8); opacity: 0.5; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 0.8; } }
-            
-            #ls-image-viewer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 200; display: none; align-items: center; justify-content: center; flex-direction: column; opacity: 0; transition: opacity 0.2s; } 
-            #ls-image-viewer.show { opacity: 1; } 
-            #ls-viewer-img { max-width: 90%; max-height: 85%; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); object-fit: contain; transform: scale(0.95); transition: transform 0.2s; cursor: default; } 
-            #ls-image-viewer.show #ls-viewer-img { transform: scale(1); } 
-            #ls-close-viewer { position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.5); border: none; color: white; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: 0.2s; } 
+
+            #ls-image-viewer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 200; display: none; align-items: center; justify-content: center; flex-direction: column; opacity: 0; transition: opacity 0.2s; }
+            #ls-image-viewer.show { opacity: 1; }
+            #ls-viewer-img { max-width: 90%; max-height: 85%; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); object-fit: contain; transform: scale(0.95); transition: transform 0.2s; cursor: default; }
+            #ls-image-viewer.show #ls-viewer-img { transform: scale(1); }
+            #ls-close-viewer { position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.5); border: none; color: white; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
             #ls-close-viewer:hover { background: rgba(0,0,0,0.8); transform: scale(1.1); color: var(--highlight); }
-            
+
             #ls-party-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 300; display: none; align-items: center; justify-content: center; overflow: hidden; pointer-events: none; }
             .party-active { animation: discoBg 1s infinite alternate; }
             @keyframes discoBg { 0% { background: rgba(255, 0, 0, 0.4); } 25% { background: rgba(0, 255, 0, 0.4); } 50% { background: rgba(0, 0, 255, 0.4); } 75% { background: rgba(255, 255, 0, 0.4); } 100% { background: rgba(255, 0, 255, 0.4); } }
             .party-dancer { position: absolute; font-size: 50px; animation: dance 0.5s infinite alternate; z-index: 302; }
             @keyframes dance { 0% { transform: translateY(0) scale(1) rotate(-10deg); } 100% { transform: translateY(-20px) scale(1.2) rotate(10deg); } }
-            #ls-disco-ball { font-size: 100px; position: absolute; top: -150px; transition: top 1s cubic-bezier(0.175, 0.885, 0.32, 1.275); animation: spin 3s linear infinite; filter: drop-shadow(0 0 20px rgba(255,255,255,0.8)); z-index: 301; }
+            #ls-disco-ball { font-size: 100px; position: absolute; top: -150px; transition: top 1s cubic-bezier(0.175, 0.885, 0.32, 1.275); animation: spin 3s linear infinite; text-shadow: 0 0 30px rgba(255,255,255,0.8); z-index: 301; background: transparent; }
             #ls-disco-ball.drop { top: 20px; }
             .party-lights { position: absolute; top: 70px; width: 200vw; height: 200vw; background: conic-gradient(from 0deg, rgba(255,0,0,0.6) 0deg, transparent 45deg, rgba(0,255,0,0.6) 90deg, transparent 135deg, rgba(0,255,255,0.6) 180deg, transparent 225deg, rgba(255,0,255,0.6) 270deg, transparent 315deg, rgba(255,0,0,0.6) 360deg); animation: spinLights 4s linear infinite; mix-blend-mode: screen; opacity: 0; transition: opacity 1s; border-radius: 50%; left: -50vw; pointer-events: none; z-index: 300;}
             .party-active .party-lights { opacity: 1; }
@@ -463,14 +481,28 @@
 
             .ls-mask-avatar { width: 200px; height: 200px; border-radius: 50%; top: 50px; left: 50px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7); position: absolute; pointer-events: none; border: 2px solid var(--highlight); box-sizing: border-box; }
             .ls-mask-banner { width: 300px; height: 108px; border-radius: 8px; top: 96px; left: 0; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7); position: absolute; pointer-events: none; border: 2px solid var(--highlight); box-sizing: border-box; }
-            
+
+            .ls-announcement-card { background: var(--bg-surface); width: 85%; max-width: 320px; border-radius: 16px; border: 2px solid #facc15; box-shadow: 0 10px 40px rgba(250, 204, 21, 0.2); padding: 20px; display: flex; flex-direction: column; gap: 12px; text-align: center; position: relative; }
+            .ls-announcement-title { color: #facc15; font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; word-wrap: break-word; }
+            .ls-announcement-body { color: var(--text-primary); font-size: 14px; line-height: 1.5; word-wrap: break-word; white-space: pre-wrap; text-align: left; background: rgba(128,128,128,0.05); padding: 12px; border-radius: 8px; border-left: 3px solid #facc15;}
+            .ls-announcement-sender { font-size: 11px; color: var(--text-muted); margin-top: 4px; font-weight: 600; }
+
+            .ls-poll-card { background: rgba(0,0,0,0.15); border-radius: 12px; padding: 10px; margin-top: 6px; display: flex; flex-direction: column; gap: 6px; }
+            .ls-poll-option { background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 8px 12px; cursor: pointer; position: relative; overflow: hidden; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; font-size: 13px; }
+            .ls-poll-option:hover:not(.disabled) { background: rgba(0,0,0,0.4); border-color: rgba(255,255,255,0.3); }
+            .ls-poll-option.voted { border-color: #10b981; background: rgba(16, 185, 129, 0.2); font-weight: bold; }
+            .ls-poll-bar { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(255,255,255,0.15); z-index: 0; transition: width 0.3s; }
+            .ls-poll-option span { position: relative; z-index: 1; }
+            .ls-poll-footer { font-size: 11px; opacity: 0.7; display: flex; justify-content: space-between; margin-top: 4px; padding: 0 4px; }
+            .ls-poll-option.disabled { cursor: default; }
+
             @keyframes ls-gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
             #ls-main-logo { font-size: 32px; font-weight: 800; display: block; margin-bottom: 4px; background: linear-gradient(270deg, #5b5cf6, #06b6d4, #7c3aed, #5b5cf6); background-size: 300% 300%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: ls-gradientShift 6s ease infinite; filter: drop-shadow(0 0 8px rgba(6, 182, 212, 0.6)); }
 
             :root { --ls-chat-width: 350px; }
             html.ls-integrated-active { margin-right: var(--ls-chat-width) !important; width: calc(100% - var(--ls-chat-width)) !important; }
             body.ls-integrated-active { max-width: calc(100vw - var(--ls-chat-width)) !important; }
-            
+
             .ls-integrated-active .html5-video-player, .ls-integrated-active #ytd-player,
             .ls-integrated-active .nf-player-container, .ls-integrated-active .watch-video,
             .ls-integrated-active .webPlayerContainer, .ls-integrated-active .scaling-video-container, .ls-integrated-active .dv-player-fullscreen,
@@ -482,8 +514,8 @@
                 max-width: calc(100vw - var(--ls-chat-width)) !important;
                 right: auto !important;
             }
-            .ls-integrated-active .ytp-chrome-bottom, 
-            .ls-integrated-active .nf-player-controls, 
+            .ls-integrated-active .ytp-chrome-bottom,
+            .ls-integrated-active .nf-player-controls,
             .ls-integrated-active .dv-player-controls,
             .ls-integrated-active .bottom-controls,
             .ls-integrated-active [data-testid="player-controls"] {
@@ -526,7 +558,7 @@
                         <button class="ls-header-btn" id="ls-close-btn" title="Fechar App"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
                     </div>
                 </div>
-                
+
                 <div id="ls-setup-area" class="ls-screen ls-modal-content">
                     <div style="text-align: center; margin-bottom: 10px;">
                         <span id="ls-main-logo">LidySync</span>
@@ -587,14 +619,14 @@
                             <button class="ls-btn-danger" id="ls-wipe-data-btn" style="margin-top: 0;">Apagar Conta e Desconectar</button>
                         </div>
                         <button class="ls-btn-primary" id="ls-save-lobby-config-btn" style="margin-top: 0;">Salvar Alterações</button>
-                        <div style="text-align: center; margin-top: 8px; color: var(--text-muted); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Versão Atual - 1.3.2</div>
+                        <div style="text-align: center; margin-top: 8px; color: var(--text-muted); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Versão Atual - 1.5.0</div>
                     </div>
                 </div>
 
                 <div id="ls-profile-overlay" class="ls-modal-overlay-card">
                     <div class="ls-profile-card">
                         <button id="ls-close-profile-modal" title="Fechar Perfil">✕</button>
-                        
+
                         <div id="ls-profile-view" class="ls-profile-scrollable">
                             <div class="ls-profile-banner" id="ls-profile-v-banner"></div>
                             <div style="display: flex; justify-content: space-between; align-items: flex-end; padding: 0 20px;">
@@ -728,7 +760,51 @@
                     <button id="ls-close-viewer">✕</button>
                     <img id="ls-viewer-img" src="">
                 </div>
-                
+
+                <div id="ls-announcement-create-overlay" class="ls-modal-overlay" style="top: 54px; height: calc(100% - 54px); z-index: 60;">
+                    <div class="ls-modal-content">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="color: #facc15; font-size: 18px; font-weight: 800;">📢 Criar Anúncio</span>
+                            <button id="ls-close-announce-create" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px;">✕</button>
+                        </div>
+                        <div><span class="ls-label">Título do Anúncio</span><input type="text" class="ls-input-text" id="ls-announce-c-title" placeholder="Ex: Regras da Sala" maxlength="40" /></div>
+                        <div><span class="ls-label">Mensagem</span><textarea class="ls-textarea" id="ls-announce-c-text" placeholder="Digite o aviso para todos..." maxlength="300"></textarea></div>
+                        <button class="ls-btn-primary" id="ls-send-announce-btn" style="background: linear-gradient(135deg, #facc15, #ca8a04); color: #000; margin-top: 10px;">Enviar para Todos</button>
+                    </div>
+                </div>
+
+                <div id="ls-announcement-display-overlay" class="ls-modal-overlay-card" style="z-index: 500;">
+                    <div class="ls-announcement-card">
+                        <div class="ls-announcement-title" id="ls-announce-v-title">Título</div>
+                        <div class="ls-announcement-body" id="ls-announce-v-text">Mensagem</div>
+                        <div class="ls-announcement-sender" id="ls-announce-v-sender">Enviado por: Admin</div>
+                        <button class="ls-btn-primary" id="ls-close-announce-btn" style="background: linear-gradient(135deg, #facc15, #ca8a04); color: #000; margin-top: 8px;">Entendi</button>
+                    </div>
+                </div>
+
+                <div id="ls-poll-create-overlay" class="ls-modal-overlay" style="top: 54px; height: calc(100% - 54px); z-index: 60;">
+                    <div class="ls-modal-content">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="color: var(--highlight); font-size: 18px; font-weight: 800;">📊 Criar Enquete</span>
+                            <button id="ls-close-poll-create" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px;">✕</button>
+                        </div>
+                        <div><span class="ls-label">Pergunta</span><input type="text" class="ls-input-text" id="ls-poll-c-title" placeholder="Ex: Qual o melhor filme?" maxlength="80" /></div>
+                        <div><span class="ls-label">Opção 1</span><input type="text" class="ls-input-text" id="ls-poll-c-opt0" placeholder="Filme A" maxlength="40" /></div>
+                        <div><span class="ls-label">Opção 2</span><input type="text" class="ls-input-text" id="ls-poll-c-opt1" placeholder="Filme B" maxlength="40" /></div>
+                        <div><span class="ls-label">Opção 3 (Opcional)</span><input type="text" class="ls-input-text" id="ls-poll-c-opt2" placeholder="" maxlength="40" /></div>
+                        <div><span class="ls-label">Opção 4 (Opcional)</span><input type="text" class="ls-input-text" id="ls-poll-c-opt3" placeholder="" maxlength="40" /></div>
+                        <div>
+                            <span class="ls-label">Duração</span>
+                            <select class="ls-select" id="ls-poll-c-duration">
+                                <option value="1">1 Minuto</option>
+                                <option value="2">2 Minutos</option>
+                                <option value="5">5 Minutos</option>
+                            </select>
+                        </div>
+                        <button class="ls-btn-primary" id="ls-send-poll-btn" style="margin-top: 10px;">Iniciar Enquete</button>
+                    </div>
+                </div>
+
                 <div id="ls-party-overlay">
                     <div class="party-lights"></div>
                     <div id="ls-disco-ball">🪩</div>
@@ -1200,7 +1276,7 @@
                         html.ls-integrated-active div[id^="layer-root-"], html.ls-integrated-active div[data-testid="playerContainer"],
                         html.ls-integrated-active .html5-video-player, html.ls-integrated-active #ytd-player,
                         html.ls-integrated-active .nf-player-container, html.ls-integrated-active .watch-video,
-                        html.ls-integrated-active .webPlayerContainer, html.ls-integrated-active .scaling-video-container, 
+                        html.ls-integrated-active .webPlayerContainer, html.ls-integrated-active .scaling-video-container,
                         html.ls-integrated-active .dv-player-fullscreen, html.ls-integrated-active div[data-testid="player-container"],
                         html.ls-integrated-active #app_body_content, html.ls-integrated-active .btm-media-client-element,
                         html.ls-integrated-active .video-player-wrapper, html.ls-integrated-active #vilos-player,
@@ -1209,7 +1285,7 @@
                             max-width: calc(100vw - var(--ls-chat-width)) !important;
                             right: auto !important;
                         }
-                        html.ls-integrated-active .ytp-chrome-bottom, html.ls-integrated-active .nf-player-controls, 
+                        html.ls-integrated-active .ytp-chrome-bottom, html.ls-integrated-active .nf-player-controls,
                         html.ls-integrated-active .dv-player-controls, html.ls-integrated-active .bottom-controls,
                         html.ls-integrated-active [data-testid="player-controls"], html.ls-integrated-active [data-testid="playback_controls"] {
                             width: calc(100vw - var(--ls-chat-width)) !important;
@@ -2012,6 +2088,10 @@
             const rb = shadow.getElementById('ls-reply-bar'); if (rb) rb.style.display = 'none';
             replyTarget = null;
 
+            const annCreate = shadow.getElementById('ls-announcement-create-overlay'); if (annCreate) annCreate.style.display = 'none';
+            const annDisp = shadow.getElementById('ls-announcement-display-overlay'); if (annDisp) annDisp.style.display = 'none';
+            const pollCreate = shadow.getElementById('ls-poll-create-overlay'); if (pollCreate) pollCreate.style.display = 'none';
+
             const roomRef = db.collection('rooms').doc(currentRoom); const messagesRef = roomRef.collection('messages');
 
             roomListener = roomRef.onSnapshot(doc => {
@@ -2158,6 +2238,77 @@
                             container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg">🎬 ${data.sender} ${data.text} <span class="ls-msg-time" style="display:block; margin-top:2px;">${formatTime(data.timestamp)}</span></div>`;
                         }
+                    } else if (data.type === 'announcement') {
+                        if (data.deleted) return;
+                        lastSender = null; lastMsgType = 'system'; lastTimestamp = msgTimeMs;
+                        container.className = 'ls-message-container system-msg-container';
+                        container.innerHTML = `<div class="ls-message system-msg" style="background:rgba(250, 204, 21, 0.1)!important; color:#facc15; border:1px solid rgba(250, 204, 21, 0.3); padding:8px 14px; text-align:left;">📢 <b style="font-size:13px; text-transform:uppercase;">${escapeHTML(data.title)}</b><br><span style="color:var(--text-primary); font-size:13px; display:block; margin-top:4px; white-space: pre-wrap; line-height: 1.4;">${escapeHTML(data.text)}</span><span class="ls-msg-time" style="display:block; margin-top:6px; text-align:right;">Enviado por ${data.sender} às ${formatTime(data.timestamp)}</span></div>`;
+                    } else if (data.type === 'poll') {
+                        container.className = `ls-message-container ${isMe ? 'sent' : 'received'}`;
+                        if (isSameSender) container.style.marginTop = '-8px';
+
+                        const senderRow = document.createElement('div'); senderRow.className = 'ls-sender-row';
+                        if (!isSameSender) {
+                            const nameLabel = document.createElement('span'); nameLabel.className = 'ls-sender-name'; nameLabel.innerText = data.sender; nameLabel.onclick = () => openProfile(data.sender); senderRow.appendChild(nameLabel);
+                            const tagsContainer = document.createElement('span'); tagsContainer.className = 'ls-tags-container';
+                            tagsContainer.innerHTML = buildTagsHTML(isAdm, userCache[data.sender]);
+                            senderRow.appendChild(tagsContainer);
+                        }
+                        const timeLabel = document.createElement('span'); timeLabel.className = 'ls-msg-time'; timeLabel.innerText = formatTime(data.timestamp); senderRow.appendChild(timeLabel);
+
+                        if (isMe && !data.deleted) {
+                            const delBtn = document.createElement('span'); delBtn.className = 'ls-msg-action'; delBtn.innerText = '🗑️'; delBtn.title = "Apagar";
+                            delBtn.onclick = async () => { try { await messagesRef.doc(docId).set({ deleted: true }, { merge: true }); } catch (e) { } };
+                            senderRow.appendChild(delBtn);
+                        }
+
+                        const msgBubble = document.createElement('div'); msgBubble.className = 'ls-message';
+                        if (data.textColor) { msgBubble.style.color = data.textColor; } else if (isMe) { msgBubble.style.color = '#ffffff'; }
+                        if (isMe) { msgBubble.style.background = data.color || '#5b5cf6'; }
+
+                        if (data.deleted) {
+                            msgBubble.classList.add('deleted-msg'); msgBubble.innerText = "🚫 Enquete apagada";
+                        } else {
+                            const isExpired = Date.now() > data.expiresAt;
+                            const hasVoted = data.voters && data.voters.includes(myName);
+                            const totalVotes = data.voters ? data.voters.length : 0;
+
+                            let html = `<div>📊 <b>${escapeHTML(data.title)}</b></div><div class="ls-poll-card">`;
+
+                            data.options.forEach((opt, idx) => {
+                                const votesForOpt = data['vote_' + idx] ? data['vote_' + idx].length : 0;
+                                const percent = totalVotes > 0 ? Math.round((votesForOpt / totalVotes) * 100) : 0;
+                                const votedThis = data['vote_' + idx] && data['vote_' + idx].includes(myName);
+
+                                html += `<div class="ls-poll-option ${isExpired || hasVoted ? 'disabled' : ''} ${votedThis ? 'voted' : ''}" data-idx="${idx}" data-docid="${docId}">
+                                    <div class="ls-poll-bar" style="width: ${percent}%"></div>
+                                    <span>${escapeHTML(opt)}</span>
+                                    <span style="font-size:11px; opacity:0.8;">${hasVoted || isExpired ? percent + '% (' + votesForOpt + ')' : ''}</span>
+                                </div>`;
+                            });
+
+                            const timerClass = !isExpired ? 'ls-poll-timer' : '';
+                            const timerText = isExpired ? 'Encerrada' : 'Calculando...';
+                            html += `<div class="ls-poll-footer"><span>${totalVotes} votos</span><span class="${timerClass}" data-expires="${data.expiresAt}">${timerText}</span></div></div>`;
+                            msgBubble.innerHTML = html;
+
+                            if (!isExpired && !hasVoted) {
+                                msgBubble.querySelectorAll('.ls-poll-option').forEach(optEl => {
+                                    optEl.addEventListener('click', async () => {
+                                        const idx = optEl.getAttribute('data-idx');
+                                        const did = optEl.getAttribute('data-docid');
+                                        try {
+                                            await messagesRef.doc(did).update({
+                                                ['vote_' + idx]: firebase.firestore.FieldValue.arrayUnion(myName),
+                                                voters: firebase.firestore.FieldValue.arrayUnion(myName)
+                                            });
+                                        } catch (e) { }
+                                    });
+                                });
+                            }
+                        }
+                        container.appendChild(senderRow); container.appendChild(msgBubble);
+                        lastSender = data.sender; lastMsgType = 'poll'; lastTimestamp = msgTimeMs;
                     } else if (data.type === 'text' || data.type === 'image' || data.type === 'gif') {
                         container.className = `ls-message-container ${isMe ? 'sent' : 'received'}`;
                         if (isSameSender) container.style.marginTop = '-8px';
@@ -2272,6 +2423,20 @@
                                 else if (data.text === 'SYSTEM_PAUSE' && myAutoPlay) document.querySelectorAll('video').forEach(v => v.pause());
                             }
 
+                            if (data.type === 'announcement') {
+                                const disp = shadow.getElementById('ls-announcement-display-overlay');
+                                const tUI = shadow.getElementById('ls-announce-v-title');
+                                const mUI = shadow.getElementById('ls-announce-v-text');
+                                const sUI = shadow.getElementById('ls-announce-v-sender');
+                                if (disp && tUI && mUI && sUI) {
+                                    tUI.innerText = data.title;
+                                    mUI.innerText = data.text;
+                                    sUI.innerText = `Enviado por: ${data.sender}`;
+                                    disp.style.display = 'flex';
+                                    if (!mutedRooms.includes(currentRoom)) playNotificationSound();
+                                }
+                            }
+
                             if (data.type === 'party') {
                                 const partyOverlay = shadow.getElementById('ls-party-overlay');
                                 const ball = shadow.getElementById('ls-disco-ball');
@@ -2300,7 +2465,7 @@
                                 }
                             }
 
-                            if (data.sender !== myName && data.type !== 'party' && data.type !== 'stopparty') {
+                            if (data.sender !== myName && data.type !== 'party' && data.type !== 'stopparty' && data.type !== 'announcement') {
                                 const chatWindow = shadow.getElementById('ls-chat-window');
                                 const badge = shadow.getElementById('ls-unread-badge');
                                 const fab = shadow.getElementById('ls-fab');
@@ -2377,6 +2542,80 @@
             const pp = shadow.getElementById('ls-plus-panel');
             if (ep) ep.style.display = ep.style.display === 'flex' ? 'none' : 'flex';
             if (pp) pp.style.display = 'none';
+        });
+
+        safeAddEvt('ls-close-announce-create', 'click', () => {
+            const ov = shadow.getElementById('ls-announcement-create-overlay');
+            if (ov) ov.style.display = 'none';
+        });
+
+        safeAddEvt('ls-close-announce-btn', 'click', () => {
+            const ov = shadow.getElementById('ls-announcement-display-overlay');
+            if (ov) ov.style.display = 'none';
+        });
+
+        safeAddEvt('ls-send-announce-btn', 'click', async () => {
+            const tInp = shadow.getElementById('ls-announce-c-title');
+            const mInp = shadow.getElementById('ls-announce-c-text');
+            if (!tInp || !mInp) return;
+            const title = tInp.value.trim();
+            const text = mInp.value.trim();
+            if (!title || !text) return alert("Preencha o título e a mensagem do anúncio!");
+            if (checkFlood()) return;
+
+            try {
+                await db.collection('rooms').doc(currentRoom).collection('messages').add({
+                    type: 'announcement', title: title, text: text, sender: myName, deviceId: myDeviceId, color: myColor, roomKey: currentRoomKey, timestamp: firebase.firestore.FieldValue.serverTimestamp(), deleted: false
+                });
+                tInp.value = ''; mInp.value = '';
+                const ov = shadow.getElementById('ls-announcement-create-overlay');
+                if (ov) ov.style.display = 'none';
+            } catch (e) { alert("Erro ao enviar o anúncio."); }
+        });
+
+        safeAddEvt('ls-close-poll-create', 'click', () => {
+            const ov = shadow.getElementById('ls-poll-create-overlay');
+            if (ov) ov.style.display = 'none';
+        });
+
+        safeAddEvt('ls-send-poll-btn', 'click', async () => {
+            const tInp = shadow.getElementById('ls-poll-c-title');
+            const o0 = shadow.getElementById('ls-poll-c-opt0');
+            const o1 = shadow.getElementById('ls-poll-c-opt1');
+            const o2 = shadow.getElementById('ls-poll-c-opt2');
+            const o3 = shadow.getElementById('ls-poll-c-opt3');
+            const dur = shadow.getElementById('ls-poll-c-duration');
+
+            if (!tInp || !o0 || !o1) return;
+
+            const title = tInp.value.trim();
+            const opt0 = o0.value.trim();
+            const opt1 = o1.value.trim();
+            const opt2 = o2 ? o2.value.trim() : '';
+            const opt3 = o3 ? o3.value.trim() : '';
+            const minutes = dur ? parseInt(dur.value) : 1;
+
+            if (!title || !opt0 || !opt1) return alert("Preencha a pergunta e as duas primeiras opções!");
+            if (checkFlood()) return;
+
+            const options = [opt0, opt1];
+            if (opt2) options.push(opt2);
+            if (opt3) options.push(opt3);
+
+            const expiresAt = Date.now() + (minutes * 60000);
+
+            try {
+                await db.collection('rooms').doc(currentRoom).collection('messages').add({
+                    type: 'poll', title: title, options: options, expiresAt: expiresAt, voters: [], vote_0: [], vote_1: [], vote_2: [], vote_3: [], sender: myName, deviceId: myDeviceId, color: myColor, textColor: myTextColor, roomKey: currentRoomKey, timestamp: firebase.firestore.FieldValue.serverTimestamp(), deleted: false
+                });
+
+                ls.setItem('ls_last_poll_time', Date.now());
+
+                tInp.value = ''; o0.value = ''; o1.value = ''; if (o2) o2.value = ''; if (o3) o3.value = '';
+                const ov = shadow.getElementById('ls-poll-create-overlay');
+                if (ov) ov.style.display = 'none';
+                updateLastRead(currentRoom); playSendSound();
+            } catch (e) { alert("Erro ao criar a enquete."); }
         });
 
         safeAddEvt('ls-btn-plus', 'click', () => {
@@ -2536,6 +2775,7 @@
                 const myUserDoc = await db.collection('users').doc(myName).get();
                 const myTags = myUserDoc.exists ? (myUserDoc.data().tags || []) : [];
                 const isOwnerOrDev = myTags.includes('OWNER') || myTags.includes('DEV');
+                const isMod = myTags.includes('MOD');
 
                 const mc = shadow.getElementById('ls-messages');
 
@@ -2550,6 +2790,36 @@
                         if (mc) mc.appendChild(container);
                         scrollToBottom();
                     }
+                    return;
+                }
+
+                if (cmd === '/anuncio') {
+                    if (isOwnerOrDev || isMod) {
+                        const ov = shadow.getElementById('ls-announcement-create-overlay');
+                        if (ov) ov.style.display = 'flex';
+                    } else {
+                        const container = document.createElement('div');
+                        container.className = 'ls-message-container system-msg-container';
+                        container.innerHTML = `<div class="ls-message system-msg" style="color:#ef4444;">⚠️ Apenas Moderadores e Desenvolvedores podem criar anúncios.</div>`;
+                        if (mc) mc.appendChild(container);
+                        scrollToBottom();
+                    }
+                    return;
+                }
+
+                if (cmd === '/pool' || cmd === '/poll') {
+                    const lastPollTime = parseInt(ls.getItem('ls_last_poll_time') || '0');
+                    if (Date.now() - lastPollTime < 3600000) {
+                        const remaining = Math.ceil((3600000 - (Date.now() - lastPollTime)) / 60000);
+                        const container = document.createElement('div');
+                        container.className = 'ls-message-container system-msg-container';
+                        container.innerHTML = `<div class="ls-message system-msg" style="color:#ef4444;">⚠️ Precisas de aguardar ${remaining} minutos para criar outra enquete.</div>`;
+                        if (mc) mc.appendChild(container);
+                        scrollToBottom();
+                        return;
+                    }
+                    const ov = shadow.getElementById('ls-poll-create-overlay');
+                    if (ov) ov.style.display = 'flex';
                     return;
                 }
 
@@ -2691,7 +2961,28 @@
             setTimeout(checkUrlChange, 50);
         });
 
-        setInterval(checkUrlChange, 1000);
+        setInterval(() => {
+            checkUrlChange();
+
+            const timers = shadow.querySelectorAll('.ls-poll-timer');
+            timers.forEach(el => {
+                const exp = parseInt(el.getAttribute('data-expires'));
+                const now = Date.now();
+                if (now >= exp) {
+                    el.innerText = 'Encerrada';
+                    el.classList.remove('ls-poll-timer');
+                    const card = el.closest('.ls-poll-card');
+                    if (card) {
+                        card.querySelectorAll('.ls-poll-option').forEach(opt => opt.classList.add('disabled'));
+                    }
+                } else {
+                    const secs = Math.ceil((exp - now) / 1000);
+                    const m = Math.floor(secs / 60);
+                    const s = secs % 60;
+                    el.innerText = `Encerra em ${m}:${s.toString().padStart(2, '0')}`;
+                }
+            });
+        }, 1000);
 
         setInterval(() => {
             if (!myName) return;
