@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LidySync
 // @namespace    https://github.com/OFaceOff
-// @version      1.2.0
+// @version      1.3.2
 // @description  Chat em tempo real para assistir filmes sincronizados com amigos.
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/refs/heads/main/docs/assets/img/favicon.ico
@@ -72,6 +72,65 @@
     function playNotificationSound() { if (ls.getItem('ls_sound') !== 'false') playAudio(600, 1000, 0.1); }
     function playSendSound() { if (ls.getItem('ls_sound') !== 'false' && ls.getItem('ls_inchat_sounds') !== 'false') playAudio(300, 600, 0.08); }
     function playReceiveSound() { if (ls.getItem('ls_sound') !== 'false' && ls.getItem('ls_inchat_sounds') !== 'false') playAudio(800, 1200, 0.15); }
+
+    let partyMusicInterval = null;
+    function playPartyHorn() {
+        if (ls.getItem('ls_sound') === 'false') return;
+        try {
+            if (!sharedAudioCtx) sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (sharedAudioCtx.state === 'suspended') sharedAudioCtx.resume();
+            const osc = sharedAudioCtx.createOscillator();
+            const osc2 = sharedAudioCtx.createOscillator();
+            const gain = sharedAudioCtx.createGain();
+            osc.type = 'sawtooth'; osc2.type = 'square';
+            osc.frequency.setValueAtTime(400, sharedAudioCtx.currentTime);
+            osc.frequency.linearRampToValueAtTime(600, sharedAudioCtx.currentTime + 1);
+            osc2.frequency.setValueAtTime(405, sharedAudioCtx.currentTime);
+            osc2.frequency.linearRampToValueAtTime(605, sharedAudioCtx.currentTime + 1);
+            osc.connect(gain); osc2.connect(gain); gain.connect(sharedAudioCtx.destination);
+            gain.gain.setValueAtTime(0.05, sharedAudioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.05, sharedAudioCtx.currentTime + 0.8);
+            gain.gain.linearRampToValueAtTime(0, sharedAudioCtx.currentTime + 1.2);
+            osc.start(); osc2.start();
+            osc.stop(sharedAudioCtx.currentTime + 1.2); osc2.stop(sharedAudioCtx.currentTime + 1.2);
+        } catch (e) { }
+    }
+    function playPartyBeatTick(beat) {
+        try {
+            if (!sharedAudioCtx) sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (sharedAudioCtx.state === 'suspended') sharedAudioCtx.resume();
+            let t = sharedAudioCtx.currentTime;
+            let osc = sharedAudioCtx.createOscillator();
+            let gain = sharedAudioCtx.createGain();
+            osc.connect(gain); gain.connect(sharedAudioCtx.destination);
+            osc.frequency.setValueAtTime(150, t); osc.frequency.exponentialRampToValueAtTime(0.01, t + 0.1);
+            gain.gain.setValueAtTime(0.4, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+            osc.start(t); osc.stop(t + 0.1);
+            let notes = [261.63, 329.63, 392.00, 523.25, 659.25];
+            let note = notes[beat % notes.length];
+            if (Math.random() > 0.2) {
+                let oscM = sharedAudioCtx.createOscillator();
+                let gainM = sharedAudioCtx.createGain();
+                oscM.type = 'square';
+                oscM.connect(gainM); gainM.connect(sharedAudioCtx.destination);
+                oscM.frequency.setValueAtTime(note, t);
+                gainM.gain.setValueAtTime(0.05, t); gainM.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
+                oscM.start(t); oscM.stop(t + 0.2);
+            }
+        } catch (e) { }
+    }
+    function startPartyMusic() {
+        if (ls.getItem('ls_sound') === 'false') return;
+        stopPartyMusic(); playPartyHorn();
+        let beats = 0;
+        partyMusicInterval = setInterval(() => {
+            if (beats >= 28) { clearInterval(partyMusicInterval); return; }
+            playPartyBeatTick(beats); beats++;
+        }, 350);
+    }
+    function stopPartyMusic() {
+        if (partyMusicInterval) clearInterval(partyMusicInterval);
+    }
 
     function escapeHTML(str) {
         return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag]));
@@ -223,25 +282,6 @@
                 text-shadow: none; 
             }
             
-            #ls-wrapper.theme-hellokitty { 
-                --bg-base: #fff1f2; 
-                --bg-surface: #ffffff; 
-                --bg-elevated: #ffe4e6;
-                --bg-overlay: rgba(255, 241, 242, 0.85); 
-                --bg-modal: #ffffff; 
-                --text-primary: #be123c; 
-                --text-secondary: #fb7185;
-                --text-muted: #fda4af; 
-                --border-color: rgba(225, 29, 72, 0.15); 
-                --received-msg: #ffe4e6; 
-                --highlight: #e11d48;
-                --fab-bg: linear-gradient(135deg, #fb7185, #e11d48); 
-                --fab-shadow: 0 8px 25px rgba(225, 29, 72, 0.3); 
-                --btn-primary-bg: linear-gradient(135deg, #fb7185, #e11d48); 
-                --btn-primary-shadow: rgba(225, 29, 72, 0.3);
-                --btn-secondary-bg: #ffe4e6; 
-            }
-
             ::-webkit-scrollbar { width: 6px; } 
             ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 6px; opacity: 0.5; transition: 0.2s; }
             ::-webkit-scrollbar-thumb:hover { background: var(--highlight); }
@@ -412,10 +452,13 @@
             #ls-party-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 300; display: none; align-items: center; justify-content: center; overflow: hidden; pointer-events: none; }
             .party-active { animation: discoBg 1s infinite alternate; }
             @keyframes discoBg { 0% { background: rgba(255, 0, 0, 0.4); } 25% { background: rgba(0, 255, 0, 0.4); } 50% { background: rgba(0, 0, 255, 0.4); } 75% { background: rgba(255, 255, 0, 0.4); } 100% { background: rgba(255, 0, 255, 0.4); } }
-            .party-dancer { position: absolute; font-size: 50px; animation: dance 0.5s infinite alternate; }
+            .party-dancer { position: absolute; font-size: 50px; animation: dance 0.5s infinite alternate; z-index: 302; }
             @keyframes dance { 0% { transform: translateY(0) scale(1) rotate(-10deg); } 100% { transform: translateY(-20px) scale(1.2) rotate(10deg); } }
-            #ls-disco-ball { font-size: 80px; position: absolute; top: -100px; transition: top 1s ease-out; animation: spin 2s linear infinite; }
+            #ls-disco-ball { font-size: 100px; position: absolute; top: -150px; transition: top 1s cubic-bezier(0.175, 0.885, 0.32, 1.275); animation: spin 3s linear infinite; filter: drop-shadow(0 0 20px rgba(255,255,255,0.8)); z-index: 301; }
             #ls-disco-ball.drop { top: 20px; }
+            .party-lights { position: absolute; top: 70px; width: 200vw; height: 200vw; background: conic-gradient(from 0deg, rgba(255,0,0,0.6) 0deg, transparent 45deg, rgba(0,255,0,0.6) 90deg, transparent 135deg, rgba(0,255,255,0.6) 180deg, transparent 225deg, rgba(255,0,255,0.6) 270deg, transparent 315deg, rgba(255,0,0,0.6) 360deg); animation: spinLights 4s linear infinite; mix-blend-mode: screen; opacity: 0; transition: opacity 1s; border-radius: 50%; left: -50vw; pointer-events: none; z-index: 300;}
+            .party-active .party-lights { opacity: 1; }
+            @keyframes spinLights { 100% { transform: rotate(360deg); } }
             @keyframes spin { 100% { transform: rotate(360deg); } }
 
             .ls-mask-avatar { width: 200px; height: 200px; border-radius: 50%; top: 50px; left: 50px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7); position: absolute; pointer-events: none; border: 2px solid var(--highlight); box-sizing: border-box; }
@@ -527,7 +570,7 @@
                         <div class="ls-config-section">
                             <span class="ls-label">Preferências Globais</span>
                             <select class="ls-select" id="ls-app-theme" style="margin-bottom: 12px;">
-                                <option value="">Tema Escuro (Padrão)</option><option value="theme-glass">Tema Glassmorfismo</option><option value="theme-light">Tema Claro</option><option value="theme-hellokitty">Tema Hello Kitty</option>
+                                <option value="">Tema Escuro (Padrão)</option><option value="theme-glass">Tema Glassmorfismo</option><option value="theme-light">Tema Claro</option>
                             </select>
                             <label class="ls-checkbox-group"><input type="checkbox" id="ls-app-sound" checked><span><b>Mudo (Sem Sons)</b><br><small style="color: var(--text-muted);">Desmarque para mutar todos os sons.</small></span></label>
                             <label class="ls-checkbox-group"><input type="checkbox" id="ls-app-inchatsound" checked><span><b>Sons no Chat</b><br><small style="color: var(--text-muted);">Sons rápidos ao enviar e receber.</small></span></label>
@@ -544,7 +587,7 @@
                             <button class="ls-btn-danger" id="ls-wipe-data-btn" style="margin-top: 0;">Apagar Conta e Desconectar</button>
                         </div>
                         <button class="ls-btn-primary" id="ls-save-lobby-config-btn" style="margin-top: 0;">Salvar Alterações</button>
-                        <div style="text-align: center; margin-top: 8px; color: var(--text-muted); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Versão Atual - 1.2.0</div>
+                        <div style="text-align: center; margin-top: 8px; color: var(--text-muted); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Versão Atual - 1.3.2</div>
                     </div>
                 </div>
 
@@ -687,6 +730,7 @@
                 </div>
                 
                 <div id="ls-party-overlay">
+                    <div class="party-lights"></div>
                     <div id="ls-disco-ball">🪩</div>
                     <div class="party-dancer" style="left: 10%; bottom: 20%;">🕺</div>
                     <div class="party-dancer" style="right: 20%; top: 30%;">💃</div>
@@ -1604,10 +1648,28 @@
                         `;
 
                         if (isAdmMode && p !== myName) {
+                            const actionDiv = document.createElement('div');
+                            actionDiv.style.cssText = 'margin-left:auto; display:flex; align-items:center; gap:8px; z-index:10;';
+
+                            const giveHostBtn = document.createElement('button');
+                            giveHostBtn.innerHTML = '👑';
+                            giveHostBtn.title = "Passar cargo de anfitrião";
+                            giveHostBtn.style.cssText = 'background:none; border:none; cursor:pointer; padding:4px; font-size:14px;';
+                            giveHostBtn.addEventListener('click', async (e) => {
+                                e.stopPropagation();
+                                if (confirm(`Tem a certeza que deseja passar o cargo de anfitrião para ${p}? Perderá os controlos da sala.`)) {
+                                    try {
+                                        await db.collection('rooms').doc(roomName).update({ createdBy: p });
+                                        sendSystemAction(`SYSTEM_NEW_HOST:${p}`);
+                                        fetchAndRenderMembers(roomName, listEl);
+                                    } catch (err) { }
+                                }
+                            });
+
                             const kickBtn = document.createElement('button');
                             kickBtn.innerHTML = '❌';
                             kickBtn.title = "Expulsar da sala";
-                            kickBtn.style.cssText = 'background:none; border:none; cursor:pointer; padding:4px 8px; font-size:12px; margin-left:auto; z-index:10;';
+                            kickBtn.style.cssText = 'background:none; border:none; cursor:pointer; padding:4px; font-size:12px;';
                             kickBtn.addEventListener('click', async (e) => {
                                 e.stopPropagation();
                                 if (confirm(`Deseja realmente expulsar ${p} desta sala?`)) {
@@ -1618,7 +1680,10 @@
                                     } catch (err) { }
                                 }
                             });
-                            item.appendChild(kickBtn);
+
+                            actionDiv.appendChild(giveHostBtn);
+                            actionDiv.appendChild(kickBtn);
+                            item.appendChild(actionDiv);
                         }
 
                         item.addEventListener('click', () => { openProfile(p); });
@@ -1650,8 +1715,8 @@
                             <button class="ls-dropdown-item" data-action="mute" data-name="${room.name}">${isMuted ? '🔔 Reativar Som' : '🔕 Silenciar Chat'}</button>
                             <button class="ls-dropdown-item" data-action="appearance" data-name="${room.name}">⚙️ Configurações da Sala</button>
                             <div style="height:1px; background:var(--border-color); margin:4px 0;" id="ls-menu-delete-divider"></div>
-                            <button class="ls-dropdown-item danger" id="ls-menu-leave" style="display:none;">🚪 Sair da Sala</button>
-                            <button class="ls-dropdown-item danger" id="ls-menu-delete">🗑️ Encerrar Sala</button>
+                            <button class="ls-dropdown-item danger" id="ls-menu-leave" data-action="leave" data-name="${room.name}" data-index="${index}" style="display:none;">🚪 Sair da Sala</button>
+                            <button class="ls-dropdown-item danger" id="ls-menu-delete" data-action="delete" data-name="${room.name}" data-index="${index}">🗑️ Encerrar Sala</button>
                         </div>
                     </div>
                 `;
@@ -1717,6 +1782,7 @@
                                 else if (data.text === 'SYSTEM_FIRST_JOIN') msgText = 'Entrou na sala';
                                 else if (data.text === 'SYSTEM_LEFT_PERMANENTLY') msgText = 'Saiu da sala';
                                 else if (data.text.startsWith('SYSTEM_KICKED:')) msgText = 'Expulsou um membro';
+                                else if (data.text.startsWith('SYSTEM_NEW_HOST:')) msgText = 'Passou o anfitrião';
                                 else if (data.text === 'SYSTEM_WENT_AWAY') msgText = 'Foi embora';
                                 else if (data.text === 'SYSTEM_PAUSE') msgText = 'Pausou a programação';
                                 else if (data.text && data.text.startsWith('SYSTEM_')) { msgText = (myHideSys && (data.text === 'SYSTEM_JOIN' || data.text === 'SYSTEM_LEAVE')) ? 'Mensagem de Sistema' : 'Ação do Sistema'; }
@@ -1961,6 +2027,13 @@
                         return;
                     }
 
+                    if (masterSyncActive && newData.createdBy !== myName) {
+                        masterSyncActive = false;
+                        detachMasterSync();
+                        const btn = shadow.getElementById('btn-action-mastersync');
+                        if (btn) { btn.innerHTML = '👑 Iniciar Sincronização do Anfitrião'; btn.style.color = '#10b981'; }
+                    }
+
                     if (newData.createdBy !== myName && newData.masterSync) {
                         if (!lastProcessedSyncId || lastProcessedSyncId !== newData.masterSync.syncId) {
                             lastProcessedSyncId = newData.masterSync.syncId;
@@ -2060,6 +2133,10 @@
                             const targetUser = data.text.split(':')[1];
                             container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg" style="background:rgba(239,68,68,0.1)!important; color:#ef4444; border:1px solid rgba(239,68,68,0.2); padding:6px 12px;">🚫 <b>${targetUser}</b> foi expulso da sala e não faz mais parte dela <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
+                        } else if (data.text.startsWith('SYSTEM_NEW_HOST:')) {
+                            const newHost = data.text.split(':')[1];
+                            container.className = 'ls-message-container system-msg-container';
+                            container.innerHTML = `<div class="ls-message system-msg" style="background:rgba(16, 185, 129, 0.1)!important; color:#10b981; border:1px solid rgba(16, 185, 129, 0.2); padding:6px 12px;">👑 <b>${data.sender}</b> passou o cargo de anfitrião para <b>${newHost}</b> <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
                         } else if (data.text === 'SYSTEM_WENT_AWAY') {
                             container.className = 'ls-message-container system-msg-container';
                             container.innerHTML = `<div class="ls-message system-msg" style="background:transparent!important; box-shadow:none; border:none; padding:4px; opacity:0.6;">🚶 <b>${data.sender}</b> foi embora <span class="ls-msg-time">${formatTime(data.timestamp)}</span></div>`;
@@ -2178,35 +2255,8 @@
                         lastTimestamp = msgTimeMs;
                     }
 
-                    if (data.type === 'party') {
+                    if (data.type === 'party' || data.type === 'stopparty') {
                         lastSender = null; lastMsgType = 'system'; lastTimestamp = msgTimeMs;
-                        if (msgTimeMs > roomJoinTime) {
-                            const partyOverlay = shadow.getElementById('ls-party-overlay');
-                            const ball = shadow.getElementById('ls-disco-ball');
-                            if (partyOverlay && ball) {
-                                clearTimeout(lsPartyTimeout);
-                                partyOverlay.style.display = 'flex';
-                                partyOverlay.classList.add('party-active');
-                                setTimeout(() => ball.classList.add('drop'), 100);
-                                lsPartyTimeout = setTimeout(() => {
-                                    partyOverlay.style.display = 'none';
-                                    partyOverlay.classList.remove('party-active');
-                                    ball.classList.remove('drop');
-                                }, 10000);
-                            }
-                        }
-                    } else if (data.type === 'stopparty') {
-                        lastSender = null; lastMsgType = 'system'; lastTimestamp = msgTimeMs;
-                        if (msgTimeMs > roomJoinTime) {
-                            const partyOverlay = shadow.getElementById('ls-party-overlay');
-                            const ball = shadow.getElementById('ls-disco-ball');
-                            if (partyOverlay && ball) {
-                                clearTimeout(lsPartyTimeout);
-                                partyOverlay.style.display = 'none';
-                                partyOverlay.classList.remove('party-active');
-                                ball.classList.remove('drop');
-                            }
-                        }
                     } else if (container.innerHTML !== "") {
                         messagesContainer.appendChild(container);
                     }
@@ -2215,12 +2265,41 @@
                 snapshot.docChanges().forEach((change) => {
                     const data = change.doc.data();
                     if (change.type === 'added' && !data.deleted) {
-                        const msgTime = data.timestamp ? data.timestamp.toMillis() : Date.now();
-                        if (msgTime > roomJoinTime) {
+                        const isNewMsg = !isFirstSnapshot || change.doc.metadata.hasPendingWrites;
+                        if (isNewMsg) {
                             if (data.type === 'countdown') {
                                 if (data.text === 'iniciou a programação!') runVisualCountdown(data.sender);
                                 else if (data.text === 'SYSTEM_PAUSE' && myAutoPlay) document.querySelectorAll('video').forEach(v => v.pause());
                             }
+
+                            if (data.type === 'party') {
+                                const partyOverlay = shadow.getElementById('ls-party-overlay');
+                                const ball = shadow.getElementById('ls-disco-ball');
+                                if (partyOverlay && ball) {
+                                    clearTimeout(lsPartyTimeout);
+                                    partyOverlay.style.display = 'flex';
+                                    partyOverlay.classList.add('party-active');
+                                    setTimeout(() => ball.classList.add('drop'), 100);
+                                    startPartyMusic();
+                                    lsPartyTimeout = setTimeout(() => {
+                                        partyOverlay.style.display = 'none';
+                                        partyOverlay.classList.remove('party-active');
+                                        ball.classList.remove('drop');
+                                        stopPartyMusic();
+                                    }, 10000);
+                                }
+                            } else if (data.type === 'stopparty') {
+                                const partyOverlay = shadow.getElementById('ls-party-overlay');
+                                const ball = shadow.getElementById('ls-disco-ball');
+                                if (partyOverlay && ball) {
+                                    clearTimeout(lsPartyTimeout);
+                                    partyOverlay.style.display = 'none';
+                                    partyOverlay.classList.remove('party-active');
+                                    ball.classList.remove('drop');
+                                    stopPartyMusic();
+                                }
+                            }
+
                             if (data.sender !== myName && data.type !== 'party' && data.type !== 'stopparty') {
                                 const chatWindow = shadow.getElementById('ls-chat-window');
                                 const badge = shadow.getElementById('ls-unread-badge');
@@ -2468,6 +2547,21 @@
                         const container = document.createElement('div');
                         container.className = 'ls-message-container system-msg-container';
                         container.innerHTML = `<div class="ls-message system-msg">⏱️ <b>Sala Criada por:</b> ${creator}<br><b>Data:</b> ${created}</div>`;
+                        if (mc) mc.appendChild(container);
+                        scrollToBottom();
+                    }
+                    return;
+                }
+
+                if (cmd === '/givehost') {
+                    if (currentRoomData && currentRoomData.createdBy === myName) {
+                        const mo = shadow.getElementById('ls-members-overlay');
+                        if (mo) mo.style.display = 'flex';
+                        fetchAndRenderMembers(currentRoom, shadow.getElementById('ls-members-list'));
+                    } else {
+                        const container = document.createElement('div');
+                        container.className = 'ls-message-container system-msg-container';
+                        container.innerHTML = `<div class="ls-message system-msg" style="color:#ef4444;">⚠️ Apenas o anfitrião pode usar este comando.</div>`;
                         if (mc) mc.appendChild(container);
                         scrollToBottom();
                     }
