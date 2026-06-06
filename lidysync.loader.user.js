@@ -1,12 +1,11 @@
 // ==UserScript==
 // @name         LidySync Loader
-// @version      3.7
+// @version      3.7.1
 // @description  LidySync Loader
 // @author       Face Off & FStudio
 // @icon         https://raw.githubusercontent.com/OFaceOff/LidySync/refs/heads/main/docs/assets/img/favicon.ico
 
 // @match *://*.ofaceoff.github.io/LidySync/*
-// @match *://*.netflix.com/*
 // @match *://*.primevideo.com/*
 // @match *://*.disneyplus.com/*
 // @match *://*.hbomax.com/*
@@ -37,7 +36,7 @@
 
     const SCRIPT_URL = "https://raw.githubusercontent.com/OFaceOff/LidySync/main/lidysync.user.js";
     const LOADER_URL = "https://raw.githubusercontent.com/OFaceOff/LidySync/main/lidysync.loader.user.js";
-    const CURRENT_VERSION = "3.7";
+    const CURRENT_VERSION = "3.7.1";
 
     function logError(contexto, erroTecnico) {
         const hora = new Date().toLocaleTimeString();

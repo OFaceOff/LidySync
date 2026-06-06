@@ -375,7 +375,7 @@
             .ls-profile-avatar-large { width: 85px; height: 85px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 36px; font-weight: bold; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.4); flex-shrink: 0; position: relative; border: 5px solid var(--bg-surface); background: var(--bg-surface); background-size: cover !important; background-position: center !important; z-index: 2; margin-top: -42px; }
             .ls-profile-status-indicator { position: absolute; bottom: 2px; right: 2px; width: 16px; height: 16px; border-radius: 50%; border: 3px solid var(--bg-surface); }
             .ls-profile-bio-box { background: rgba(128,128,128,0.05); padding: 12px 16px; border-radius: 10px; border-left: 3px solid var(--highlight); margin-top: 12px; font-size: 13.5px; line-height: 1.5; color: var(--text-primary); }
-            .ls-profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+            .ls-profile-grid { grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
             .ls-profile-stat-box { background: var(--bg-elevated); border: 1px solid var(--border-color); padding: 12px; border-radius: 10px; text-align: center; }
             .ls-profile-stat-value { font-size: 18px; font-weight: 700; color: var(--text-primary); display: block; margin-top: 4px; }
             .ls-profile-stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
@@ -2695,8 +2695,29 @@
             const expiresAt = Date.now() + (minutes * 60000);
 
             try {
+                // Garantir autenticação anônima antes de gravar, caso as regras exijam
+                if (window.firebase && firebase.auth && !firebase.auth().currentUser) {
+                    await firebase.auth().signInAnonymously().catch(() => { });
+                }
+
                 await db.collection('rooms').doc(currentRoom).collection('messages').add({
-                    type: 'poll', title: title, options: options, expiresAt: expiresAt, voters: [], vote_0: [], vote_1: [], vote_2: [], vote_3: [], sender: myName, deviceId: myDeviceId, color: myColor, textColor: myTextColor, roomKey: currentRoomKey, timestamp: firebase.firestore.FieldValue.serverTimestamp(), deleted: false
+                    type: 'poll',
+                    text: '📊 Enquete: ' + title, // Adicionado campo 'text' para satisfazer as regras do Firestore
+                    title: title,
+                    options: options,
+                    expiresAt: expiresAt,
+                    voters: [],
+                    vote_0: [],
+                    vote_1: [],
+                    vote_2: [],
+                    vote_3: [],
+                    sender: myName,
+                    deviceId: myDeviceId,
+                    color: myColor,
+                    textColor: myTextColor,
+                    roomKey: currentRoomKey,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    deleted: false
                 });
 
                 ls.setItem('ls_last_poll_time', Date.now());
@@ -2705,7 +2726,10 @@
                 const ov = shadow.getElementById('ls-poll-create-overlay');
                 if (ov) ov.style.display = 'none';
                 updateLastRead(currentRoom); playSendSound();
-            } catch (e) { alert("Erro ao criar a enquete."); }
+            } catch (e) {
+                console.error("Erro Técnico LidySync Poll:", e);
+                alert("Erro ao criar a enquete: " + (e.message || "Permissão negada."));
+            }
         });
 
         safeAddEvt('ls-btn-plus', 'click', () => {
